@@ -11,7 +11,8 @@
 MyFunctions::my_lib(c("ggmap","sf","tidyverse","tools","readr","data.table","maps","shiny"))
 
 spp_survey <- read.csv("./data/spp_region.csv") %>% 
-    filter(spp %in% c ("Centropristis striata","Gadus morhua"),
+    filter(
+        # spp %in% c ("Centropristis striata","Gadus morhua"),
            region %in% c("Northeast US Fall" , "Northeast US Spring")) #No more seasons
     
 

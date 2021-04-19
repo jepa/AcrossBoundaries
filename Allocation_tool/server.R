@@ -12,14 +12,30 @@ MyFunctions::my_lib(c("ggmap","sf","tidyverse","tools","readr","data.table","map
 us_map <- st_as_sf(map("state", plot = FALSE, fill = TRUE))
 
 
+# First let's define a bounding Box to extrapolate from
+    bbox <- c(
+        "xmin" = -76,
+        "ymin" = 35,
+        "xmax" = -65,
+        "ymax" = 45
+    )
+
+# Expand the grid
+grd_template <- expand.grid(
+    lon = seq(from = bbox["xmin"], to = bbox["xmax"], by = 0.5),
+    lat = seq(from = bbox["ymin"], to = bbox["ymax"], by = 0.5)
+)
+
 # Define server logic required to draw a histogram
 shinyServer(function(input, output) {
     
     datasetInput <- reactive({
         
         data <- readRDS("/Volumes/Enterprise/Data/pinskylab-OceanAdapt-966adf0/data_clean/dat_exploded.rds") %>% 
-            filter(spp %in% c ("Centropristis striata","Gadus morhua"),
-                   region %in% c("Northeast US Fall" , "Northeast US Spring")) #No more seasons
+            filter(
+                # spp %in% c ("Centropristis striata","Gadus morhua"),
+                   region %in% c("Northeast US Fall" , "Northeast US Spring")
+                   ) #No more seasons
         
     })
     
@@ -28,83 +44,100 @@ shinyServer(function(input, output) {
         
         # Set the filters
         species <- input$SppSelection
-        # species <- c("Centropristis striata","gadus morhua")
-        # survey <- c("Northeast US Fall" , "Northeast US Spring")
         survey <- input$SurveySelection
         # years <- input$YearSelection
         
         # Set the plot data
-        plot_data <- data %>%
+        plot_data <- datasetInput() %>%
             filter(spp %in% species,
                    region %in% survey)#,
         # year %in% years)
         
         # Density map
-        if(input$PlotStyle == 2){
-            
-            # Set manual breaks for bins
-            bins <- seq(1970,2020,10)
-            
-            map_data <- plot_data %>%
-                group_by(spp,year,lat,lon,depth) %>%
-                summarise_if(is_numeric,mean,na.rm=T) %>%
-                mutate(
-                    year = as.numeric(year),
-                    period = cut(year, breaks = bins)
-                ) %>%
-                group_by(period,lat,lon) %>%
-                summarise_if(is.numeric,mean,na.rm=T) %>%
-                filter(wtcpue>0)
-            
+        if(input$PlotStyle == 1){
             
             ggplot(us_map) +
                 geom_sf() +
-                stat_density_2d(data = map_data, geom = "polygon",
-                                aes(x = lon, y = lat, fill = ..level..)) +
-                geom_point(data = map_data,
+                geom_point(data = subset(plot_data, wtcpue = 0),
                            aes(
                                x = lon,
                                y = lat
                            ),
-                           size = 0.1
+                           color = "grey95",
+                           size = 1
                 ) +
-                facet_wrap(~period,
-                           nrow = 1) +
-                scale_fill_distiller(palette = "Spectral",
-                                     guide_legend(title = "Probability \ndensity")) +
+                geom_point(data = subset(plot_data, wtcpue > 0),
+                           aes(
+                               x = lon,
+                               y = lat,
+                               color = log10(wtcpue)
+                           ),
+                           size = 1
+                ) +
+                scale_color_distiller(palette = "Spectral", 
+                                      guide_legend(title = "WCPUE per Haul (log10)")) + 
                 coord_sf(xlim = c(-76, -65),ylim = c(35, 45)) +
-                MyFunctions::my_ggtheme_m()
+                MyFunctions::my_ggtheme_m() +
+                facet_wrap(~region)
+            
         }else{
             
             # Survey map
-            if(input$PlotStyle == 1){
+            if(input$PlotStyle == 2){
                 
+                # Set the filters
+                species <- input$SppSelection
+                survey <- input$SurveySelection
+                # years <- input$YearSelection
+                
+                # Set the plot data
+                plot_data <- datasetInput() %>%
+                    filter(spp %in% species,
+                           region %in% survey) %>% 
+                    group_by(lon,lat) %>% 
+                    summarise(wtcpue = sum(wtcpue,na.rm = T)) %>% 
+                    filter(wtcpue > 0)
+                
+                # Triangular Irregular Surface
+                fit_tin <- interp::interp( # using {interp}
+                    x = plot_data$lon,           # the function actually accepts coordinate vectors
+                    y = plot_data$lat,
+                    z = plot_data$wtcpue,
+                    xo = grd_template$lon,     # here we already define the target grid
+                    yo = grd_template$lat,
+                    output = "points"
+                ) %>% 
+                    bind_cols() %>% 
+                    filter(!is.na(z))
+                
+                # The actual map
                 ggplot(us_map) +
-                    geom_sf() +
-                    geom_point(data = subset(plot_data, wtcpue = 0),
+                    geom_sf()+
+                    geom_tile( data = fit_tin,
                                aes(
-                                   x = lon,
-                                   y = lat
-                               ),
-                               color = "grey95",
-                               size = 1
+                                   x = x,
+                                   y = y,
+                                   fill =z,
+                                   colour = z
+                               )
                     ) +
                     geom_point(data = subset(plot_data, wtcpue > 0),
                                aes(
                                    x = lon,
-                                   y = lat,
-                                   color = log10(wtcpue)
+                                   y = lat
                                ),
-                               size = 1
+                               alpha = 0.2
                     ) +
                     scale_color_distiller(palette = "Spectral", 
-                                          guide_legend(title = "WCPUE per Haul (log10)")) + 
+                                          guide_legend(title = "WCPUE per Haul")) + 
+                    scale_fill_distiller(palette = "Spectral", 
+                                         guide_legend(title = "WCPUE per Haul")) +
                     coord_sf(xlim = c(-76, -65),ylim = c(35, 45)) +
-                    MyFunctions::my_ggtheme_m() +
-                    facet_wrap(~region)
+                    
+                    MyFunctions::my_ggtheme_m()
                 
+
             }
-            
         }
         
     })
