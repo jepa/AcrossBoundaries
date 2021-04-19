@@ -1,0 +1,346 @@
+---
+title: "Ocean adapt exploration script"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+MyFunctions::my_lib(c("ggmap","sf","tidyverse","tools","readr","data.table","maps"))
+```
+
+# Ocean adapta data
+
+
+```{r basic_exploratin, eval = F, echo = F}
+
+head(by_species)
+names(by_species)
+unique(by_species$spp)
+unique(by_species$region)
+max(by_species$year)
+min(by_species$year)
+
+```
+
+
+## By species data exploration
+
+- for each region, year, species combination, the mean location and biomass, shows species averages.
+
+```{r by_species_data, eval = T, echo = T}
+
+
+by_species <- read_csv(here::here("data_clean/by_species.csv"))
+
+head(by_species)
+
+by_species %>% 
+  filter(spp == "Centropristis striata",
+         region %in% c("Northeast US Fall" , "Northeast US Spring")
+         )
+
+
+```
+
+
+
+```{r plot_by_species, eval = T, echo = T, message = F, warning = F}
+
+suppressWarnings(
+  by_species %>% 
+    filter(spp == "Centropristis striata",
+           region %in% c("Northeast US Fall" , "Northeast US Spring")) %>% 
+    group_by(spp,year,lat,lon,depth) %>%
+    summarise_if(is_numeric,mean) %>%
+    ggplot() +
+    geom_point(
+      aes(
+        x = lon,
+        y = lat,
+        fill = as.numeric(year),
+        col = as.numeric(year)
+      )
+    )
+)
+```
+
+
+## By species data exploration
+
+- for every region and year, all of the species for that region, including zeros if they were not present.
+
+```{r dat_exploded, eval = T, echo = T}
+
+dat_exploded <- readRDS("/Volumes/Enterprise/Data/pinskylab-OceanAdapt-966adf0/data_clean/dat_exploded.rds") %>% 
+  filter(spp == "Centropristis striata",
+         region %in% c("Northeast US Fall" , "Northeast US Spring")) #No more seasons
+
+head(dat_exploded)
+
+
+
+```
+
+O.K. so now we have a `wtcpue` column here. Lets now get some data wrangling going and exploration figures
+
+### Survey plots
+
+```{r plot_data, eval = T, echo = T, fig.width = 12, fig.height = 8}
+
+plot_data <- dat_exploded %>% 
+  group_by(spp,year,lat,lon,depth) %>%
+  summarise_if(is_numeric,mean,na.rm=T) %>%
+  mutate(
+    year = as.numeric(year)
+  )
+
+```
+
+#### Histogram of data points
+
+```{r histogram, eval = T, echo = T}
+
+plot_data %>% 
+  filter(wtcpue < 10,
+         wtcpue >0) %>% #remove THAT one outlier
+  mutate(depth = depth*-1) %>% 
+  gather("variable","value",depth:wtcpue) %>% 
+  # View(.)
+    ggplot() +
+    geom_histogram(
+      aes(
+        x = value,
+      ),
+      binwidth = 1
+    ) +
+  facet_wrap(~variable,
+             ncol = 1,
+             scales = "free_x")
+
+```
+
+#### Timeline of depth and wtcpue
+
+```{r timeline, eval = T, echo = T}
+
+plot_data %>% 
+  # filter(wtcpue < 200) %>% #remove THAT one outlier
+  mutate(depth = depth*-1) %>%
+  gather("variable","value",depth:wtcpue) %>% 
+  mutate(lat_round = round(lat)) %>% 
+  group_by(variable,year,lat_round) %>% 
+  summarise_at(vars(value),sum) %>% 
+  # View(.)
+    ggplot() +
+    geom_line(
+      aes(
+        x = year,
+        y = value,
+        col = as.factor(lat_round)
+      )
+    ) +
+  facet_wrap(~variable,
+             ncol = 1,
+             scales = "free_y") +
+  MyFunctions::my_ggtheme_p()
+
+
+
+```
+
+#### Boxplot of data 
+
+```{r boxplot, eval = T, echo = T}
+
+plot_data %>% 
+  # filter(wtcpue < 200) %>% #remove THAT one outlier
+  mutate(depth = depth*-1) %>%
+  gather("variable","value",depth:wtcpue) %>% 
+  mutate(lat_round = round(lat)) %>% 
+    ggplot() +
+    geom_boxplot(
+      aes(
+        x = as.factor(lat_round),
+        y = value
+        # fill = as.factor(year)
+      )
+    ) +
+  facet_wrap(~variable,
+             # ncol = 2,
+             scales = "free")
+
+
+
+```
+
+
+
+```{r time_line_facet, eval = T, echo = T}
+
+# Set manual breaks for bins
+bins <- seq(1970,2020,10)
+
+
+plot_data %>% 
+  # filter(wtcpue < 200) %>% #remove THAT one outlier
+  mutate(depth = depth*-1) %>%
+  gather("variable","value",depth:wtcpue) %>% 
+  mutate(lat_round = round(lat),
+         period = cut(year, breaks = bins)) %>% 
+  group_by(variable,year,period,lat_round) %>% 
+  summarise_at(vars(value),sum,na.rm=T) %>% 
+  # View(.)
+    ggplot() +
+    geom_line(
+      aes(
+        x = year,
+        y = value#,
+        # col = ,
+        # fill = as.factor(year)
+      )
+    ) +
+  facet_wrap(~variable+lat_round,
+             # ncol = 2,
+             scales = "free_y")
+
+
+gc()
+```
+
+
+### Survey maps
+
+```{r maps_sf, eval = F, echo = T, results = 'hide'}
+
+us_map <- st_as_sf(map("state", plot = FALSE, fill = TRUE))
+
+path_world <- MyFunctions::my_path("G", extra_path = "Spatial/SAU/SAU_Shapefile")
+path_world <- "~/Downloads/SAU_Shapefile"
+
+# The File
+fnam_world <- "SAUEEZ_July2015.shp"
+
+# Load it!
+World_eez_sf <- st_read(dsn = path_world,
+                        layer =file_path_sans_ext(fnam_world)) %>% 
+  rename(eez_name = Name) %>% 
+  st_transform(crs = 4326) %>% # 4326
+  # st_transform(crs = "+proj=eck4") %>% # for tbular plot
+  st_simplify(preserveTopology = TRUE, dTolerance = 0.1) %>% 
+  filter(eez_name == "USA (East Coast)")
+
+```
+
+```{r map_data, eval = T, echo = T, fig.width = 12, fig.height = 8}
+
+# Set manual breaks for bins
+bins <- seq(1970,2020,5)
+
+map_data <- dat_exploded %>% 
+  group_by(spp,year,lat,lon,depth) %>%
+  summarise_if(is_numeric,mean,na.rm=T) %>%
+  mutate(
+    year = as.numeric(year),
+    period = cut(year, breaks = bins)
+  ) %>% 
+  group_by(period,lat,lon) %>% 
+  summarise_if(is.numeric,mean,na.rm=T) %>% 
+  filter(wtcpue>0) 
+
+```
+
+#### Map of smapling points
+
+In this case the color gradiant represents year from 1972 to 2019
+
+```{r survey_map, eval = T, echo = T, fig.width = 12, fig.height = 8}
+
+ggplot(us_map) +
+  geom_sf() +
+  geom_sf(data = World_eez_sf, aes(), fill = "white") +
+  geom_point(data = map_data,
+             aes(
+               x = lon,
+               y = lat,
+               color = year
+             ),
+             size = 1
+  ) +
+  scale_color_distiller(palette = "Spectral", 
+                       guide_legend(title = "Probability \ndensity")) + 
+  coord_sf(xlim = c(-76, -65),ylim = c(35, 45)) +
+  MyFunctions::my_ggtheme_m()
+
+```
+
+### Density map
+
+This is a simple 2d kenell analysis using `ggplot2::stat_density_2d()` of the sampling points
+
+Looks to me that the stock might not be shifting _per se_ but expanding its northern range
+
+```{r density_map, eval = T, echo = T, fig.width = 12, fig.height = 8}
+
+# Expansion of the stock
+ggplot(us_map) +
+  geom_sf() +
+  geom_sf(data = World_eez_sf, aes(), fill = "white") +
+  stat_density_2d(data = map_data, geom = "polygon", 
+                  aes(x = lon, y = lat, fill = ..level..)) + 
+  geom_point(data = map_data,
+             aes(
+               x = lon,
+               y = lat
+             ),
+             size = 0.1
+  ) +
+  facet_wrap(~period,
+             nrow = 2) +
+  scale_fill_distiller(palette = "Spectral", 
+                       guide_legend(title = "Probability \ndensity")) + 
+  # viridis::scale_fill_viridis() +
+  # viridis::scale_colour_viridis() +
+  coord_sf(xlim = c(-76, -65),ylim = c(35, 45)) +
+  MyFunctions::my_ggtheme_m()
+
+```
+
+### CPUE (wt CPUE) data
+
+```{r biomass_time_map, eval = T, echo = T, fig.width = 12, fig.height = 8}
+
+ggplot(us_map) +
+  geom_sf() +
+  geom_sf(data = World_eez_sf, aes(), fill = "white") +
+  geom_point(data = subset(map_data, wtcpue < 100),
+             aes(
+               x = lon,
+               y = lat,
+               color = wtcpue
+             ),
+             
+  ) +
+  # facet_wrap(~period,
+  #            nrow = 2) +
+  scale_color_distiller(palette = "Spectral", 
+                       guide_legend(title = "CPUE")) + 
+  # viridis::scale_fill_viridis() +
+  # viridis::scale_colour_viridis() +
+  coord_sf(xlim = c(-76, -65),ylim = c(35, 45)) +
+  MyFunctions::my_ggtheme_m()
+
+```
+
+
+# ERDDAP
+
+This is the data extracted directly from NOAA in has four available surveys (OceanAdapt only two)
+
+- Northeast Fisheries Science Center (NEFSC) Fall Bottom Trawl Survey	
+- Northeast Fisheries Science Center (NEFSC) Spring Bottom Trawl Survey	
+- Northeast Fisheries Science Center (NEFSC) Summer Bottom Trawl Survey	
+- Northeast Fisheries Science Center (NEFSC) Winter Bottom Trawl Survey	
+
+
+- Black seabass code is 141
