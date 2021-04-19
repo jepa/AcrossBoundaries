@@ -7,7 +7,13 @@
 #    http://shiny.rstudio.com/
 #
 
-library(shiny)
+# Load libraries and data
+MyFunctions::my_lib(c("ggmap","sf","tidyverse","tools","readr","data.table","maps","shiny"))
+
+spp_survey <- read.csv("./data/spp_region.csv") %>% 
+    filter(spp %in% c ("Centropristis striata","Gadus morhua"),
+           region %in% c("Northeast US Fall" , "Northeast US Spring")) #No more seasons
+    
 
 # Define UI for application that draws a histogram
 shinyUI(fluidPage(
@@ -21,14 +27,14 @@ shinyUI(fluidPage(
             # Select which Gender(s) to plot
             checkboxGroupInput(inputId = "SurveySelection",
                                label = "Select Survey(s)",
-                               choices = c("Fall" = "M", "Summer" = "F"),
-                               selected = "Fall"),
+                               choices = unique(spp_survey$region)#,
+                               # selected = "Fall"
+                               ),
             # Select Species
             selectInput(inputId = "SppSelection",
                         label = "Select Species",
-                        # choices = levels(Species),
-                        choices = c("Black Sea Bass","Y. Flounder","Spp"),
-                        selected = "Balck Sea Bass",
+                        choices = unique(spp_survey$spp),
+                        # selected = "Balck Sea Bass",
                         width = "220px"
             ),
             # Set Time Range
@@ -40,27 +46,29 @@ shinyUI(fluidPage(
             # Choose the years you want to plot
             sliderInput(inputId = "YearSelection",
                         label = "Select Year Range",
-                        min = 1971,
-                        max = 2015,
+                        min = 1972,
+                        max = 2019,
                         step = 1,
                         sep = "",
                         animate = FALSE,
-                        value = c(1971,2015),
+                        value = c(1972,2019),
                         width = "220px"),
         # Select which plot you want to create
         checkboxGroupInput(inputId = "PlotStyle",
-                           label = "Select Result(s)",
-                           choices = c("Allocation Area" = "M", 
-                                       "Survey Point" = "F", 
-                                       "Distribution Map" = "F",
-                                       "Distribution Point" = "g",
-                                       "States' Table" = "ST"),
-                           selected = "ST")
+                           label = "Select Result",
+                           choices = c("Survey Point" = 1, 
+                                       "Distribution Map" = 2,
+                                       "Allocation Area" = 3),
+                           selected = 1
+                           )
         ),
 
         # Show a plot of the generated distribution
         mainPanel(
-            plotOutput("distPlot")
+            p(h4(strong("Result plot"))),
+            plotOutput("distPlot"),
+            p(h4(strong("Allocation Table"))),
+            dataTableOutput("Allocation_tbl")
         )
     )
 ))
