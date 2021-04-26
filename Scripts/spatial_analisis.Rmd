@@ -25,7 +25,9 @@ ocean_data <- readRDS("/Volumes/Enterprise/Data/pinskylab-OceanAdapt-966adf0/dat
 
 ```{r maps_sf, eval = F, echo = T, results = 'hide'}
 
-us_map <- st_as_sf(map("state", plot = FALSE, fill = TRUE))
+us_map <- st_as_sf(map("state", plot = FALSE, fill = TRUE)) %>% 
+  filter(ID %in% c("maine", "new hampshire", "massachusets", "connecticut", "rhode island", "new york", "new jersey", "delaware", "maryland", "virginia", "north carolina")) 
+
 
 # path_world <- MyFunctions::my_path("G", extra_path = "Spatial/SAU/SAU_Shapefile")
 path_world <- "~/Downloads/SAU_Shapefile"
@@ -43,7 +45,53 @@ World_eez_sf <- st_read(dsn = path_world,
   filter(eez_name == "USA (East Coast)")
 
 
+# US state waters
+# https://www.fisheries.noaa.gov/inport/item/39963
+
+path_world <- MyFunctions::my_path("D", extra_path = "Spatial/USMaritimeLimitsAndBoundariesSHP")
+path_world <- "~/Desktop/GAFBorders"
+
+# The File
+fnam_world <- "Statistical_Areas_2010_withNames.shp"
+
+# Load it!
+us_sf <- st_read(dsn = path_world,
+                        layer =file_path_sans_ext(fnam_world)) %>% 
+  st_transform(crs = 4326) %>% # 4326
+  janitor::clean_names() %>% 
+  # st_transform(crs = "+proj=eck4") %>% # for tbular plot
+  st_simplify(preserveTopology = TRUE, dTolerance = 0.1) #%>% 
+  # filter(region == "Atlantic Coast and Gulf of Mexico")
+  # filter(name %in% c("Maine", "Vermont", "New Hampshire", "Massachusets", "Connecticut", "rhode island", "new york", "new jersey", "delaware", "maryland", "virginia", "north carolina", "south carolina", "georgia", "florida", "pennsylvania"))
+
+us_sf$full_name
+
+
+ggplot(us_sf) +
+  geom_sf(aes(fill = nafodiv)) +
+  geom_sf(data =  us_map,aes()) +
+  coord_sf(xlim = c(-76, -65),ylim = c(35, 45))
+
+us_map %>% 
+  ggplot() +
+  geom_sf(aes(fill = ID)) +
+  # geom_sf(data =  us_map,aes()) +
+  coord_sf(xlim = c(-76, -65),ylim = c(35, 45))
+
+
+st_intersects(us_map)
+
 ```
+
+
+### Exploring spatial regions
+
+```{r}
+
+
+
+```
+
 
 ### Map of smapling points
 
