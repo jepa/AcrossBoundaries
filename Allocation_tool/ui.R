@@ -18,10 +18,48 @@ spp_survey <- read.csv("./data/spp_region.csv") %>%
 
 # Define UI for application that draws a histogram
 shinyUI(fluidPage(
-
+    tabPanel("Home",
+             fluidRow(
+                 column(
+                     12,
+                     align = "center",
+                     h1("Managing across boundaries: preventing interjurisdictional conflicts arising from shifting fish stocks"),
+                 ),
+                 br(),
+                 column(
+                     10,
+                     align = "justified",
+                     offset = 2,
+                     p(h3("The project")),
+                     p(
+                         "To develop and test a scientific tool for evaluating policy options for managing fish stocks that are shifting across management boundaries, and to assess the socio-economic benefits and tradeoffs of these options for two important fisheries in the U.S. Mid-Atlantic."
+                     )
+                 ),
+                 column(
+                     10,
+                     align = "justified",
+                     offset = 2,
+                     p(strong(h4("PROJECT PARTNERS"))),
+                     p("Arielle Levine, San Diego State University (Prospective Grantee)"),
+                     p("Rod Fujita, Environmental Defense Fund (Project Director)"),
+                     p("Katie Longo, Marine Stewardship Council"),
+                     p("Olaf Jensen, University of Wisconsin, Madison"),
+                     p("Lisa Wainger, University of Maryland Center for Environmental Science"),
+                     p("Ellen Bolen, Virginia Marine Resources Commission"),
+                     p("Scott Crosson, NOAA"),
+                     p("Juliano Palacios-Abrantes, University of Wisconsin, Madison")
+                 )
+             ) # close fluid row
+    ), # tabPanel close
     # Application title
-    titlePanel("Stock allocation formula"),
-
+    tabPanel("Stock allocation formula",
+             br(),
+             br(),
+             column(
+                 12,
+                 align = "justified",
+                 h3("Stock allocation formula"),
+             ),
     # Sidebar with a slider input for number of bins
     sidebarLayout(
         sidebarPanel(
@@ -35,7 +73,7 @@ shinyUI(fluidPage(
             selectInput(inputId = "SppSelection",
                         label = "Select Species",
                         choices = unique(spp_survey$spp),
-                        # selected = "Balck Sea Bass",
+                        selected = "Centropristis striata",
                         width = "220px"
             ),
             # Set Time Range
@@ -71,5 +109,6 @@ shinyUI(fluidPage(
             p(h4(strong("Allocation Table"))),
             dataTableOutput("Allocation_tbl")
         )
+    )
     )
 ))
