@@ -41,7 +41,6 @@ shinyServer(function(input, output) {
     
     # Main plot
     output$distPlot <- renderPlot({
-        
         # Set the filters
         species <- input$SppSelection
         survey <- input$SurveySelection
@@ -79,6 +78,7 @@ shinyServer(function(input, output) {
                 coord_sf(xlim = c(-76, -65),ylim = c(35, 45)) +
                 MyFunctions::my_ggtheme_m() +
                 facet_wrap(~region)
+                
             
         }else{
             
@@ -111,6 +111,7 @@ shinyServer(function(input, output) {
                     filter(!is.na(z))
                 
                 # The actual map
+                
                 ggplot(us_map) +
                     geom_sf()+
                     geom_tile( data = fit_tin,
@@ -134,9 +135,9 @@ shinyServer(function(input, output) {
                                          guide_legend(title = "WCPUE per Haul")) +
                     coord_sf(xlim = c(-76, -65),ylim = c(35, 45)) +
                     
-                    MyFunctions::my_ggtheme_m()
+                    MyFunctions::my_ggtheme_m() +
+                    ggtitle("Distribution estimated by using Triangular Irregular Surface method")
                 
-
             }
         }
         
