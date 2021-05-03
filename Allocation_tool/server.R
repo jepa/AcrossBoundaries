@@ -7,23 +7,23 @@
 #    http://shiny.rstudio.com/
 #
 
-MyFunctions::my_lib(c("ggmap","sf","tidyverse","tools","readr","data.table","maps","shiny","DT"))
+MyFunctions::my_lib(c("ggmap","sf","tidyverse","tools","readr","data.table","maps","shiny","DT","plotly"))
 
 us_map <- st_as_sf(map("state", plot = FALSE, fill = TRUE))
 
 
 # First let's define a bounding Box to extrapolate from
-    bbox <- c(
-        "xmin" = -76,
-        "ymin" = 35,
-        "xmax" = -65,
-        "ymax" = 45
-    )
+bbox <- c(
+    "xmin" = -76,
+    "ymin" = 35,
+    "xmax" = -65,
+    "ymax" = 45
+)
 
 # Expand the grid
 grd_template <- expand.grid(
-    lon = seq(from = bbox["xmin"], to = bbox["xmax"], by = 0.5),
-    lat = seq(from = bbox["ymin"], to = bbox["ymax"], by = 0.5)
+    lon = seq(from = bbox["xmin"], to = bbox["xmax"], by = 0.1),
+    lat = seq(from = bbox["ymin"], to = bbox["ymax"], by = 0.1)
 )
 
 # Define server logic required to draw a histogram
@@ -34,27 +34,134 @@ shinyServer(function(input, output) {
         data <- readRDS("/Volumes/Enterprise/Data/pinskylab-OceanAdapt-966adf0/data_clean/dat_exploded.rds") %>% 
             filter(
                 # spp %in% c ("Centropristis striata","Gadus morhua"),
-                   region %in% c("Northeast US Fall" , "Northeast US Spring")
-                   ) #No more seasons
+                region %in% c("Northeast US Fall" , "Northeast US Spring")
+            ) #No more seasons
         
     })
+    
+    # Main plot
+    # output$distPlot <- renderPlotly({
+    #     # Set the filters
+    #     species <- input$SppSelection
+    #     survey <- input$SurveySelection
+    #     # years <- input$YearSelection
+    #     
+    #     # Set the plot data
+    #     plot_data <- datasetInput() %>%
+    #         filter(spp %in% species,
+    #                region %in% survey)#,
+    #     # year %in% years)
+    #     
+    #     # Density map
+    #     if(input$PlotStyle == 1){
+    #         
+    #         ggplotly(
+    #             ggplot(us_map) +
+    #                 geom_sf() +
+    #                 geom_point(data = subset(plot_data, wtcpue = 0),
+    #                            aes(
+    #                                x = lon,
+    #                                y = lat
+    #                            ),
+    #                            color = "grey95",
+    #                            size = 1
+    #                 ) +
+    #                 geom_point(data = subset(plot_data, wtcpue > 0),
+    #                            aes(
+    #                                x = lon,
+    #                                y = lat,
+    #                                color = log10(wtcpue)
+    #                            ),
+    #                            size = 1
+    #                 ) +
+    #                 scale_color_distiller(palette = "Spectral", 
+    #                                       guide_legend(title = "WCPUE per Haul (log10)")) + 
+    #                 coord_sf(xlim = c(-76, -65),ylim = c(35, 45)) +
+    #                 MyFunctions::my_ggtheme_m() +
+    #                 facet_wrap(~region)
+    #         )
+    #         
+    #     }else{
+    #         
+    #         # Survey map
+    #         if(input$PlotStyle == 2){
+    #             
+    #             # Set the filters
+    #             species <- input$SppSelection
+    #             survey <- input$SurveySelection
+    #             # years <- input$YearSelection
+    #             
+    #             # Set the plot data
+    #             plot_data <- datasetInput() %>%
+    #                 filter(spp %in% species,
+    #                        region %in% survey) %>% 
+    #                 group_by(lon,lat) %>% 
+    #                 summarise(wtcpue = sum(wtcpue,na.rm = T)) %>% 
+    #                 filter(wtcpue > 0)
+    #             
+    #             # Triangular Irregular Surface
+    #             fit_tin <- interp::interp( # using {interp}
+    #                 x = plot_data$lon,           # the function actually accepts coordinate vectors
+    #                 y = plot_data$lat,
+    #                 z = plot_data$wtcpue,
+    #                 xo = grd_template$lon,     # here we already define the target grid
+    #                 yo = grd_template$lat,
+    #                 output = "points"
+    #             ) %>% 
+    #                 bind_cols() %>% 
+    #                 filter(!is.na(z))
+    #             
+    #             # The actual map
+    #             
+    #             x <- ggploty(
+    #                 ggplot(us_map) +
+    #                     geom_sf()+
+    #                     geom_tile( data = fit_tin,
+    #                                aes(
+    #                                    x = x,
+    #                                    y = y,
+    #                                    fill =z,
+    #                                    colour = z
+    #                                )
+    #                     ) +
+    #                     geom_point(data = subset(plot_data, wtcpue > 0),
+    #                                aes(
+    #                                    x = lon,
+    #                                    y = lat
+    #                                ),
+    #                                alpha = 0.2
+    #                     ) +
+    #                     scale_color_distiller(palette = "Spectral", 
+    #                                           guide_legend(title = "WCPUE per Haul")) + 
+    #                     scale_fill_distiller(palette = "Spectral", 
+    #                                          guide_legend(title = "WCPUE per Haul")) +
+    #                     coord_sf(xlim = c(-76, -65),ylim = c(35, 45)) +
+    #                     
+    #                     MyFunctions::my_ggtheme_m() +
+    #                     ggtitle("Distribution estimated by using Triangular Irregular Surface method")
+    #             )
+    #             x
+    #         }
+    #     }
+    #     
+    # })
     
     # Main plot
     output$distPlot <- renderPlot({
         # Set the filters
         species <- input$SppSelection
         survey <- input$SurveySelection
-        # years <- input$YearSelection
-        
+        years <- input$YearSelection
+
         # Set the plot data
         plot_data <- datasetInput() %>%
             filter(spp %in% species,
-                   region %in% survey)#,
-        # year %in% years)
-        
+                   region %in% survey,
+                   year %in% years)
+
         # Density map
         if(input$PlotStyle == 1){
-            
+
             ggplot(us_map) +
                 geom_sf() +
                 geom_point(data = subset(plot_data, wtcpue = 0),
@@ -73,31 +180,33 @@ shinyServer(function(input, output) {
                            ),
                            size = 1
                 ) +
-                scale_color_distiller(palette = "Spectral", 
-                                      guide_legend(title = "WCPUE per Haul (log10)")) + 
+                scale_color_distiller(palette = "Spectral",
+                                      guide_legend(title = "WCPUE per Haul (log10)")) +
                 coord_sf(xlim = c(-76, -65),ylim = c(35, 45)) +
                 MyFunctions::my_ggtheme_m() +
-                facet_wrap(~region)
-                
-            
+                facet_wrap(~region) +
+                ggtitle(paste(min(years),max(years)))
+
+
         }else{
-            
+
             # Survey map
             if(input$PlotStyle == 2){
-                
+
                 # Set the filters
                 species <- input$SppSelection
                 survey <- input$SurveySelection
-                # years <- input$YearSelection
-                
+                years <- input$YearSelection
+
                 # Set the plot data
                 plot_data <- datasetInput() %>%
                     filter(spp %in% species,
-                           region %in% survey) %>% 
-                    group_by(lon,lat) %>% 
-                    summarise(wtcpue = sum(wtcpue,na.rm = T)) %>% 
+                           region %in% survey,
+                           year %in% years) %>%
+                    group_by(lon,lat) %>%
+                    summarise(wtcpue = sum(wtcpue,na.rm = T)) %>%
                     filter(wtcpue > 0)
-                
+
                 # Triangular Irregular Surface
                 fit_tin <- interp::interp( # using {interp}
                     x = plot_data$lon,           # the function actually accepts coordinate vectors
@@ -106,12 +215,12 @@ shinyServer(function(input, output) {
                     xo = grd_template$lon,     # here we already define the target grid
                     yo = grd_template$lat,
                     output = "points"
-                ) %>% 
-                    bind_cols() %>% 
+                ) %>%
+                    bind_cols() %>%
                     filter(!is.na(z))
-                
+
                 # The actual map
-                
+
                 ggplot(us_map) +
                     geom_sf()+
                     geom_tile( data = fit_tin,
@@ -127,20 +236,21 @@ shinyServer(function(input, output) {
                                    x = lon,
                                    y = lat
                                ),
-                               alpha = 0.2
+                               shape = 3,
+                               alpha = 0.05
                     ) +
-                    scale_color_distiller(palette = "Spectral", 
-                                          guide_legend(title = "WCPUE per Haul")) + 
-                    scale_fill_distiller(palette = "Spectral", 
+                    scale_color_distiller(palette = "Spectral",
+                                          guide_legend(title = "WCPUE per Haul")) +
+                    scale_fill_distiller(palette = "Spectral",
                                          guide_legend(title = "WCPUE per Haul")) +
                     coord_sf(xlim = c(-76, -65),ylim = c(35, 45)) +
-                    
+
                     MyFunctions::my_ggtheme_m() +
                     ggtitle("Distribution estimated by using Triangular Irregular Surface method")
-                
+
             }
         }
-        
+
     })
     
     
