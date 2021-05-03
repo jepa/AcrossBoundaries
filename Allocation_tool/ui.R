@@ -85,30 +85,18 @@ shinyUI(
                                 column(
                                     12,
                                     align = "center",
-                                    h1("This project is part of the Leanfest"),
+                                    h5("This is a project funded by The Lenfest Ocean Program"),
+                                    p("Know more about the Lenfest program", a(img(src= 'logo_lenfest.jpeg',
+                                                                                   height = 30,
+                                                                                   width = 50),
+                                                                               href="https://www.lenfestocean.org/en/about-us")
+                                    )
                                 ),
                             ) # close fluid row
                    ), # tabPanel close
                    # Application title
                    tabPanel("Stock allocation formula",
                             fluidRow(
-                                column(
-                                    12,
-                                    align = "justified",
-                                    h1("Instructions"),
-                                    p("Wellcome to our interactive tool. In here you will be able to visualize how marine species have been
-                                      shifting, or not, along the United States East coast since 1971 to date. Please go to the Control panel
-                                      section, where you can choose the species, the survey, the time period, the allocation equation and the
-                                      type of result"),
-                                    h2("Outputs"),
-                                    p("There are currently 3 output options to choose from; Survey Point, this will return the raw survey points
-                                      from the NCSF dataset; Distribution Map, this will return a distribution map of the stock based on a 
-                                      Triangular Irregular Surface method; and Allocation Area that will produce the proportion of the stock's
-                                      distribution that each state had from the years selected. In all cases the tool will show the first and last 
-                                      5 years of data"),
-                                ),
-                                br(),
-                                br(),
                                 column(
                                     12,
                                     align = "justified",
@@ -120,8 +108,8 @@ shinyUI(
                                         # Select which Gender(s) to plot
                                         checkboxGroupInput(inputId = "SurveySelection",
                                                            label = "Select Survey(s)",
-                                                           choices = unique(spp_survey$region)#,
-                                                           # selected = "Fall"
+                                                           choices = unique(spp_survey$region),
+                                                           selected = "Fall"
                                         ),
                                         # Select Species
                                         selectInput(inputId = "SppSelection",
@@ -164,8 +152,33 @@ shinyUI(
                                         p(h4(strong("Allocation Table"))),
                                         dataTableOutput("Allocation_tbl")
                                     )
+                                ),
+                                br(),
+                                br(),
+                                # ----------- #
+                                # Instructions
+                                # ----------- #
+                                column(
+                                    5,
+                                    align = "justified",
+                                    h3("Instructions"),
+                                    p("This is our interactive tool. In here you will be able to visualize how marine species have been
+                                      shifting, or not, along the United States East coast since 1971 to date. Please go to the Control panel
+                                      section, where you can choose the species, the survey, the time period, the allocation equation and the
+                                      type of outputs")
+                                ),
+                                column(
+                                    5,
+                                    offset = 1,
+                                    h3("Outputs"),
+                                    p("There are currently 3 output options to choose from; Survey Point, this will return the raw survey points
+                                      from the NCSF dataset; Distribution Map, this will return a distribution map of the stock based on a 
+                                      Triangular Irregular Surface method; and Allocation Area that will produce the proportion of the stock's
+                                      distribution that each state had from the years selected. In all cases the tool will show the first and last 
+                                      5 years of data")
                                 )
                             )
+                            
                    )
         )
     )
