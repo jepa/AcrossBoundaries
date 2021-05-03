@@ -25,9 +25,17 @@ ocean_data <- readRDS("/Volumes/Enterprise/Data/pinskylab-OceanAdapt-966adf0/dat
 
 ```{r maps_sf, eval = F, echo = T, results = 'hide'}
 
-us_map <- st_as_sf(map("state", plot = FALSE, fill = TRUE)) %>% 
-  filter(ID %in% c("maine", "new hampshire", "massachusets", "connecticut", "rhode island", "new york", "new jersey", "delaware", "maryland", "virginia", "north carolina")) 
+States <- c("maine", "new hampshire", "massachusets", "connecticut", "rhode island", "new york", "new jersey", "delaware", "maryland", "virginia", "north carolina") 
 
+# US State Map (land)
+
+land_sf <- st_as_sf(map("state", plot = FALSE, fill = TRUE)) %>% 
+  filter(ID %in% States) 
+
+# ggplot(us_map) +
+  # geom_sf()
+
+# US EEZ map
 
 # path_world <- MyFunctions::my_path("G", extra_path = "Spatial/SAU/SAU_Shapefile")
 path_world <- "~/Downloads/SAU_Shapefile"
@@ -36,7 +44,7 @@ path_world <- "~/Downloads/SAU_Shapefile"
 fnam_world <- "SAUEEZ_July2015.shp"
 
 # Load it!
-World_eez_sf <- st_read(dsn = path_world,
+eez_sf <- st_read(dsn = path_world,
                         layer =file_path_sans_ext(fnam_world)) %>% 
   rename(eez_name = Name) %>% 
   st_transform(crs = 4326) %>% # 4326
@@ -45,49 +53,64 @@ World_eez_sf <- st_read(dsn = path_world,
   filter(eez_name == "USA (East Coast)")
 
 
+# ggplot(World_eez_sf) +
+  # geom_sf()
+
+# ggplot() +
+#   geom_sf(data = World_eez_sf, aes(), color = "red") +
+#   geom_sf(data = us_map, aes(), color = "blue")
+
+
+
 # US state waters
-# https://www.fisheries.noaa.gov/inport/item/39963
+# https://catalog.data.gov/dataset/federal-and-state-waters
 
-path_world <- MyFunctions::my_path("D", extra_path = "Spatial/USMaritimeLimitsAndBoundariesSHP")
-path_world <- "~/Desktop/GAFBorders"
-
-# The File
-fnam_world <- "Statistical_Areas_2010_withNames.shp"
-
-# Load it!
-us_sf <- st_read(dsn = path_world,
-                        layer =file_path_sans_ext(fnam_world)) %>% 
-  st_transform(crs = 4326) %>% # 4326
+# us_state_w <- rgdal::readOGR(dsn = "~/Downloads/FederalAndStateWaters/FederalAndStateWaters.gdb")
+state_sf <-  st_read("~/Downloads/FederalAndStateWaters/FederalAndStateWaters.gdb") %>% 
   janitor::clean_names() %>% 
-  # st_transform(crs = "+proj=eck4") %>% # for tbular plot
-  st_simplify(preserveTopology = TRUE, dTolerance = 0.1) #%>% 
-  # filter(region == "Atlantic Coast and Gulf of Mexico")
-  # filter(name %in% c("Maine", "Vermont", "New Hampshire", "Massachusets", "Connecticut", "rhode island", "new york", "new jersey", "delaware", "maryland", "virginia", "north carolina", "south carolina", "georgia", "florida", "pennsylvania"))
+  mutate(jurisdicti = str_to_lower(jurisdicti)) %>% 
+  filter(jurisdicti %in% States)
 
-us_sf$full_name
+# plot <- state_sf %>%
+  # st_simplify(preserveTopology = TRUE, dTolerance = 10000) %>%
+  # ggplot()  +
+  # geom_sf(aes(col = Jurisdicti))
 
+# ggsave("plot.png",plot)
 
-ggplot(us_sf) +
-  geom_sf(aes(fill = nafodiv)) +
-  geom_sf(data =  us_map,aes()) +
-  coord_sf(xlim = c(-76, -65),ylim = c(35, 45))
-
-us_map %>% 
-  ggplot() +
-  geom_sf(aes(fill = ID)) +
-  # geom_sf(data =  us_map,aes()) +
-  coord_sf(xlim = c(-76, -65),ylim = c(35, 45))
-
-
-st_intersects(us_map)
 
 ```
 
 
-### Exploring spatial regions
+### Exploring spatial regions (a.k.a  buffers)
 
 ```{r}
 
+## Test with st_buffer
+
+test <- state_sf %>% 
+  filter(jurisdicti == "maine") %>% 
+  select(jurisdicti,Shape)
+  
+ggplot(test) +
+  geom_sf()
+
+pbuf = st_buffer(test, 100)
+
+p <- ggplot() +
+  geom_sf(data = test, aes(), color = "blue") +
+  geom_sf(data = pbuf, aes(), color = "red")
+
+ggsave("testplot.png",p)
+
+
+### Test with library(ggforce)
+# install.packages("ggforce")
+library(ggforce)
+
+ test <- state_sf %>% 
+  filter(jurisdicti == "maine") %>% 
+  select(jurisdicti,Shape)
 
 
 ```
