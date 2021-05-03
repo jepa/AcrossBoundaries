@@ -25,108 +25,129 @@ shinyUI(
                    ".shiny-output-error { visibility: hidden; }",
                    ".shiny-output-error:before { visibility: hidden; }"
         ),
-    navbarPage(id = "MMM_Nav_Bar",
-               # Page title
-               "Across Boundaries",
-               tabPanel("About",
-                        fluidRow(
-                            column(
-                                12,
-                                align = "center",
-                                h1("Managing across boundaries: preventing interjurisdictional conflicts arising from shifting fish stocks"),
-                            ),
-                            br(),
-                            column(
-                                10,
-                                align = "justified",
-                                p(h3("The project")),
-                                p(
-                                    "The objective of this tool is to evaluate policy options for managing fish stocks that are shifting across management boundaries, and to assess the socio-economic benefits and tradeoffs of these options for two important fisheries in the U.S. Mid-Atlantic."
-                                )
-                            ),
-                            column(
-                                6,
-                                align = "justified",
-                                p(h3("Project Partners")),
-                                p("Arielle Levine, San Diego State University"),
-                                p("Rod Fujita, Environmental Defense Fund"),
-                                p("Katie Longo, Marine Stewardship Council"),
-                                p("Olaf Jensen, University of Wisconsin, Madison"),
-                                p("Ellen Bolen, Virginia Marine Resources Commission"),
-                                p("Scott Crosson, NOAA"),
-                                p("Chris Dumas, University of North Carolina Wilmington"),
-                                p("Juliano Palacios-Abrantes, University of Wisconsin, Madison")
-                            ),
-                            column(
-                                4,
-                                img(src= 'logos.png',
-                                    height = 300,
-                                    width = 500),
-                            )
-                        ) # close fluid row
-               ), # tabPanel close
-               # Application title
-               tabPanel("Stock allocation formula",
-                        fluidRow(
-                        br(),
-                        br(),
-                        column(
-                            12,
-                            align = "justified",
-                            h3("Stock allocation formula"),
-                        ),
-                        # Sidebar with a slider input for number of bins
-                        sidebarLayout(
-                            sidebarPanel(
-                                # Select which Gender(s) to plot
-                                checkboxGroupInput(inputId = "SurveySelection",
-                                                   label = "Select Survey(s)",
-                                                   choices = unique(spp_survey$region)#,
-                                                   # selected = "Fall"
+        navbarPage(id = "MMM_Nav_Bar",
+                   # Page title
+                   "Across Boundaries",
+                   tabPanel("About",
+                            fluidRow(
+                                column(
+                                    12,
+                                    align = "center",
+                                    h1("Managing across boundaries: preventing interjurisdictional conflicts arising from shifting fish stocks"),
                                 ),
-                                # Select Species
-                                selectInput(inputId = "SppSelection",
-                                            label = "Select Species",
-                                            choices = unique(spp_survey$spp),
-                                            selected = "Centropristis striata",
-                                            width = "220px"
+                                br(),
+                                column(
+                                    10,
+                                    align = "justified",
+                                    p(h3("Project background")),
+                                    p(
+                                        "Climate change is driving shifts in fish stock distributions that will affect resource availability across
+                                    different jurisdictions around the world. Elinor Ostrom’s fundamental principles of common pool
+                                    resource governance include a requirement for clear boundaries over resource units. 
+                                    However, when stock ranges shift, governance systems and boundaries are no longer aligned. 
+                                    This misalignment has already created conflicts around access and the re-distribution of benefits 
+                                    flowing from the stocks. This is a global challenge that is likely to increase as the effects of 
+                                    climate change intensify in the coming years. 
+                                    
+                                    Specific problems that arise from the movement of stocks across jurisdictions include: 
+                                    overfishing; conflicts over access; unfairness to stakeholders who have borne the costs of resource 
+                                    stewardship but cannot capture the benefits due to stock movement; and high costs and conflicts associated 
+                                    with re-negotiating allocation, which is typically the most contentious aspect of fishery management."
+                                    ),
+                                    p(h3("Objective")),
+                                    p("The objective of this tool is to evaluate policy options for managing
+                                    fish stocks that are shifting across management boundaries, and to assess 
+                                    the socio-economic benefits and tradeoffs of these options for two important 
+                                    fisheries in the U.S. Mid-Atlantic."
+                                    )
                                 ),
-                                # Set Time Range
-                                sliderInput("bins",
-                                            "Scale of Hist./Dist. allocation (%)",
-                                            min = 0,
-                                            max = 100,
-                                            value = 20),
-                                # Choose the years you want to plot
-                                sliderInput(inputId = "YearSelection",
-                                            label = "Select Year Range",
-                                            min = 1972,
-                                            max = 2019,
-                                            step = 1,
-                                            sep = "",
-                                            animate = FALSE,
-                                            value = c(1972,2019),
-                                            width = "220px"),
-                                # Select which plot you want to create
-                                checkboxGroupInput(inputId = "PlotStyle",
-                                                   label = "Select Result",
-                                                   choices = c("Survey Point" = 1, 
-                                                               "Distribution Map" = 2,
-                                                               "Allocation Area" = 3),
-                                                   selected = 1
+                                column(
+                                    6,
+                                    p(h3("Partners")),
+                                    p(a("Arielle Levine, San Diego State University",href = "https://geography.sdsu.edu/people/bios/levine")),
+                                    p(a("Rod Fujita, Environmental Defense Fund", href = "https://www.edf.org/people/rod-m-fujita")),
+                                    p(a("Katie Longo, Marine Stewardship Council", href = "https://www.researchgate.net/profile/Catherine-Longo")),
+                                    p(a("Olaf Jensen, University of Wisconsin, Madison", href = "https://limnology.wisc.edu/staff/jensen-olaf/")),
+                                    p(a("Scott Crosson, NOAA", href = "https://www.fisheries.noaa.gov/contact/scott-crosson-phd")),
+                                    p(a("Chris Dumas, University of North Carolina Wilmington", href ="https://csbapp.uncw.edu/data/fs/vita.aspx?id=8307")),
+                                    p(a("Juliano Palacios-Abrantes, University of Wisconsin, Madison", href = "https://limnology.wisc.edu/staff/palacios-abrantes-juliano/"))
+                                ),
+                                column(
+                                    5,
+                                    img(src= 'logo_all.png',
+                                        height = 300,
+                                        width = 500),
+                                ),
+                                br(),
+                                column(
+                                    12,
+                                    align = "center",
+                                    h1("This project is part of the Leanfest"),
+                                ),
+                            ) # close fluid row
+                   ), # tabPanel close
+                   # Application title
+                   tabPanel("Stock allocation formula",
+                            fluidRow(
+                                br(),
+                                br(),
+                                column(
+                                    12,
+                                    align = "justified",
+                                    h3("Stock allocation formula"),
+                                ),
+                                # Sidebar with a slider input for number of bins
+                                sidebarLayout(
+                                    sidebarPanel(
+                                        # Select which Gender(s) to plot
+                                        checkboxGroupInput(inputId = "SurveySelection",
+                                                           label = "Select Survey(s)",
+                                                           choices = unique(spp_survey$region)#,
+                                                           # selected = "Fall"
+                                        ),
+                                        # Select Species
+                                        selectInput(inputId = "SppSelection",
+                                                    label = "Select Species",
+                                                    choices = unique(spp_survey$spp),
+                                                    selected = "Centropristis striata",
+                                                    width = "220px"
+                                        ),
+                                        # Set Time Range
+                                        sliderInput("bins",
+                                                    "Scale of Hist./Dist. allocation (%)",
+                                                    min = 0,
+                                                    max = 100,
+                                                    value = 20),
+                                        # Choose the years you want to plot
+                                        sliderInput(inputId = "YearSelection",
+                                                    label = "Select Year Range",
+                                                    min = 1972,
+                                                    max = 2019,
+                                                    step = 1,
+                                                    sep = "",
+                                                    animate = FALSE,
+                                                    value = c(1972,2019),
+                                                    width = "220px"),
+                                        # Select which plot you want to create
+                                        checkboxGroupInput(inputId = "PlotStyle",
+                                                           label = "Select Result",
+                                                           choices = c("Survey Point" = 1, 
+                                                                       "Distribution Map" = 2,
+                                                                       "Allocation Area" = 3),
+                                                           selected = 1
+                                        )
+                                    ),
+                                    
+                                    # Show a plot of the generated distribution
+                                    mainPanel(
+                                        p(h4(strong("Result plot"))),
+                                        plotOutput("distPlot"),
+                                        p(h4(strong("Allocation Table"))),
+                                        dataTableOutput("Allocation_tbl")
+                                    )
                                 )
-                            ),
-                            
-                            # Show a plot of the generated distribution
-                            mainPanel(
-                                p(h4(strong("Result plot"))),
-                                plotOutput("distPlot"),
-                                p(h4(strong("Allocation Table"))),
-                                dataTableOutput("Allocation_tbl")
                             )
-                        )
-               )
-               )
-    )
+                   )
+        )
     )
 )
