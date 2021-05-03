@@ -8,7 +8,7 @@
 #
 
 # Load libraries and data
-MyFunctions::my_lib(c("ggmap","sf","tidyverse","tools","readr","data.table","maps","shiny","png"))
+MyFunctions::my_lib(c("ggmap","sf","tidyverse","tools","readr","data.table","maps","shiny"))
 
 spp_survey <- read.csv("./data/spp_region.csv") %>% 
     filter(
@@ -20,12 +20,15 @@ spp_survey <- read.csv("./data/spp_region.csv") %>%
 
 # Define UI for application that draws a histogram
 shinyUI(
-    fluidPage( # remove shiny "red" warning messages on GUI
+    fluidPage( 
+        # remove shiny "red" warning messages on GUI
         tags$style(type="text/css",
                    ".shiny-output-error { visibility: hidden; }",
                    ".shiny-output-error:before { visibility: hidden; }"
         ),
         navbarPage(id = "MMM_Nav_Bar",
+                   # Set a theme for the tool
+                   theme = shinythemes::shinytheme("spacelab"),
                    # Page title
                    "Across Boundaries",
                    tabPanel("About",
@@ -89,12 +92,27 @@ shinyUI(
                    # Application title
                    tabPanel("Stock allocation formula",
                             fluidRow(
+                                column(
+                                    12,
+                                    align = "justified",
+                                    h1("Instructions"),
+                                    p("Wellcome to our interactive tool. In here you will be able to visualize how marine species have been
+                                      shifting, or not, along the United States East coast since 1971 to date. Please go to the Control panel
+                                      section, where you can choose the species, the survey, the time period, the allocation equation and the
+                                      type of result"),
+                                    h2("Outputs"),
+                                    p("There are currently 3 output options to choose from; Survey Point, this will return the raw survey points
+                                      from the NCSF dataset; Distribution Map, this will return a distribution map of the stock based on a 
+                                      Triangular Irregular Surface method; and Allocation Area that will produce the proportion of the stock's
+                                      distribution that each state had from the years selected. In all cases the tool will show the first and last 
+                                      5 years of data"),
+                                ),
                                 br(),
                                 br(),
                                 column(
                                     12,
                                     align = "justified",
-                                    h3("Stock allocation formula"),
+                                    h1("Control panel"),
                                 ),
                                 # Sidebar with a slider input for number of bins
                                 sidebarLayout(
@@ -142,6 +160,7 @@ shinyUI(
                                     mainPanel(
                                         p(h4(strong("Result plot"))),
                                         plotOutput("distPlot"),
+                                        # plotlyOutput("distPlot"),
                                         p(h4(strong("Allocation Table"))),
                                         dataTableOutput("Allocation_tbl")
                                     )
