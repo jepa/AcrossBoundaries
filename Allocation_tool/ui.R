@@ -31,6 +31,9 @@ shinyUI(
                    theme = shinythemes::shinytheme("spacelab"),
                    # Page title
                    "Across Boundaries",
+                   # ---------------------------- #
+                   # About tab ######
+                   # ---------------------------- #
                    tabPanel("About",
                             fluidRow(
                                 column(12,
@@ -58,7 +61,7 @@ shinyUI(
                             ) # close fluid row
                    ), # tabPanel About close
                    # ----------------------- #
-                   # General info
+                   # General info ####
                    # ----------------------- #
                    navbarMenu("Information",
                               tabPanel("Shared stocks",
@@ -139,7 +142,7 @@ shinyUI(
                               
                    ), # close information tab
                    # ----------------------- #
-                   # Stock allocation formula
+                   # Tool UI ####
                    # ----------------------- #
                    tabPanel("Quota allocation",
                             fluidRow(
@@ -155,7 +158,7 @@ shinyUI(
                                         checkboxGroupInput(inputId = "SurveySelection",
                                                            label = "Select Survey(s)",
                                                            choices = unique(spp_survey$region),
-                                                           selected = "Fall"
+                                                           selected = unique(spp_survey$region)[1]
                                         ),
                                         # Select Species
                                         selectInput(inputId = "SppSelection",
@@ -183,24 +186,26 @@ shinyUI(
                                         # Select which plot you want to create
                                         checkboxGroupInput(inputId = "PlotStyle",
                                                            label = "Select Result",
-                                                           choices = c("Survey Point" = 1, 
-                                                                       "Distribution Map" = 2,
-                                                                       "Allocation Area" = 3),
+                                                           choices = c(
+                                                               "Latitudinal Shift" = 1,
+                                                               "Survey Point" = 2, 
+                                                               "Distribution Map" = 3,
+                                                               "Allocation Area" = 4
+                                                               ),
                                                            selected = 1
                                         )
                                     ),
                                     
                                     # Show a plot of the generated distribution
                                     mainPanel(
-                                        p(h4(strong("Result plot"))),
-                                        plotOutput("distPlot"),
+                                        plotOutput("distPlot")
                                         # plotlyOutput("distPlot"),
-                                        p(h4(strong("Allocation Table"))),
-                                        dataTableOutput("Allocation_tbl")
                                     )
                                 ),
                                 br(),
                                 br(),
+                                p(h3(strong("Quota allocation table"))),
+                                dataTableOutput("Allocation_tbl"),
                                 # ----------- #
                                 # Instructions
                                 # ----------- #
