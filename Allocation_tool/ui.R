@@ -93,35 +93,79 @@ shinyUI(
                                     )
                                 ),
                             ) # close fluid row
-                   ), # tabPanel close
+                   ), # tabPanel About close
                    # ----------------------- #
                    # General info
                    # ----------------------- #
                    navbarMenu("Information",
-                              tabPanel("Transboundary stocks",
+                              tabPanel("Shared stocks",
+                                       column(10,
+                                              align = "justified",
+                                              p(h3("Shared fisheries management")),
+                                              p(
+                                                  "From 1973 to 1982, members of the United Nations (UN) held a series of meetings to discuss 
+                                               regulations regarding the high seas, a region of international common property, at that time, 
+                                               consisting of waters beyond 12 nautical miles (22.22 km) from shore [@Munro:2004ug].
+                                               Among the main outcomes of these meetings was the establishment of the UN Convention on the Law of the Sea (UNCLOS).
+                                               Under UNCLOS coastal states were allowed to claim special rights over the exploration and
+                                               exploitation of marine resources up to 200 nautical miles (370 km) from their coasts.
+                                               Area within which such special rights were claimed delineate today the states' Exclusive Economic Zone (EEZ) [@UnitedNations2018].
+                                               
+                                               The inception of the concept of shared stocks in fisheries management called for the establishment of new fisheries governance 
+                                               approaches and organizations. Many straddling and highly migratory stocks are managed by Regional Fisheries Management Organizations 
+                                               (RFMOs) [@MonllorHurtado:2017cm; @Song:2017va; @CullisSuzuki:2010fi]. At the EEZ level, transboundary stocks can be jointly managed 
+                                               by neighbouring countries under bi-lateral agreements or unilaterally without legal-binding agreements with other countries."
+                                              ),
+                                              p(h3("Classification of shared stocks")),
+                                              p(
+                                                  "Generally speaking, shared fish stocks are those populations that move between different jurisdictions in the course of their life.
+                                               The Food and Agricultural Organization (FAO) recognizes four types of shared stocks:"
+                                              ),
+                                              p(
+                                                  "(i) transboundary stocks are those that are shared between neighboring coastal nations e.g., Pacific halibut
+                                               (*Hippoglossus stenolepis*) shared between Canada and the United States"
+                                              ),
+                                              p(
+                                                  "(ii) straddling stocks are those that occur in two or more adjacent national jurisdictions and the high seas e.g.,
+                                               Chilean jack mackerel (*Trachurus murphyi*) off the coast of Chile and Peru but also the high seas"
+                                              ),
+                                              p(
+                                                  "(iii) highly migratory stocks are those that are found in the EEZs of coastal nations that are not necessarily 
+                                               adjoining, and the high seas (e.g., Bluefin tuna *Thunnus thynnus* do circum-Atlantic migrations from the 
+                                               Mediterranean to the Gulf of Mexico)"
+                                              ),
+                                              p("(iv) discrete high seas stocks whose distribution is limited to the high seas.")
+                                       ),
                                        column(
                                            10,
-                                           align = "justified",
-                                           p(h3("Project background")),
-                                           p(
-                                               "Climate change is driving shifts in fish stock distributions that will affect resource availability across
-                                    different jurisdictions around the world. Elinor Ostrom’s fundamental principles of common pool
-                                    resource governance include a requirement for clear boundaries over resource units. 
-                                    However, when stock ranges shift, governance systems and boundaries are no longer aligned. 
-                                    This misalignment has already created conflicts around access and the re-distribution of benefits 
-                                    flowing from the stocks. This is a global challenge that is likely to increase as the effects of 
-                                    climate change intensify in the coming years. 
-                                    
-                                    Specific problems that arise from the movement of stocks across jurisdictions include: 
-                                    overfishing; conflicts over access; unfairness to stakeholders who have borne the costs of resource 
-                                    stewardship but cannot capture the benefits due to stock movement; and high costs and conflicts associated 
-                                    with re-negotiating allocation, which is typically the most contentious aspect of fishery management."
-                                           )
-                                           )
+                                           img(src= 'shared_stocks.png',
+                                               height = 400,
+                                               width = 800),
                                        ),
-                              tabPanel("Climate change"),
+                                       column(10,
+                                              align = "justified",
+                                              p(h3("Shared stocks between U.S. States")),
+                                              p(
+                                                  "In some U.S. fisheries, federal and interstate management authorities allocate fishing access to individual states, 
+                                                  with each state receiving a fixed fraction of the total allowable harvest. These allocations are typically based on 
+                                                  the state’s historical harvest during some previous period. But as fish ranges shift, these state allocations become 
+                                                  increasingly disconnected from the actual distribution of the fish. A more adaptive policy would allocate harvest based 
+                                                  on current geographic distributions of fish, with some consideration given to other factors such as catch history, 
+                                                  socio-economic impact, and the rate at which fish are re-allocated.  States whose waters contain a higher abundance of 
+                                                  any given stock would generally receive a higher allocation of access. This would be expected to reduce trip times, fishing costs, 
+                                                  and the carbon footprint of the industry, and it may allow fishers to deliver a fresher, higher quality product to market. 
+                                                  But shifting allocation too quickly could create economic and social dislocation, as shoreside processing facilities and fishing 
+                                                  communities would be hard-pressed to keep up with such rapid changes.  Adaptive allocation triggered by observed changes in biomass
+                                                  distribution and modified by consideration of other factors, according to an agreed upon rule,  
+                                                  could reduce conflict and transaction costs associated with repeatedly re-negotiating the allocations. "
+                                              )
+                                       )
+                              ),
+                              tabPanel("Climate change",
+                                       includeMarkdown("./scripts/climate_change.Rmd")
+                                       ),
                               tabPanel("Dynamic management")
-                            
+                              
                    ), # close information tab
                    # ----------------------- #
                    # Stock allocation formula
