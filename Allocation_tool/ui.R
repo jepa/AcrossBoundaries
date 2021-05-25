@@ -45,7 +45,7 @@ shinyUI(
                                     8,
                                     offset = 2,
                                     align = "justified",
-                                includeMarkdown("./scripts/about.Rmd")
+                                includeMarkdown("./scripts/about.Rmd") # Call the About info
                                 ),
                                 br(),
                                 column(
