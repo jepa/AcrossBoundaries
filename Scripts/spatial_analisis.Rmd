@@ -49,12 +49,12 @@ eez_sf <- st_read(dsn = path_world,
   rename(eez_name = Name) %>% 
   st_transform(crs = 4326) %>% # 4326
   # st_transform(crs = "+proj=eck4") %>% # for tbular plot
-  st_simplify(preserveTopology = TRUE, dTolerance = 0.1) %>% 
+  st_simplify(preserveTopology = TRUE, dTolerance = 10000) %>% #0.1
   filter(eez_name == "USA (East Coast)")
 
 
-# ggplot(World_eez_sf) +
-  # geom_sf()
+# ggplot(eez_sf) +
+# geom_sf(aes(),fill =NA)
 
 # ggplot() +
 #   geom_sf(data = World_eez_sf, aes(), color = "red") +
@@ -69,7 +69,8 @@ eez_sf <- st_read(dsn = path_world,
 state_sf <-  st_read("~/Downloads/FederalAndStateWaters/FederalAndStateWaters.gdb") %>% 
   janitor::clean_names() %>% 
   mutate(jurisdicti = str_to_lower(jurisdicti)) %>% 
-  filter(jurisdicti %in% States)
+  filter(jurisdicti %in% States) %>% 
+  st_transform(crs = 4326) # for matching projections
 
 # plot <- state_sf %>%
   # st_simplify(preserveTopology = TRUE, dTolerance = 10000) %>%
@@ -86,31 +87,34 @@ state_sf <-  st_read("~/Downloads/FederalAndStateWaters/FederalAndStateWaters.gd
 
 ```{r}
 
-## Test with st_buffer
+# Buffer state waters
 
-test <- state_sf %>% 
-  filter(jurisdicti == "maine") %>% 
-  select(jurisdicti,Shape)
-  
-ggplot(test) +
+state_bf = st_buffer(state_sf, 405000)
+
+# ------------------------------ #
+# Testing and visualizing the buffer 
+# ------------------------------ #
+
+# p <- ggplot() +
+#   geom_sf(data = eez_sf, aes(), fill = NA) +
+#   geom_sf(data = state_bf, aes(color = jurisdicti), fill = NA) +
+#   geom_sf(data = state_sf, aes(color = jurisdicti), fill = NA)
+#   
+
+# ggsave("testplotb.png",p)
+
+# ------------------------------ #
+
+#Join eez shapefile wih buffer
+
+state_bf_ezz <- st_join(state_bf,eez_sf,join = st_contains)
+
+
+pp <- ggplot(state_bf_ezz) +
   geom_sf()
-
-pbuf = st_buffer(test, 100)
-
-p <- ggplot() +
-  geom_sf(data = test, aes(), color = "blue") +
-  geom_sf(data = pbuf, aes(), color = "red")
 
 ggsave("testplot.png",p)
 
-
-### Test with library(ggforce)
-# install.packages("ggforce")
-library(ggforce)
-
- test <- state_sf %>% 
-  filter(jurisdicti == "maine") %>% 
-  select(jurisdicti,Shape)
 
 
 ```
