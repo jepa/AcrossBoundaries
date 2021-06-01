@@ -1,10 +1,12 @@
 ---
 title: "Spatial Analysis"
-output: html_notebook
+# output: html_notebook
+output: html_document
 ---
 
 ```{r setup, include=FALSE}
-MyFunctions::my_lib(c("ggmap","sf","tidyverse","tools","readr","data.table","maps"))
+MyFunctions::my_lib(c("ggmap","sf","tidyverse","tools","readr","data.table","maps","viridis"))
+library(MyFunctions)
 ```
 
 
@@ -67,15 +69,28 @@ eez_sf <- st_read(dsn = path_world,
 # https://catalog.data.gov/dataset/federal-and-state-waters
 
 # us_state_w <- rgdal::readOGR(dsn = "~/Downloads/FederalAndStateWaters/FederalAndStateWaters.gdb")
-state_sf <-  st_read("~/Downloads/FederalAndStateWaters/FederalAndStateWaters.gdb") %>% 
+state_sf <-  st_read("~/Downloads/FederalAndStateWaters/FederalAndStateWaters.gdb") %>%
   janitor::clean_names() %>% 
   mutate(jurisdicti = str_to_lower(jurisdicti)) %>% 
   filter(jurisdicti %in% States) %>% 
-  rename(state = jurisdicti)
+  rename(state = jurisdicti) %>% 
   # st_transform(crs = 4326)  # for matching projections
-  # st_simplify(preserveTopology = TRUE, dTolerance = 0.1)
+  st_simplify(preserveTopology = TRUE, dTolerance = 10000) #0.1 for paper
+
+
+grid_sf <-  st_read("/Volumes/Enterprise/Data/AcrossBoundaries/Data/Spatial/grid_sf/grid_eez_sf.shp")
 
 ```
+
+## Create basis sf
+
+In this first step we first combine the North East EEZ shapefile (SAU) with the state waters sf provided by [NOAA](link) and girded the area following these steps:
+
+- 1. Expand state waters using a buffer
+
+- 2. Grid that buffer on a 0.3 ressolution
+
+- 3. Crop the buffer to the EEZ
 
 ### 1. Expand Spatial regions (a.k.a  buffers)
 
@@ -203,29 +218,34 @@ eez_sf <- st_read(dsn = path_world,
 # Get the overlapping segments
 grid_eez_sf <- st_intersection(grid_sf,eez_sf)
 
+# write_sf(grid_eez_sf, "../Results/Partial/grid_eez_sf.shp")
+
 # Get final df with index
 grid_eez_df <- as.data.frame(grid_eez_sf) %>%
   select(state,index)
 
+
+# write_csv(grid_eez_df, "../Results/Partial/grid_eez_df.csv")
+
 # Plot to make sure makes sense (Picasso syle)
-grid_eez_sf %>% 
-  st_simplify(preserveTopology = TRUE, dTolerance = 10000) %>% #0.1 for paper
-  ggplot() +
-  geom_sf(aes(color = state))
+# grid_eez_sf %>%
+#   st_simplify(preserveTopology = TRUE, dTolerance = 10000) %>% #0.1 for paper
+#   ggplot() +
+#   geom_sf(aes(color = state))
 
 
 ```
 
 
-### Map of smapling points
+## Map of smapling points
 
 In this case the color gradient represents wtcpue (wet tones catch per unit of effort, haul hours) from 1972 to 2019. Grey dots represent `wtcpue = 0`
 
-```{r survey_map, eval = T, echo = T, fig.width = 12, fig.height = 8}
+```{r survey_map, eval = F, echo = T, fig.width = 12, fig.height = 8}
 
-ggplot(us_map) +
+ggplot(land_sf) +
   geom_sf() +
-  geom_sf(data = World_eez_sf, aes(), fill = "white") +
+  geom_sf(data = eez_sf, aes(), fill = "white") +
   geom_point(data = subset(ocean_data, wtcpue = 0),
              aes(
                x = lon,
@@ -253,99 +273,199 @@ ggplot(us_map) +
 
 # Interpolation
 
-## SF example A
+Here we [interpolate](https://swilke-geoscience.net/post/spatial_interpolation/) the survey data within the grid. We
 
-https://swilke-geoscience.net/post/spatial_interpolation/
+## Prepare data
+
+- We removed cases where `wtcpue < 0`
 
 
-```{r interpolation, eval = T, echo = T}
+```{r prepare_data, eval = T, echo = T}
 
+# Subset data
 subset_data <- ocean_data %>% 
-  filter(region == "Northeast US Spring",
-         wtcpue > 0) %>% 
-  group_by(lon,lat) %>% 
-  summarise(wtcpue = sum(wtcpue,na.rm = T))
+  filter(
+    region == "Northeast US Spring",
+    wtcpue > 0)
+
+# Get grid
+grd_template <- data.frame(index = grid_sf$index,
+                       state = grid_sf$state,
+                       st_coordinates(grid_sf))
+
+```
 
 
-# First let's define a bounding Box to extrapolate from
-bbox <- c(
-  "xmin" = min(subset_data$lon),
-  "ymin" = min(subset_data$lat),
-  "xmax" = max(subset_data$lon),
-  "ymax" = max(subset_data$lat)
+## Fun. interpol
+
+This is the main function used to interpolate the data per year. It follows a Triangular Irregular Surface method using the `interp::interp()` function.
+
+```{r interpol_function, eval = T, echo = T}
+
+tis <- function(input_data,yr){
+  
+  # print(paste(yr))
+  
+  data <- input_data %>% 
+    filter(year == yr)
+  
+  if(nrow(data) == 0){
+    return(tibble())
+  }else{
+    # Triangular Irregular Surface
+    fit_tin <- interp::interp( # using {interp}
+      x = data$lon,           # the function actually accepts coordinate vectors
+      y = data$lat,
+      z = data$wtcpue,
+      xo = grd_template$X,     # here we already define the target grid
+      yo = grd_template$Y,
+      output = "points"
+    ) %>% 
+      bind_cols() %>% 
+      bind_cols(grd_template) %>%
+      mutate(year = yr) %>% 
+      select(index, state, year, lon=x, lat=y, value = z)
+    
+    return(fit_tin)
+  }
+}
+
+```
+
+## Control pannel
+
+```{r contro_pannel, eval = T, echo = T}
+
+# Run interpolation for all years
+years <- seq(1973,2019,1)
+
+historic_tif <- bind_rows(
+  lapply(years,tis,input_data = subset_data)
 )
 
-# Expand the grid
-grd_template <- expand.grid(
-  lon = seq(from = bbox["xmin"], to = bbox["xmax"], by = 0.5),
-  lat = seq(from = bbox["ymin"], to = bbox["ymax"], by = 0.5)
-)
+
+write_csv(historic_tif,
+          paste0(my_path("R",),"interpolated_data.csv"))
+
+```
 
 
-# ---------------- #
-# Visualize the box
+# Results
 
 
-# ggplot() +
-#   geom_point(data = grd_template, aes(x = lon, y = lat), size = 0.1) +
-#   geom_point(data = subset_data,
-#   mapping = aes(x = lon, y = lat, color = wtcpue), size = 3) +
-#   scale_color_gradientn(colors = c("blue", "yellow", "red")) +
-#   theme_bw()
-
-# ---------------- #
+```{r load_data}
 
 
-# Rasterize our grid
-# expects a PROJ.4 string, see https://epsg.io/25833
-
-crs_raster_format <- "+proj=longlat +datum=WGS84 +no_defs"
-
-grd_template_raster <- grd_template %>% 
-  dplyr::mutate(Z = 0) %>% 
-  raster::rasterFromXYZ( 
-    crs = crs_raster_format)
-
-# The model
-
-# Triangular Irregular Surface
-fit_tin <- interp::interp( # using {interp}
-  x = subset_data$lon,           # the function actually accepts coordinate vectors
-  y = subset_data$lat,
-  z = subset_data$wtcpue,
-  xo = grd_template$lon,     # here we already define the target grid
-  yo = grd_template$lat,
-  output = "points"
-) %>% 
-  bind_cols() %>% 
-  filter(!is.na(z))
-
-ggplot(us_map) +
-  geom_sf()+
-  geom_sf(data = World_eez_sf, aes(), fill = "white")+
-  geom_tile( data = fit_tin,
-             aes(
-               x = x,
-               y = y,
-               fill =z,
-               colour = z
-             )
-  ) +
-  geom_point(data = subset(subset_data, wtcpue > 0),
-             aes(
-               x = lon,
-               y = lat
+# Periods
+periods <-tibble(
+  period = c(rep("a early",12),
+             rep("b mid",12),
+             rep("c late",12),
+             rep("d now",12)
              ),
-             alpha = 0.2
+  year = c(seq(1972,1984,1),
+            seq(1985,1997,1),
+            seq(1998,2011,1),
+            seq(2012,2019,1)
+            )
+  )
+
+```
+
+
+## Points
+
+```{r area_plot, eval = T, echo = T}
+
+ data_grid <- historic_tif %>% 
+  # left_join(periods) %>% 
+  # group_by(state,lat,lon,period) %>% 
+  group_by(state,lat,lon) %>% 
+  summarise(mean = mean(value,na.rm= T), .groups = "drop") %>% 
+  rename(ID = state)
+
+ggplot(data_grid) +
+  geom_tile(
+    aes(
+      x = lon,
+      y = lat,
+      fill = mean,
+      col = mean
+    )
   ) +
-  scale_color_distiller(palette = "Spectral", 
-                        guide_legend(title = "WCPUE per Haul")) + 
-  scale_fill_distiller(palette = "Spectral", 
-                       guide_legend(title = "WCPUE per Haul")) +
-  coord_sf(xlim = c(-76, -65),ylim = c(35, 45)) +
-  MyFunctions::my_ggtheme_m()
+  facet_wrap(~ ID) +
+  scale_fill_viridis("Mean Proportion", alpha = 0.8) +
+  scale_color_viridis("Mean Proportion", alpha = 0.8)
 
 
 ```
 
+## Map
+
+```{r area_plot, eval = T, echo = T}
+
+total_fited <- historic_tif %>% 
+  group_by(year) %>% 
+  summarise(total_value = sum(value,na.rm=T))
+
+state_fit <- historic_tif %>% 
+  group_by(state,year) %>% 
+  summarise(state_value = sum(value,na.rm= T), .groups = "drop") %>% 
+  left_join(total_fited,
+            by = "year") %>%
+  mutate(percentage = state_value/total_value*100) %>% 
+  left_join(periods) %>% 
+  group_by(ID = state,period) %>% 
+  summarise(mean_per = round(mean(percentage)))
+  
+# check percentages
+# state_fit %>% 
+#   group_by(period) %>% 
+#   summarise(sum(mean_per))
+
+
+land_sf %>% 
+  left_join(state_fit,
+            by = "ID") %>% 
+  ggplot() +
+  geom_sf(aes(fill = mean_per)) +
+  viridis::scale_fill_viridis("Mean Proportion", alpha = 0.8) +
+  facet_wrap(~period, nrow = 1) +
+  my_ggtheme_m()
+
+```
+
+## Area plot
+
+This graph shows the proportion of each State over time
+
+```{r area_plot, eval = T, echo = T}
+
+total_fited <- historic_tif %>% 
+  group_by(year) %>% 
+  summarise(total_value = sum(value,na.rm=T))
+
+# group by state
+state_fit <- historic_tif %>% 
+  group_by(state,year) %>% 
+  summarise(state_value = sum(value,na.rm= T), .groups = "drop") %>% 
+  left_join(total_fited,
+            by = "year") %>%
+  mutate(percentage = state_value/total_value*100)
+
+
+p <- ggplot(state_fit) +
+  geom_area(
+    aes(
+      x = year,
+      y = round(percentage),
+      fill = state
+    )
+  ) +
+  viridis::scale_fill_viridis(discrete = T, alpha = 0.8) +
+  MyFunctions::my_ggtheme_p()
+
+plotly::ggplotly(p)
+
+```
 
