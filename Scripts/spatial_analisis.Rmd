@@ -12,7 +12,9 @@ MyFunctions::my_lib(c("ggmap","sf","tidyverse","tools","readr","data.table","map
 
 ## Ocean adapt data
 
-```{r dat_exploded, eval = T, echo = T}
+- Using only "Northeast US Fall and Spring surveys for now
+
+```{r dat_exploded, eval = T, echo = F}
 
 ocean_data <- readRDS("/Volumes/Enterprise/Data/pinskylab-OceanAdapt-966adf0/data_clean/dat_exploded.rds") %>% 
   filter(spp == "Centropristis striata",
@@ -23,7 +25,7 @@ ocean_data <- readRDS("/Volumes/Enterprise/Data/pinskylab-OceanAdapt-966adf0/dat
 
 ## Maps data
 
-```{r maps_sf, eval = F, echo = T, results = 'hide'}
+```{r maps_sf, eval = T, echo = T, results = 'hide'}
 
 States <- c("maine", "new hampshire", "massachusets", "connecticut", "rhode island", "new york", "new jersey", "delaware", "maryland", "virginia", "north carolina") 
 
@@ -48,8 +50,7 @@ eez_sf <- st_read(dsn = path_world,
                         layer =file_path_sans_ext(fnam_world)) %>% 
   rename(eez_name = Name) %>% 
   st_transform(crs = 4326) %>% # 4326
-  # st_transform(crs = "+proj=eck4") %>% # for tbular plot
-  st_simplify(preserveTopology = TRUE, dTolerance = 10000) %>% #0.1
+  st_simplify(preserveTopology = TRUE, dTolerance = 10000) %>% #0.1 for paper
   filter(eez_name == "USA (East Coast)")
 
 
@@ -70,51 +71,147 @@ state_sf <-  st_read("~/Downloads/FederalAndStateWaters/FederalAndStateWaters.gd
   janitor::clean_names() %>% 
   mutate(jurisdicti = str_to_lower(jurisdicti)) %>% 
   filter(jurisdicti %in% States) %>% 
-  st_transform(crs = 4326) # for matching projections
-
-# plot <- state_sf %>%
-  # st_simplify(preserveTopology = TRUE, dTolerance = 10000) %>%
-  # ggplot()  +
-  # geom_sf(aes(col = Jurisdicti))
-
-# ggsave("plot.png",plot)
-
+  rename(state = jurisdicti)
+  # st_transform(crs = 4326)  # for matching projections
+  # st_simplify(preserveTopology = TRUE, dTolerance = 0.1)
 
 ```
 
+### 1. Expand Spatial regions (a.k.a  buffers)
 
-### Exploring spatial regions (a.k.a  buffers)
+A buffer of *410000* m (410 KM / 221) overshoots the EEZ a bit, but is eventually cropped
 
-```{r}
+```{r buffer, eval = T, echo = T}
 
 # Buffer state waters
-
-state_bf = st_buffer(state_sf, 405000)
+state_bf = st_buffer(state_sf, 410000) %>% 
+  st_transform(4326) %>% # to match shape
+  st_set_crs(4326)
 
 # ------------------------------ #
 # Testing and visualizing the buffer 
 # ------------------------------ #
 
-# p <- ggplot() +
-#   geom_sf(data = eez_sf, aes(), fill = NA) +
-#   geom_sf(data = state_bf, aes(color = jurisdicti), fill = NA) +
-#   geom_sf(data = state_sf, aes(color = jurisdicti), fill = NA)
+state_bf_plot <- ggplot() +
+  geom_sf(data = eez_sf, aes(), fill = NA) +
+  geom_sf(data = state_bf, aes(color = state), fill = NA)
 #   
 
-# ggsave("testplotb.png",p)
+# ggsave("../Results/Partial/state_waters_buffer.png",state_bf_plot)
 
 # ------------------------------ #
 
-#Join eez shapefile wih buffer
+state_bf_plot
 
-state_bf_ezz <- st_join(state_bf,eez_sf,join = st_contains)
+```
+
+### 2. Expand grid within buffer
+
+Here we expand a grid within the buffer so we can estimate the catch within
+
+```{r grid_indexing, eval = T, echo = T, message = F, warning = F}
+
+# Create grid of the region
+bbox <- c(st_bbox(state_bf))
+
+# Expand the grid
+ne_grid <- expand.grid(
+    lon = seq(from = bbox["xmin"], to = bbox["xmax"], by = 0.3),
+    lat = seq(from = bbox["ymin"], to = bbox["ymax"], by = 0.3)
+) %>% 
+  rowid_to_column("index")
+
+# ----------- #
+# [TEST] Plot all layers
+# ----------- #
+
+# Looks good
+state_sf %>%
+  st_transform(4326) %>% # to match shape
+  st_set_crs(4326) %>%
+  st_simplify(preserveTopology = TRUE, dTolerance = 10000) %>%
+  ggplot() +
+  geom_sf(aes(color = state))+
+  # geom_sf(data = eez_sf, aes(),fill =NA) +
+  # ggplot()+
+  geom_tile(data = ne_grid,
+            aes(
+              x = lon,
+              y = lat
+            ),
+            alpha = 0.2
+  ) 
 
 
-pp <- ggplot(state_bf_ezz) +
-  geom_sf()
+```
 
-ggsave("testplot.png",p)
+#### 2.1 Merge grid and buffers
 
+Here we converted the grid to `sf`, merged with the buffered states and filter out everything outside the states polygon
+
+```{r grid_buf_merge, eval = T, echo = T, message = F, warning = F, fig.width = 10}
+
+# ---------------- #
+# Convert grid to sf
+# ---------------- #
+grid_sf <- st_as_sf(ne_grid,
+             coords = c("lon", "lat"),
+             crs = 4326) %>% 
+  st_join(state_bf) %>% 
+  filter(!is.na(state))
+
+# Create data frame for future computations
+# Note, will be used in next chunk
+grid_bf_dt <- as.data.frame(grid_sf) %>%
+    select(index,state)
+    # group_by(state) %>% 
+    # summarise(length(index))
+
+
+# ---------------- #
+# [TEST] 
+# Visualization of grid
+# ---------------- #
+
+gridExtra::grid.arrange(
+  # Overall (overlapping) position
+  ggplot(grid_sf) +
+    geom_sf(aes(color = state)) +
+    geom_sf(data = eez_sf, aes(),fill =NA) + 
+    theme(legend.position = ""),
+  # Showing each state separatley
+  ggplot() +
+    geom_sf(data = grid_sf, aes(color = state),size = 0.1) +
+    facet_wrap(~state) +
+    theme(legend.position = "top"),
+  nrow = 1)
+
+```
+
+### 3. Crop buffers to EEZ
+
+```{r buff_to_eez, eval = T, echo = T, message = F, warning = F}
+
+
+# I don't know how to undo st_simplify so need to re-load the shapefile
+eez_sf <- st_read(dsn = path_world,
+                        layer =file_path_sans_ext(fnam_world)) %>% 
+  rename(eez_name = Name) %>% 
+  st_transform(crs = 4326) %>% # 4326
+  filter(eez_name == "USA (East Coast)")
+
+# Get the overlapping segments
+grid_eez_sf <- st_intersection(grid_sf,eez_sf)
+
+# Get final df with index
+grid_eez_df <- as.data.frame(grid_eez_sf) %>%
+  select(state,index)
+
+# Plot to make sure makes sense (Picasso syle)
+grid_eez_sf %>% 
+  st_simplify(preserveTopology = TRUE, dTolerance = 10000) %>% #0.1 for paper
+  ggplot() +
+  geom_sf(aes(color = state))
 
 
 ```
