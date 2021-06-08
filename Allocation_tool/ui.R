@@ -195,11 +195,16 @@ shinyUI(
                                                            # selected = 1
                                         )
                                     ),
-                                    
                                     # Show a plot of the generated distribution
                                     mainPanel(
-                                        plotlyOutput("distPlot"),
-                                        plotlyOutput("areaPlot")
+                                        conditionalPanel(
+                                            condition = "input.PlotStyle != 4",
+                                        plotOutput("distPlot")
+                                        ),
+                                        conditionalPanel(
+                                            condition = "input.PlotStyle == 4",
+                                            plotlyOutput("areaPlot")
+                                        )
                                     )
                                 ),
                                 br(),

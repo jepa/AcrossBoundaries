@@ -282,11 +282,12 @@ shinyServer(function(input, output) {
             ylab("Percentage (%)") +
             scale_fill_manual(values = state_pallet) +
             MyFunctions::my_ggtheme_p() +
-            facet_wrap(~region, ncol = 1)
+            theme(legend.position = "top") #+
+            # facet_wrap(~region, ncol = 1)
         
         ggplotly(p,
                  dynamicTicks = TRUE,
-                 height = 1000) %>% 
+                 height = 500) %>% 
             layout(hovermode = "x") %>% 
             # add_trace() %>% 
             rangeslider()
