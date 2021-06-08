@@ -12,6 +12,7 @@
 # ---------------------------- #
 
 # Get functions and shapefiles
+library(MyFunctions)
 MyFunctions::my_lib(c("ggmap","sf","tidyverse","tools","readr","data.table","maps","shiny","DT","plotly","wesanderson"))
 
 us_map <- st_as_sf(map("state", plot = FALSE, fill = TRUE))
@@ -249,13 +250,13 @@ shinyServer(function(input, output) {
         
         if(input$PlotStyle == 4){
             # Set the filters
-            # species <- input$SppSelection #"Gadus morhua"
+            species <- input$SppSelection #"Gadus morhua"
             survey <- input$SurveySelection #"Northeast US Fall"
             years <- seq(input$YearSelection[1],input$YearSelection[2],1) #seq(1971,2019,1)
          
         
         total_fited <- tif_data() %>% 
-                filter(#spp %in% species,
+                filter(spp %in% species,
                        region %in% survey,
                        year %in% years
                        ) %>% 
@@ -287,7 +288,7 @@ shinyServer(function(input, output) {
         
         ggplotly(p,
                  dynamicTicks = TRUE,
-                 height = 500) %>% 
+                 height = 600) %>% 
             layout(hovermode = "x") %>% 
             # add_trace() %>% 
             rangeslider()
@@ -298,41 +299,51 @@ shinyServer(function(input, output) {
     # ---------------------------- #
     # Allocation Table ####
     # ---------------------------- #
-    # output$Allocation_tbl <- renderDataTable({
+    output$Allocation_tbl <- renderDataTable({
         
-        # species <- input$SppSelection
-        # survey <- input$SurveySelection
-        # years <- input$YearSelection
-        
+        if(input$PlotStyle == 4){
+
+        species <- input$SppSelection
+        survey <- input$SurveySelection
+        years <- input$YearSelection
+
         # Set the plot data
-        # total_fited <- tif_data() %>% 
-            # filter(spp %in% species,
-            #        region %in% survey,
-            #        year %in% years)
-        # group_by(year,region) %>% 
-        #     summarise(total_value = sum(value,na.rm=T))
-        # 
+        total_fited <- tif_data() %>%
+        filter(#spp %in% species,
+               region %in% survey,
+               #year %in% years
+        ) %>% 
+        group_by(year,region) %>%
+            summarise(total_value = sum(value,na.rm=T))
+
         # group by state
-        # state_fit <- tif_data() %>% 
-        #     group_by(state,year,region) %>% 
-        #     summarise(state_value = sum(value,na.rm= T), .groups = "drop") %>% 
-        #     left_join(total_fited,
-        #               by = c("year","region")) %>%
-        #     mutate(percentage = state_value/total_value*100) %>% 
-        #     group_by(state,region) %>% 
-        #     filter(year %in% c(seq(1971,1975,1),seq(2010,2015,1))) %>%
-        #     spread(year,percentage)
-        
-        
-#         datatable(print_data,
-#                   rownames = FALSE,
-#                   filter = 'top',
-#                   escape = FALSE,
-#                   options = list(pageLength = 5,
-#                                  autoWidth = TRUE,
-#                                  lengthMenu = c(10, 15, 20, 50)
-#                   )
-#         )
-#     })
+        state_fit <- tif_data() %>%
+            filter(#spp %in% species,
+                region %in% survey,
+                #year %in% years
+                ) %>% 
+            group_by(state,year,region) %>%
+            summarise(state_value = sum(value,na.rm= T), .groups = "drop") %>%
+            left_join(total_fited,
+                      by = c("year","region")) %>%
+            mutate(percentage = round(state_value/total_value*100)) %>%
+            group_by(state,region) %>%
+            filter(year %in% c(seq(1973,1977,1),seq(2015,2019,1))) %>%
+            ungroup() %>% 
+            select(state,year,percentage) %>% 
+            spread(year,percentage)
+
+        # Print data table
+        datatable(state_fit,
+                  rownames = FALSE,
+                  filter = 'top',
+                  escape = FALSE,
+                  options = list(pageLength = 12,
+                                 autoWidth = TRUE,
+                                 lengthMenu = c(10, 15, 20, 50)
+                  )
+        )
+        }
+    })
 #     
-}) # app cloasure
+}) # app closure

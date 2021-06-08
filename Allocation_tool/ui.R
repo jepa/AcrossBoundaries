@@ -191,12 +191,13 @@ shinyUI(
                                                                "Survey Point" = 2, 
                                                                "Distribution Map" = 3,
                                                                "Allocation Area" = 4
-                                                               )#,
-                                                           # selected = 1
+                                                               ),
+                                                           selected = 1
                                         )
                                     ),
                                     # Show a plot of the generated distribution
                                     mainPanel(
+                                        # Cndition between plot and plotly
                                         conditionalPanel(
                                             condition = "input.PlotStyle != 4",
                                         plotOutput("distPlot")
@@ -209,8 +210,11 @@ shinyUI(
                                 ),
                                 br(),
                                 br(),
-                                p(h3(strong("Quota allocation table"))),
-                                # dataTableOutput("Allocation_tbl"),
+                                conditionalPanel(
+                                    condition = "input.PlotStyle == 4",
+                                    p(h3(strong("Quota allocation table"))),
+                                    dataTableOutput("Allocation_tbl")
+                                ),
                                 # ----------- #
                                 # Instructions
                                 # ----------- #
