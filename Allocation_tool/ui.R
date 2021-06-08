@@ -8,7 +8,7 @@
 #
 
 # Load libraries and data
-MyFunctions::my_lib(c("ggmap","sf","tidyverse","tools","readr","data.table","maps","shiny"))
+MyFunctions::my_lib(c("ggmap","sf","tidyverse","tools","readr","data.table","maps","shiny","plotly"))
 
 spp_survey <- read.csv("./data/spp_region.csv") %>% 
     filter(
@@ -191,21 +191,21 @@ shinyUI(
                                                                "Survey Point" = 2, 
                                                                "Distribution Map" = 3,
                                                                "Allocation Area" = 4
-                                                               ),
-                                                           selected = 1
+                                                               )#,
+                                                           # selected = 1
                                         )
                                     ),
                                     
                                     # Show a plot of the generated distribution
                                     mainPanel(
-                                        plotOutput("distPlot")
-                                        # plotlyOutput("distPlot"),
+                                        plotlyOutput("distPlot"),
+                                        plotlyOutput("areaPlot")
                                     )
                                 ),
                                 br(),
                                 br(),
                                 p(h3(strong("Quota allocation table"))),
-                                dataTableOutput("Allocation_tbl"),
+                                # dataTableOutput("Allocation_tbl"),
                                 # ----------- #
                                 # Instructions
                                 # ----------- #
