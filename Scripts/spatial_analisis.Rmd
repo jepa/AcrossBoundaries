@@ -264,8 +264,8 @@ tis <- function(input_data, grid, yr, taxa, reg){
   
   # --------------- #
   # Testing
-  # print(paste(yr))
-  # yr = 1976
+  print(paste(yr))
+  yr = 1976
   # --------------- #
   
   # Filter data
@@ -310,7 +310,11 @@ tis <- function(input_data, grid, yr, taxa, reg){
 # Test me
 # Needs variables in Control panel
 # Test no data: "Alosa aestivalis", reg = "Northeast US Fall", yr = 1974 
-tis(input_data = ocean_data, grid = grid_eez_df, taxa = spp[1], reg = "Northeast US Fall", yr = 1974)
+tis(input_data = ocean_data, grid = grid_eez_df, taxa = "Illex illecebrosus", reg = "Northeast US Fall", yr = 1973)
+
+
+
+lapply(years,tis,input_data = ocean_data, grid = grid_eez_df, taxa = "Illex illecebrosus", reg = regions[2])
 
 ```
 
@@ -358,8 +362,15 @@ run_tis <- function(input_data, grid, years, taxa, reg){
   #  Save file
   write_csv(historic_tif,save_name)
   
+  return_msg <- paste("Interpolation done for", taxa)
+  
+  return(return_msg)
+  
+  
 }
 
+# Test me
+    # run_tis(input_data = ocean_data, grid = grid_eez_df, taxa = "Centropristis striata", years = years, reg = regions)
 
 ```
 
@@ -418,15 +429,28 @@ years <- seq(1973,2019,1)
 # regions
 regions <- c("Northeast US Fall" , "Northeast US Spring")
 
-
-# taxa
-# spp <- "Centropristis striata"
-
+# species list
 spp <- ocean_data %>% 
   filter(region %in% regions,
          spp != "NA") %>% 
   pull(spp) %>% 
   unique()
+
+
+# Double check runs
+
+spp_runs <- tibble(taxa = (list.files(my_path("R","Partial/Interpolation")))) %>%
+  mutate(
+    taxa = str_remove(taxa, "tif_"),
+    taxa = str_remove(taxa, ".csv"),
+    taxa = str_replace(taxa, "_", " ")
+  ) 
+
+# Missing runs
+spp <- tibble(taxa=spp) %>% 
+  anti_join(spp_runs) %>% 
+  pull(taxa)
+
 
 ```
 
@@ -434,48 +458,24 @@ spp <- ocean_data %>%
 
 ```{r run_routine, eval = T, echo = T}
 
-# Run for a single region
-# historic_tif <- bind_rows(
-  # lapply(years,tis,input_data = ocean_data, grid = grid, taxa = "Centropristis striata", reg = regions[2])
+# single species run
+# run_tis(input_data = ocean_data,
+#         grid = grid_eez_df,
+#         years = years,
+#         reg = regions,
+#         taxa = "Illex illecebrosus"
 # )
 
 
-# # Simple for-loop for running both regions (seasons)
-# for(r in 1:2){
-#   
-#   partial_df <- bind_rows(
-#     lapply(years,tis,input_data = ocean_data, grid = grid, taxa = spp, reg = regions[r])
-#   )
-#   
-#   if(r == 1){
-#     historic_tif <- partial_df
-#   }else{
-#     historic_tif <- bind_rows(historic_tif,partial_df)
-#   }
-#   
-# }
+# Run them all in parallel
+parallel::mclapply(spp,
+                   run_tis, 
+                   input_data = ocean_data,
+                   grid = grid_eez_df,
+                   years = years,
+                   reg = regions
+)
 
-
-
-# Run for one species
-    run_tis(input_data = ocean_data, grid = grid_eez_df, taxa = "Centropristis striata", years = years, reg = regions)
-
-# Run for multiple species
-    run_tis(input_data = ocean_data, grid = grid_eez_df, taxa = spp[1], years = years, reg = regions)
-
-
-# Save data for future plotting
-# write_csv(historic_tif,
-          # paste0(my_path("R","Partial"),"interpolated_data.csv"))
-
-# Show data in notebook
-head(historic_tif,10) %>% 
-   kable(
-    format = "html",
-    caption = "Extrapolated data") %>% 
-  kableExtra::kable_minimal() %>% 
-  kableExtra::kable_styling() %>%
-  kableExtra:: scroll_box(width = "100%", height = "300px")
 
 ```
 
