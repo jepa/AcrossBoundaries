@@ -33,11 +33,15 @@ shinyServer(function(input, output) {
     # ---------------------------- #
     raw_data <- reactive({
         
-        data <- readRDS("/Volumes/Enterprise/Data/pinskylab-OceanAdapt-966adf0/data_clean/dat_exploded.rds") %>% 
-            filter(
-                # spp %in% c ("Centropristis striata","Gadus morhua"),
-                region %in% c("Northeast US Fall" , "Northeast US Spring")
-            ) #No more seasons
+        name <- paste0("obs_",str_replace(input$SppSelection," ","_"),".csv")
+        
+        data <- my_path("D","Spp/Observation",name = name, read = T)
+        
+        # data <- readRDS("/Volumes/Enterprise/Data/pinskylab-OceanAdapt-966adf0/data_clean/dat_exploded.rds") %>%
+        #     filter(
+        #         # spp %in% c ("Centropristis striata","Gadus morhua"),
+        #         region %in% c("Northeast US Fall" , "Northeast US Spring")
+        #     ) #No more seasons
         
     })
     
@@ -48,7 +52,9 @@ shinyServer(function(input, output) {
     # ---------------------------- #
     tif_data <- reactive({
         
-        data <- MyFunctions::my_path("R","Partial","interpolated_data.csv",read = T)
+        name <- paste0("tif_",str_replace(input$SppSelection," ","_"),".csv")
+        
+        data <- my_path("R","Partial/Interpolation",name = name, read = T)
 
     })
     
@@ -85,7 +91,7 @@ shinyServer(function(input, output) {
             avr_lat <- plot_data %>% 
                 filter(wtcpue > 0) %>% 
                 group_by(year,spp) %>%
-                summarise(mean_lat = mean(lat,na.rm = T)) %>% 
+                summarise(mean_lat = mean(lat,na.rm = T), .groups = "drop") %>% 
                 group_by(spp) %>%
                 mutate(Rmean = zoo::rollmean(x = mean_lat,
                                              5,
@@ -261,7 +267,7 @@ shinyServer(function(input, output) {
                        year %in% years
                        ) %>% 
             group_by(year,region) %>% 
-            summarise(total_value = sum(value,na.rm=T))
+            summarise(total_value = sum(value,na.rm=T), .groups = "drop")
         
         # group by state
         state_fit <- tif_data() %>% 
@@ -314,7 +320,7 @@ shinyServer(function(input, output) {
                #year %in% years
         ) %>% 
         group_by(year,region) %>%
-            summarise(total_value = sum(value,na.rm=T))
+            summarise(total_value = sum(value,na.rm=T), .groups = "drop")
 
         # group by state
         state_fit <- tif_data() %>%
