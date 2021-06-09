@@ -264,8 +264,8 @@ tis <- function(input_data, grid, yr, taxa, reg){
   
   # --------------- #
   # Testing
-  print(paste(yr))
-  yr = 1976
+  # print(paste(yr))
+  # yr = 1976
   # --------------- #
   
   # Filter data
@@ -310,11 +310,11 @@ tis <- function(input_data, grid, yr, taxa, reg){
 # Test me
 # Needs variables in Control panel
 # Test no data: "Alosa aestivalis", reg = "Northeast US Fall", yr = 1974 
-tis(input_data = ocean_data, grid = grid_eez_df, taxa = "Illex illecebrosus", reg = "Northeast US Fall", yr = 1973)
+# tis(input_data = ocean_data, grid = grid_eez_df, taxa = "Illex illecebrosus", reg = "Northeast US Fall", yr = 1973)
 
 
 
-lapply(years,tis,input_data = ocean_data, grid = grid_eez_df, taxa = "Illex illecebrosus", reg = regions[2])
+# lapply(years,tis,input_data = ocean_data, grid = grid_eez_df, taxa = "Illex illecebrosus", reg = regions[2])
 
 ```
 
@@ -486,7 +486,19 @@ parallel::mclapply(spp,
 ```{r load_data}
 
 # Load interpolated data
-historic_tif <- my_path("R","Partial","interpolated_data.csv",read = T)
+# "Centropristis striata"
+# 
+historic_tif <- my_path("R","Partial/Interpolation","tif_Centropristis_striata.csv", read = T)
+
+# Spatial data
+
+States <- c("maine", "new hampshire", "massachusetts", "connecticut", "rhode island", "new york", "new jersey", "delaware", "maryland", "virginia", "north carolina","pennsylvania") 
+
+# US State Map (land)
+
+land_sf <- st_as_sf(map("state", plot = FALSE, fill = TRUE)) %>% 
+  filter(ID %in% States) 
+
 
 # Periods
 periods <-tibble(
@@ -509,6 +521,10 @@ state_pallet <- c(wes_palette(n = 5, name = "Darjeeling1"),
                                wes_palette(n = 3, name = "Royal1")
                   )
 
+
+
+# print for notebook
+head(historic_tif)
 ```
 
 
@@ -546,7 +562,7 @@ ggplot(data_grid) +
 
 total_fited <- historic_tif %>% 
   group_by(year,region) %>% 
-  summarise(total_value = sum(value,na.rm=T))
+  summarise(total_value = sum(value,na.rm=T),.groups = "drop")
 
 state_fit <- historic_tif %>% 
   group_by(state,year,region) %>% 
@@ -556,7 +572,7 @@ state_fit <- historic_tif %>%
   mutate(percentage = state_value/total_value*100) %>% 
   left_join(periods) %>% 
   group_by(ID = state,period,region) %>% 
-  summarise(mean_per = round(mean(percentage)))
+  summarise(mean_per = round(mean(percentage)),.groups = "drop")
   
 # check percentages
 # state_fit %>% 
@@ -583,7 +599,7 @@ This graph shows the proportion of each State over time
 
 total_fited <- historic_tif %>% 
   group_by(year,region) %>% 
-  summarise(total_value = sum(value,na.rm=T))
+  summarise(total_value = sum(value,na.rm=T),.groups = "drop")
 
 # group by state
 state_fit <- historic_tif %>% 
@@ -591,8 +607,7 @@ state_fit <- historic_tif %>%
   summarise(state_value = sum(value,na.rm= T), .groups = "drop") %>% 
   left_join(total_fited,
             by = c("year","region")) %>%
-  mutate(percentage = state_value/total_value*100) %>% 
-  group_by(state,region)
+  mutate(percentage = state_value/total_value*100)
 
 p <- ggplot(state_fit) +
   geom_area(
@@ -623,7 +638,7 @@ This graph shows the proportion of each State smoothed over a 10 years running m
 
 # group by state
 state_fit <- historic_tif %>% 
-  group_by(state,year,region) %>% 
+  group_by(state,year,region,.groups = "drop") %>% 
   summarise(state_value = sum(value,na.rm= T), .groups = "drop") %>% 
   left_join(total_fited,
             by = c("year","region")) %>%
