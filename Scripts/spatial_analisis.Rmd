@@ -262,17 +262,28 @@ This is the main function used to interpolate the data per year. It follows a Tr
 
 tis <- function(input_data, grid, yr, taxa, reg){
   
+  # --------------- #
+  # Testing
   # print(paste(yr))
+  # yr = 1976
+  # --------------- #
   
+  # Filter data
   data <- input_data %>% 
     filter(year == yr,
            spp == taxa,
            region == reg
     ) %>% 
+    # Average duplicated hauls in the same spot
+    group_by(region,year,spp,lat,lon) %>%
+    summarise_at(vars(wtcpue),
+                 mean,na.rm = T) %>%
     filter(wtcpue > 0)
     
-    if(nrow(data) == 0){
-      return(tibble())
+  # Only interpolate cases where there is more than 3 rows
+  # Marked by the function 
+    if(nrow(data) <= 3){
+      fit_tin <- tibble()
     }else{
       
       # Triangular Irregular Surface
@@ -294,9 +305,64 @@ tis <- function(input_data, grid, yr, taxa, reg){
     }
    
     return(fit_tin)
-  }
+}
+
+# Test me
+# Needs variables in Control panel
+# Test no data: "Alosa aestivalis", reg = "Northeast US Fall", yr = 1974 
+tis(input_data = ocean_data, grid = grid_eez_df, taxa = spp[1], reg = "Northeast US Fall", yr = 1974)
 
 ```
+
+### Run function
+
+```{r interpol_run_fun, eval = T, echo = T}
+
+
+run_tis <- function(input_data, grid, years, taxa, reg){
+  
+  
+  # Run tis for species and surveys
+  for(r in 1:2){
+    
+    partial_df <- bind_rows(
+      lapply(years,tis,input_data = ocean_data, grid = grid_eez_df, taxa = taxa, reg = regions[r])
+    )
+    
+    if(r == 1){
+      historic_tif <- partial_df
+    }else{
+      historic_tif <- bind_rows(historic_tif,partial_df)
+    }
+    
+  }
+  
+  # ----------------------- #
+  # Save dataset per species
+  # ----------------------- #
+  
+  # Set file name
+  name <- paste0("tif_",str_replace(taxa," ","_"),".csv")
+  
+  # Set path name
+  save_path <- my_path("R","Partial/Interpolation")
+  
+  # Set complete path
+  save_name <- paste0(save_path,name)
+  
+  # Create folder if it does not exist
+  if(file.exists(save_path) == F){
+    dir.create(save_path)
+  }
+  
+  #  Save file
+  write_csv(historic_tif,save_name)
+  
+}
+
+
+```
+
 
 ### Ocean adapt data
 
@@ -349,11 +415,18 @@ grid_eez_df <- my_path("D","Spatial","grid_eez_df.csv", read = T)
 # Run interpolation for all years
 years <- seq(1973,2019,1)
 
-# taxa
-spp <- "Centropristis striata"
-
 # regions
 regions <- c("Northeast US Fall" , "Northeast US Spring")
+
+
+# taxa
+# spp <- "Centropristis striata"
+
+spp <- ocean_data %>% 
+  filter(region %in% regions,
+         spp != "NA") %>% 
+  pull(spp) %>% 
+  unique()
 
 ```
 
@@ -367,20 +440,29 @@ regions <- c("Northeast US Fall" , "Northeast US Spring")
 # )
 
 
-# Simple for-loop for running both regions (seasons)
-for(r in 1:2){
-  
-  partial_df <- bind_rows(
-    lapply(years,tis,input_data = ocean_data, grid = grid, taxa = spp, reg = regions[r])
-  )
-  
-  if(r == 1){
-    historic_tif <- partial_df
-  }else{
-    historic_tif <- bind_rows(historic_tif,partial_df)
-  }
-  
-}
+# # Simple for-loop for running both regions (seasons)
+# for(r in 1:2){
+#   
+#   partial_df <- bind_rows(
+#     lapply(years,tis,input_data = ocean_data, grid = grid, taxa = spp, reg = regions[r])
+#   )
+#   
+#   if(r == 1){
+#     historic_tif <- partial_df
+#   }else{
+#     historic_tif <- bind_rows(historic_tif,partial_df)
+#   }
+#   
+# }
+
+
+
+# Run for one species
+    run_tis(input_data = ocean_data, grid = grid_eez_df, taxa = "Centropristis striata", years = years, reg = regions)
+
+# Run for multiple species
+    run_tis(input_data = ocean_data, grid = grid_eez_df, taxa = spp[1], years = years, reg = regions)
+
 
 # Save data for future plotting
 # write_csv(historic_tif,
