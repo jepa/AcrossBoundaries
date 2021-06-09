@@ -379,11 +379,34 @@ run_tis <- function(input_data, grid, years, taxa, reg){
 
 - Using only the Northeast US Fall and Spring bottom trawl survey data for now
 
-```{r dat_exploded, eval = T, echo = F}
+```{r dat_exploded, eval = T, echo = F, fig.width = 9}
 
 ocean_data <- readRDS("/Volumes/Enterprise/Data/pinskylab-OceanAdapt-966adf0/data_clean/dat_exploded.rds") #%>% 
   # filter(spp == "Centropristis striata",
        # region %in% c("Northeast US Fall" , "Northeast US Spring")) #No more seasons
+
+
+spp_data <- function(spp){
+  
+  name_save <- paste0(my_path("D","Spp/Observation"),"obs_",str_replace(spp[1], " ", "_"),".csv")
+
+ocean_data %>% 
+  filter(spp == spp,
+       region %in% c("Northeast US Fall" , "Northeast US Spring")
+       ) %>% 
+  write_csv(., name_save)
+  
+}
+
+spp_list <- ocean_data %>% 
+  filter(region %in% regions,
+         spp != "NA") %>% 
+  pull(spp) %>% 
+  unique()
+  
+
+lapply(spp_list, spp_data)
+
 
 subset_data <- ocean_data %>% 
   filter(spp == "Centropristis striata",
