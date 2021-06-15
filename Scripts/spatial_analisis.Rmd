@@ -1,15 +1,16 @@
 ---
 title: "Spatial Analysis"
-output: 
- # html_document
+author: "Juliano Palacios Abrantes"
+output:
   html_notebook:
-  fig_width: 6
-  fig_height: 4
-  toc: false
-  toc_depth: 3
-  code_folding: hide
-  toc_float:
-    collapsed: false
+    fig_width: 6
+    fig_height: 4
+    code_folding: hide
+    toc: yes
+    toc_depth: 3
+    toc_float:
+      collapsed: false
+    theme: darkly
 ---
 
 ```{r setup, include=FALSE}
