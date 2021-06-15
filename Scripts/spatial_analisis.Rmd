@@ -3,6 +3,7 @@ title: "Spatial Analysis"
 output: 
  # html_document
   html_notebook:
+    css: _config.yml
   fig_width: 6
   fig_height: 4
   toc: false
