@@ -227,7 +227,6 @@ Finally, we crop the grided buffers to within the EEZ to capture the actual wate
 
 ```{r buff_to_eez, eval =T, echo = T, message = F, warning = F}
 
-
 # I don't know how to undo st_simplify so need to re-load the shapefile
 eez_sf <- st_read(dsn = path_world,
                         layer =file_path_sans_ext(fnam_world)) %>% 
@@ -252,7 +251,8 @@ grid_eez_df <- as.data.frame(grid_eez_sf) %>%
 grid_eez_sf %>%
   st_simplify(preserveTopology = TRUE, dTolerance = 10000) %>% #0.1 for paper
   ggplot() +
-  geom_sf(aes(color = state), alpha = 0.3)
+  geom_sf(aes(color = state), alpha = 0.3) +
+  scale_color_manual(values = state_pallet)
 
 ```
 
