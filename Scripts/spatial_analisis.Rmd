@@ -18,10 +18,13 @@ library(MyFunctions)
 MyFunctions::my_lib(c("ggmap","sf","tidyverse","tools","readr","data.table","maps","viridis","wesanderson","knitr","kableExtra","plotly"))
 ```
 
+# Methods
 
-# Load data
+## Spatial data preparation
 
-## Maps data
+### Load data
+
+#### Maps data
 
 We use three different shapefiles for the continental U.S. land mass, the State waters of maine, new hampshire, massachusets, connecticut, rhode island, new york, new jersey, delaware, maryland, virginia, north carolina and the North East EEZ.
 
@@ -89,8 +92,6 @@ unique(land_sf$ID)
 ```
 
 
-## Spatial component
-
 ### Create base shapefile for computation
 
 As a first step we need to divide the NE US EEZ among the different states. For that we expanded state waters up to the 200 nautical miles to then estimate the percentage that each expanded-state-waters occupied. Note that in all cases these areas overlapped and percentages accounted for it. We did this by following these steps:
@@ -118,7 +119,8 @@ state_bf = st_buffer(state_sf, 410000) %>%
 
 state_bf_plot <- ggplot() +
   geom_sf(data = eez_sf, aes(), fill = NA) +
-  geom_sf(data = state_bf, aes(color = state), fill = NA)
+  geom_sf(data = state_bf, aes(color = state), fill = NA) +
+  scale_color_manual(values = state_pallet)
 #   
 
 # ggsave("../Results/Partial/state_waters_buffer.png",state_bf_plot)
@@ -131,7 +133,9 @@ state_bf_plot
 
 #### 2. Expand grid within buffer
 
-Here we expand a grid within the buffer so we can estimate the proportion of each state
+Here we expand a grid within the buffer so we can estimate the proportion of each state.
+
+*Note:* Dark grey shaded area is the grid
 
 ```{r grid_indexing, eval = T, echo = T, message = F, warning = F}
 
@@ -164,7 +168,8 @@ state_sf %>%
               y = lat
             ),
             alpha = 0.2
-  ) 
+  ) +
+  scale_color_manual(values = state_pallet)
 
 
 ```
@@ -202,12 +207,14 @@ gridExtra::grid.arrange(
   ggplot(grid_sf) +
     geom_sf(aes(color = state), alpha = 0.3) +
     geom_sf(data = eez_sf, aes(),fill =NA) + 
+    scale_color_manual(values = state_pallet) +
     theme(legend.position = ""),
   # Showing each state separatley
   ggplot() +
-    geom_sf(data = grid_sf, aes(color = state),size = 0.1, alpha = 0.3) +
+    geom_sf(data = grid_sf, aes(color = state),size = 0.1, alpha = 0.5) +
     facet_wrap(~state) +
-    theme(legend.position = "top"),
+    theme(legend.position = "top") +
+    scale_color_manual(values = state_pallet),
   nrow = 1)
 
 ```
@@ -249,15 +256,19 @@ grid_eez_sf %>%
 
 ```
 
-## Interpolation rutine
+### Interpolation rutine
 
-Here we [interpolate](https://swilke-geoscience.net/post/spatial_interpolation/) the survey data within the previously created grid.
+In this step we [interpolate](https://swilke-geoscience.net/post/spatial_interpolation/) the survey data within the previously created grid following a Triangular Irregular Surface method.
 
 - We removed cases where `wtcpue < 0`
 
-### Function for interpolation
+#### Functions needed
 
-This is the main function used to interpolate the data per year. It follows a Triangular Irregular Surface method using the `interp::interp()` function.
+We need to create a couple of functions to run the whole process
+
+##### Interpolation main fx (tis).
+
+This is the main function used to interpolate the data per year. It follows a Triangular Irregular Surface method using the `interp::interp()` function. If you want to see the function clic on `code`
 
 ```{r interpol_function, eval = T, echo = T}
 
@@ -319,7 +330,9 @@ tis <- function(input_data, grid, yr, taxa, reg){
 
 ```
 
-### Run function
+##### Run function
+
+This is a sub-function that runs the `tis()` function by taxa and region. It saves the output as a .csv file for each species. 
 
 ```{r interpol_run_fun, eval = T, echo = T}
 
@@ -376,9 +389,19 @@ run_tis <- function(input_data, grid, years, taxa, reg){
 ```
 
 
-### Ocean adapt data
+#### Survey data
+
+The interpolation was done with NOAA Northeast Fisheries Science Center Spring and Fall Bottom Trawl Surveys [data](https://www.fisheries.noaa.gov/region/new-england-mid-atlantic#science) provided by [Ocean adapt](https://oceanadapt.rutgers.edu/). Data was accessed trough the [Github](https://github.com/pinskylab/OceanAdapt).
+
+*In primary publications using data from the database, please cite Pinsky et al. 2013. Marine taxa track local climate velocities. Science 341: 1239-1242 doi: 10.1126/science.1239352, as well as the original data sources.*
 
 - Using only the Northeast US Fall and Spring bottom trawl survey data for now
+
+##### Splitting up data
+
+- No part on spatial analysis. Can be ignored. 
+
+This is just a sub-step to split up the data into single species files. This makes the app faster as it only needs to load species specific data, rather than all the data at de begining. 
 
 ```{r dat_exploded, eval = T, echo = F, fig.width = 9}
 
@@ -438,9 +461,9 @@ ggplot() +
 
 ```
 
-### Control Pannel
+#### Control Pannel
 
-Load required data. Note that some of it has been previously created 
+This is where we load the required data and prepare to run the interpolation function. Note that some of the data here has been previously created 
 
 ```{r contro_pannel, eval = T, echo = T}
 
@@ -478,7 +501,12 @@ spp <- tibble(taxa=spp) %>%
 
 ```
 
-### Run routine
+#### Run routine
+
+Here we just run the routine for each of the species present in the Northeast US Fall and Spring surveys between 1973 and 2019. 
+
+- Note there are 43 identified taxa
+- Some taxa do not have presence data in some years
 
 ```{r run_routine, eval = T, echo = T}
 
@@ -503,11 +531,11 @@ parallel::mclapply(spp,
 
 ```
 
-
 # Results
 
+This section shows preliminary results for Black sea bass (*Centropristis striata*).
 
-```{r load_data}
+```{r load_data, eval = T, echo = T}
 
 # Load interpolated data
 # "Centropristis striata"
@@ -552,7 +580,11 @@ head(historic_tif)
 ```
 
 
-## Points
+## Average proportion
+
+This map shows the average proportion of the extrapolated value from the whole study period within each State's water.
+
+*Note:* Grey tiles represent `NAs`
 
 ```{r area_map_state, eval = T, echo = T, fig.width=10, fig.height=12}
 
@@ -576,11 +608,18 @@ ggplot(data_grid) +
              ncol = 4) +
   scale_fill_viridis("Mean Proportion", alpha = 0.8) +
   scale_color_viridis("Mean Proportion", alpha = 0.8)
-
-
 ```
 
-## Map
+## Proportion Change
+
+Here we show the average proportion of the interpolation by State and time period. Time periods were arbitrary defined as;
+
+- Early; 1972 to 1984
+- Mid; 1985 to 1997
+- Late; 1998 to 2011
+- Now; 2012 to 2019
+
+*Notes:* To panel represents Fall survey and bottom panel Spring. This computation considers the Overlapping of state waters.
 
 ```{r area_map, eval = T, echo = T, fig.width = 10}
 
@@ -594,7 +633,8 @@ state_fit <- historic_tif %>%
   left_join(total_fited,
             by = c("year","region")) %>%
   mutate(percentage = state_value/total_value*100) %>% 
-  left_join(periods) %>% 
+  left_join(periods,
+            by = "year") %>% 
   group_by(ID = state,period,region) %>% 
   summarise(mean_per = round(mean(percentage)),.groups = "drop")
   
@@ -617,7 +657,13 @@ land_sf %>%
 
 ## Area plot
 
-This graph shows the proportion of each State over time
+This graph shows the proportion of the interpolation value each State has over time.
+
+*Note:* This plot is interactive. For ease comparison between States you can;
+
+- *One* click on any State to *remove* it from the plot 
+- *Two* clicks on any State to *isolate it* from the plot (other states can then be added by just clicking on them).
+- The bottom panel allows you to reduce the time frame
 
 ```{r area_plot, eval = T, echo = T, fig.height = 10, fig.width = 10}
 
@@ -649,14 +695,16 @@ p <- ggplot(state_fit) +
 
 ggplotly(p,
          dynamicTicks = TRUE) %>% 
-  layout(hovermode = "x") %>% 
-  # add_trace() %>% 
+  layout(hovermode = "x") %>%
   rangeslider()
 
 ```
-## Area plot (running)
 
-This graph shows the proportion of each State smoothed over a 10 years running mean. It helps seeing the trends better (I Think...)
+## Area plot (running mean)
+
+This graph shows the proportion of each State smoothed over a *10 years running mean**. It allows to better see increasing and decreasing trends.
+
+*Note:* This plot is also interactive and thus, follows the same options of the previous one.
 
 ```{r area_lm_plot, eval = T, echo = T, fig.height = 10, fig.width = 10}
 
