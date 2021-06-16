@@ -1,6 +1,6 @@
 # Managing Across Boundaries 
 
-this repository supports the Lenfest project; [Adaptive Allocation Strategies for Transboundary Fish Stocks](https://www.lenfestocean.org/en/research-projects/new-effort-to-inform-adaptive-allocation-strategies-for-transboundary-fish-stocks)
+This repository supports the Lenfest project; [Adaptive Allocation Strategies for Transboundary Fish Stocks](https://www.lenfestocean.org/en/research-projects/new-effort-to-inform-adaptive-allocation-strategies-for-transboundary-fish-stocks)
 
 Projecet updates: https://jepa.github.io/AcrossBoundaries/index.html
 
@@ -41,7 +41,7 @@ The objective of this tool is to evaluate policy options for managing fish stock
 - [Juliano Palacios-Abrantes, University of Wisconsin, Madison](https://limnology.wisc.edu/staff/palacios-abrantes-juliano/)
 
 
-![](/Allocation_tool/www/logo_all2.png)
+![](./Allocation_tool/www/logo_all2.png)
 
 # Repository structure
 
