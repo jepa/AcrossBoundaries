@@ -1,0 +1,20 @@
+---
+title: "Managing across boundaries: shifts in stock distribution challenges United States' north Atlantic fisheries management"
+author: "Crosson Scott, Dumas Chris, Fujita Rod, Jensen Olaf, Levine Arielle, Longo Katie, Palacios-Abrantes Juliano"
+output: word_document
+---
+
+# Abstract 
+(Currently 202/250-300 words)
+
+Climate change is driving shifts in fish stock distributions that will affect resource availability across different jurisdictions around the world. Elinor Ostrom’s fundamental principles of common pool resource governance include a requirement for clear boundaries over resource units. However, when stock ranges shift, governance systems and boundaries are no longer aligned. This misalignment has already created conflicts around access and the re-distribution of benefits flowing from the stocks. Here, we look at the historical shift in the distribution of managed stocks across the North East Atlantic coast of the United States of America. We estimate the yearly abundance proportion that each State had from 1971 to 2019 and compare that to the current quota allocation policy. We found that, for many species, the stock proportion has shifted since the establishment of the allocations policy, creating a misalignment between the quota allocation and the stock's biomass distribution. Our findings have direct impact of on the management of stocks that cross jurisdictions highlighting the need for allocation strategies that can cope with such biomass changes. Moreover, the implementation of such strategies are challenged by the complexity of the Northeast Atlantic social-ecological system that expands multiple stakeholders and where changes can result in winner and looser States. Strategies that account for changes in stock distribution are key to maintain the sustainability of the stock but should consider strategies to address the potential re-distribution of benefits.
+
+
+
+# Instructions
+
+- Deadline to submit: 30 June
+- Your abstract must be uploaded as a Word file with 11 point Arial font.
+- Title
+- Author(s) (last name, first name). If there is more than one author, underline the name of the presenter.
+- The abstract should be between 250-300 words
