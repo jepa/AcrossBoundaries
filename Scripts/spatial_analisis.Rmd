@@ -318,8 +318,7 @@ tis <- function(input_data, grid, yr, taxa, reg){
     # Average duplicated hauls in the same spot
     group_by(region,year,spp,lat,lon) %>%
     summarise_at(vars(wtcpue),
-                 mean,na.rm = T) %>%
-    filter(wtcpue > 0)
+                 mean,na.rm = T)
     
   # Only interpolate cases where there is more than 3 rows
   # Marked by the function 
