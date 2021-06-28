@@ -258,20 +258,29 @@ grid_eez_df <- as.data.frame(grid_eez_sf) %>%
 # write_csv(grid_eez_df, paste0(my_path("R", "Partial"),"grid_eez_df.csv"))
 
 # Remove Pennsylvania from sf
-grid_eez_df <-  st_read("/Volumes/Enterprise/Data/AcrossBoundaries/Data/Spatial/grid_sf/grid_eez_sf.shp") %>% 
+grid_eez_sf <-  st_read("/Volumes/Enterprise/Data/AcrossBoundaries/Data/Spatial/grid_sf/grid_eez_sf.shp") %>% 
   filter(state != "pennsylvania")
 
 # Make sure no Penn.
-unique(grid_eez_df$state)
+unique(grid_eez_sf$state)
 
 # over write sf
-write_sf(grid_eez_df, paste0(my_path("D", "Spatial"),"grid_eez_sf.shp"))
+write_sf(grid_eez_sf, paste0(my_path("D", "Spatial"),"grid_eez_sf.shp"))
 
 #Make sure of things
 
 grid_eez_sf <-  st_read("/Volumes/Enterprise/Data/AcrossBoundaries/Data/Spatial/grid_sf/grid_eez_sf.shp")
 
 unique(grid_eez_sf$state)
+
+# Now save it as a DF too
+
+grid_eez_df <- as.data.frame(grid_eez_sf) %>%
+  select(state,index) %>% 
+  left_join(ne_grid, 
+            by = "index")
+
+write_csv(grid_eez_df, paste0(my_path("R", "Partial"),"grid_eez_df.csv"))
 
 # DONE!
 
