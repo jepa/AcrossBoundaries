@@ -2,6 +2,7 @@
 title: "Spatial Analysis"
 author: "Juliano Palacios Abrantes"
 output:
+  # html_document
   html_notebook:
     fig_width: 6
     fig_height: 4
@@ -38,7 +39,7 @@ We use three different shapefiles for the continental U.S. land mass, the State 
 
 ```{r maps_sf, eval = T, echo = T, results = 'hide'}
 
-States <- c("maine", "new hampshire", "massachusetts", "connecticut", "rhode island", "new york", "new jersey", "delaware", "maryland", "virginia", "north carolina","pennsylvania") 
+States <- c("maine", "new hampshire", "massachusetts", "connecticut", "rhode island", "new york", "new jersey", "delaware", "maryland", "virginia", "north carolina") 
 
 # US State Map (land)
 
@@ -86,6 +87,13 @@ state_sf <-  st_read("~/Downloads/FederalAndStateWaters/FederalAndStateWaters.gd
 
 
 grid_sf <-  st_read("/Volumes/Enterprise/Data/AcrossBoundaries/Data/Spatial/grid_sf/grid_eez_sf.shp")
+
+
+# Create specific state pallet from our friend Wes Andersson
+state_pallet <- c(wes_palette(n = 5, name = "Darjeeling1"),
+                               wes_palette(n = 5, name = "Darjeeling2"),
+                               wes_palette(n = 3, name = "Royal1")
+                  )
 
 unique(land_sf$ID)
 
@@ -169,7 +177,8 @@ state_sf %>%
             ),
             alpha = 0.2
   ) +
-  scale_color_manual(values = state_pallet)
+  scale_color_manual(values = state_pallet) +
+  theme_bw()
 
 
 ```
@@ -234,10 +243,11 @@ eez_sf <- st_read(dsn = path_world,
   st_transform(crs = 4326) %>% # 4326
   filter(eez_name == "USA (East Coast)")
 
-# Get the overlapping segments
+# Get the overlapping segments 
+# NOTE: Takes some gooooood time
 grid_eez_sf <- st_intersection(grid_sf,eez_sf)
 
-# write_sf(grid_eez_sf, paste0(my_path("D", "Spatial"),"grid_eez_sf.shp"))
+write_sf(grid_eez_sf, paste0(my_path("D", "Spatial"),"grid_eez_sf.shp"))
 
 # Get final df with index
 grid_eez_df <- as.data.frame(grid_eez_sf) %>%
@@ -246,6 +256,25 @@ grid_eez_df <- as.data.frame(grid_eez_sf) %>%
             by = "index")
 
 # write_csv(grid_eez_df, paste0(my_path("R", "Partial"),"grid_eez_df.csv"))
+
+# Remove Pennsylvania from sf
+grid_eez_df <-  st_read("/Volumes/Enterprise/Data/AcrossBoundaries/Data/Spatial/grid_sf/grid_eez_sf.shp") %>% 
+  filter(state != "pennsylvania")
+
+# Make sure no Penn.
+unique(grid_eez_df$state)
+
+# over write sf
+write_sf(grid_eez_df, paste0(my_path("D", "Spatial"),"grid_eez_sf.shp"))
+
+#Make sure of things
+
+grid_eez_sf <-  st_read("/Volumes/Enterprise/Data/AcrossBoundaries/Data/Spatial/grid_sf/grid_eez_sf.shp")
+
+unique(grid_eez_sf$state)
+
+# DONE!
+
 
 # Plot to make sure makes sense (Picasso syle)
 grid_eez_sf %>%
@@ -544,7 +573,7 @@ historic_tif <- my_path("R","Partial/Interpolation","tif_Centropristis_striata.c
 
 # Spatial data
 
-States <- c("maine", "new hampshire", "massachusetts", "connecticut", "rhode island", "new york", "new jersey", "delaware", "maryland", "virginia", "north carolina","pennsylvania") 
+States <- c("maine", "new hampshire", "massachusetts", "connecticut", "rhode island", "new york", "new jersey", "delaware", "maryland", "virginia", "north carolina") 
 
 # US State Map (land)
 
