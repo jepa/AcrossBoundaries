@@ -45,6 +45,7 @@ States <- c("maine", "new hampshire", "massachusetts", "connecticut", "rhode isl
 
 land_sf <- st_as_sf(map("state", plot = FALSE, fill = TRUE)) %>% 
   filter(ID %in% States) %>% 
+  mutate(abrev = c("CO","DE","ME","MD","MA","NH","NJ","NY","NC","RI","VI"))
 
 # ggplot(us_map) +
   # geom_sf()
@@ -241,7 +242,7 @@ eez_sf <- st_read(dsn = path_world,
                         layer =file_path_sans_ext(fnam_world)) %>% 
   rename(eez_name = Name) %>% 
   st_transform(crs = 4326) %>% # 4326
-  filter(eez_name == "USA (East Coast)")
+  filter(eez_name == "USA (East Coast)") 
 
 # Get the overlapping segments 
 # NOTE: Takes some gooooood time
@@ -265,6 +266,60 @@ grid_eez_sf %>%
   scale_color_manual(values = state_pallet)
 
 ```
+
+
+```{r cropped_plot_paper}
+
+
+plot_data <-grid_eez_sf %>% 
+    mutate(state = str_to_sentence(state)) %>% 
+    left_join(state_lat)
+
+p <- gridExtra::grid.arrange(
+  # Overall (overlapping) position
+  ggplot(plot_data) +
+    geom_sf(data = eez_sf, aes(), fill = "white") + 
+    geom_sf(aes(color = order, fill = order), alpha = 0.3) +
+    geom_sf(data = land_sf, aes()) +
+    geom_sf_label_repel(data = land_sf, aes(label= abrev), 
+                      size = 2,
+                      box.padding = 0.10,
+                      hjust = 1) +
+    scale_color_manual(values = state_pallet) +
+    scale_fill_manual(values = state_pallet) +
+    my_ggtheme_p(leg_pos = "",
+                 ax_tx_s = 12) +
+    coord_sf(ylim = c(30,48)) +
+    scale_y_continuous(breaks = c(30,35,40,45))+
+    labs(x = "", y = ""),
+  # Showing each state separately
+  
+    ggplot(plot_data) +
+    geom_sf(data = land_sf, aes(), fill = "grey80") +
+    geom_sf( aes(color = order),size = 0.1, alpha = 0.8) +
+    facet_wrap(~ state) +
+    theme(legend.position = "top") +
+    scale_color_manual(values = state_pallet,
+                       labels = plot_data %>% arrange(order) %>%  pull(state) %>% unique()) +
+    my_ggtheme_p(leg_pos = "",
+                 ax_tx_s = 6,
+                 axx_tx_ang = 45,
+                 hjust = 1
+                 ),
+  nrow = 1,
+  bottom = "Longitude",
+  left = "Latitude")
+
+
+  ggsave(filename = "buffer_figure.jpg",
+         plot = p,
+         path = my_path("R","Figures"),
+         width = 10,
+         height = 5
+         )
+
+```
+
 
 
 ```{r remove_pen, eval = F, echo = F}
@@ -589,6 +644,25 @@ historic_tif <- my_path("R","Partial/Interpolation","tif_Centropristis_striata.c
 # Spatial data
 
 States <- c("maine", "new hampshire", "massachusetts", "connecticut", "rhode island", "new york", "new jersey", "delaware", "maryland", "virginia", "north carolina") 
+
+# Managed species by Mid-Atlantic Council Management Plans, and State waters
+# https://www.fisheries.noaa.gov/new-england-mid-atlantic/commercial-fishing/new-england-mid-atlantic-fishery-management-plans
+
+Species <- c(
+  "Scomber scombrus",
+  "Doryteuthis (Amerigo) pealeii", #longfin squid
+  "Peprilus triacanthus", # butterfish
+  "Illex illecebrosus", #shortfin squid
+  "Paralichthys dentatus", #summer flounder
+  "Stenotomus chrysops", #Scoop"
+  "Centropristis striata", # black sea bass
+  "Pomatomus saltatrix", # Bluefish
+  "Lopholatilus chamaeleonticeps", #golden tilefish
+  "Caulolatilus microps", #blueline tilefish
+  "Clupea harengus" # Atlantic herring (Jointly in State and Federal Waters)
+  
+  )
+
 
 # US State Map (land)
 
