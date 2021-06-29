@@ -2,8 +2,8 @@
 title: "Spatial Analysis"
 author: "Juliano Palacios Abrantes"
 output:
-  # html_document
-  html_notebook:
+  html_document
+  # html_notebook:
     fig_width: 6
     fig_height: 4
     code_folding: hide
@@ -16,7 +16,7 @@ output:
 
 ```{r setup, include=FALSE}
 library(MyFunctions)
-MyFunctions::my_lib(c("ggmap","sf","tidyverse","tools","readr","data.table","maps","viridis","wesanderson","knitr","kableExtra","plotly"))
+MyFunctions::my_lib(c("ggmap","sf","tidyverse","tools","readr","data.table","maps","viridis","wesanderson","knitr","kableExtra","plotly","ggrepel","ggsflabel"))
 ```
 
 # Methods
@@ -44,7 +44,7 @@ States <- c("maine", "new hampshire", "massachusetts", "connecticut", "rhode isl
 # US State Map (land)
 
 land_sf <- st_as_sf(map("state", plot = FALSE, fill = TRUE)) %>% 
-  filter(ID %in% States) 
+  filter(ID %in% States) %>% 
 
 # ggplot(us_map) +
   # geom_sf()
@@ -444,9 +444,9 @@ The interpolation was done with NOAA Northeast Fisheries Science Center Spring a
 
 - No part on spatial analysis. Can be ignored. 
 
-This is just a sub-step to split up the data into single species files. This makes the app faster as it only needs to load species specific data, rather than all the data at de begining. 
+This is just a sub-step to split up the data into single species files. This makes the app faster as it only needs to load species specific data, rather than all the data at de beginning. 
 
-```{r dat_exploded, eval = T, echo = F, fig.width = 9}
+```{r dat_exploded, eval = F, echo = F, fig.width = 9}
 
 ocean_data <- readRDS("/Volumes/Enterprise/Data/pinskylab-OceanAdapt-966adf0/data_clean/dat_exploded.rds") #%>% 
   # filter(spp == "Centropristis striata",
@@ -563,7 +563,7 @@ Here we just run the routine for each of the species present in the Northeast US
 
 
 # Run them all in parallel
-parallel::mclapply(spp,
+lapply(spp,
                    run_tis, 
                    input_data = ocean_data,
                    grid = grid_eez_df,
@@ -583,7 +583,8 @@ This section shows preliminary results for Black sea bass (*Centropristis striat
 # Load interpolated data
 # "Centropristis striata"
 # 
-historic_tif <- my_path("R","Partial/Interpolation","tif_Centropristis_striata.csv", read = T)
+historic_tif <- my_path("R","Partial/Interpolation","tif_Centropristis_striata.csv", read = T) %>% 
+  mutate(state = str_to_sentence(state))
 
 # Spatial data
 
@@ -592,28 +593,49 @@ States <- c("maine", "new hampshire", "massachusetts", "connecticut", "rhode isl
 # US State Map (land)
 
 land_sf <- st_as_sf(map("state", plot = FALSE, fill = TRUE)) %>% 
-  filter(ID %in% States) 
+  filter(ID %in% States) %>% 
+  mutate(abrev = c("CO","DE","ME","MD","MA","NH","NJ","NY","NC","RI","VI"),
+         state = str_to_sentence(ID)
+         )
 
 
 # Periods
 periods <-tibble(
-  period = c(rep("a early",12),
-             rep("b mid",12),
-             rep("c late",12),
-             rep("d now",12)
-             ),
-  year = c(seq(1972,1984,1),
-            seq(1985,1997,1),
-            seq(1998,2011,1),
-            seq(2012,2019,1)
-            )
+  order = c(rep("a",12),
+            rep("b",12),
+            rep("c",12),
+            rep("d",11)
+  ),
+  label = c(rep("1973-1984",12),
+            rep("1985-1996",12),
+            rep("1997-2008",12),
+            rep("2009-2019",11)
+  ),
+  year = c(seq(1973,1984,1),
+           seq(1985,1996,1),
+           seq(1997,2008,1),
+           seq(2009,2019,1)
   )
+)
+
+state_lat <- historic_tif %>%
+  group_by(state) %>% 
+  summarise(
+    order = mean(lat)
+  ) %>% 
+  mutate(abrev = c("CO","DE","ME","MD","MA","NH","NJ","NY","NC","RI","VI")
+  ) %>% 
+  arrange(desc(order)) %>% 
+  mutate(order= letters[1:11])
+
+
 
 # State pallet
 
 state_pallet <- c(wes_palette(n = 5, name = "Darjeeling1"),
                                wes_palette(n = 5, name = "Darjeeling2"),
-                               wes_palette(n = 3, name = "Royal1")
+                               # wes_palette(n = 2, name = "GrandBudapest1")
+                  "#FD6467"
                   )
 
 
@@ -627,7 +649,7 @@ head(historic_tif)
 
 This map shows the average proportion of the extrapolated value from the whole study period within each State's water.
 
-*Note:* Grey tiles represent `NAs`
+*Note:* This is intended to be a supplemental figure
 
 ```{r area_map_state, eval = T, echo = T, fig.width=10, fig.height=12}
 
@@ -638,7 +660,7 @@ This map shows the average proportion of the extrapolated value from the whole s
   summarise(mean = mean(value,na.rm= T), .groups = "drop") %>% 
   rename(ID = state)
 
-ggplot(data_grid) +
+ggplot(data = subset(data_grid, !is.na(mean))) +
   geom_tile(
     aes(
       x = lon,
@@ -647,28 +669,32 @@ ggplot(data_grid) +
       col = mean
     )
   ) +
+  geom_sf(data = land_sf, aes()) +
   facet_wrap(~ ID  +  region,
              ncol = 4) +
+  labs(x = "Longitude", y = "Latitude") +
   scale_fill_viridis("Mean Proportion", alpha = 0.8) +
-  scale_color_viridis("Mean Proportion", alpha = 0.8)
+  scale_color_viridis("Mean Proportion", alpha = 0.8) +
+  my_ggtheme_p()
 ```
 
 ## Proportion Change
 
 Here we show the average proportion of the interpolation by State and time period. Time periods were arbitrary defined as;
 
-- Early; 1972 to 1984
+- Early; 1973 to 1984
 - Mid; 1985 to 1997
 - Late; 1998 to 2011
 - Now; 2012 to 2019
 
-*Notes:* To panel represents Fall survey and bottom panel Spring. This computation considers the Overlapping of state waters.
+*Notes:* Panel represents the **Spring.** survey. This computation considers the Overlapping of state waters.
 
-```{r area_map, eval = T, echo = T, fig.width = 10}
+```{r paper_figure_area_map, eval = F, echo = F, results='hide'}
 
 total_fited <- historic_tif %>% 
   group_by(year,region) %>% 
   summarise(total_value = sum(value,na.rm=T),.groups = "drop")
+
 
 state_fit <- historic_tif %>% 
   group_by(state,year,region) %>% 
@@ -678,9 +704,11 @@ state_fit <- historic_tif %>%
   mutate(percentage = state_value/total_value*100) %>% 
   left_join(periods,
             by = "year") %>% 
-  group_by(ID = state,period,region) %>% 
-  summarise(mean_per = round(mean(percentage)),.groups = "drop")
-  
+  group_by(state,order,label,region) %>% 
+  summarise(mean_per = round(mean(percentage)),.groups = "drop") %>% 
+  #Only show results for spring
+  filter(str_detect(region,"Spring"))
+
 # check percentages
 # state_fit %>% 
 #   group_by(period) %>% 
@@ -689,12 +717,75 @@ state_fit <- historic_tif %>%
 
 land_sf %>% 
   left_join(state_fit,
-            by = "ID") %>% 
+            by = "state") %>% 
   ggplot() +
   geom_sf(aes(fill = mean_per)) +
-  viridis::scale_fill_viridis("Mean Proportion", alpha = 0.8) +
-  facet_wrap(~region + period, nrow = 2) +
-  my_ggtheme_m()
+  viridis::scale_fill_viridis("Average proportion per State", alpha = 0.8) +
+  facet_wrap(~ label, nrow = 1) +
+  geom_sf_label_repel(data = land_sf, aes(label= abrev), 
+                      size = 2,
+                      box.padding = 0.10,
+                      hjust = 1) +
+  labs(x = "Latitude", 
+       y = "Longitude") +
+  my_ggtheme_p(facet_tx_s = 16,
+               leg_pos = "bottom") +
+  theme(legend.key.width = unit(4,"line")) +
+  ggsave(filename = "proportion_chg.jpg",
+         plot = ggplot2::last_plot(),
+         path = my_path("R","Figures"),
+         width = 12,
+         height = 5
+         )
+
+
+```
+
+
+```{r area_map, eval = T, echo = T, fig.width = 10, fig.height=6}
+
+total_fited <- historic_tif %>% 
+  group_by(year,region) %>% 
+  summarise(total_value = sum(value,na.rm=T),.groups = "drop")
+
+
+state_fit <- historic_tif %>% 
+  group_by(state,year,region) %>% 
+  summarise(state_value = sum(value,na.rm= T), .groups = "drop") %>% 
+  left_join(total_fited,
+            by = c("year","region")) %>%
+  mutate(percentage = state_value/total_value*100) %>% 
+  left_join(periods,
+            by = "year") %>% 
+  group_by(state,order,label,region) %>% 
+  summarise(mean_per = round(mean(percentage)),.groups = "drop")
+
+# check percentages
+# state_fit %>% 
+#   group_by(period) %>% 
+#   summarise(sum(mean_per))
+
+
+p <- land_sf %>% 
+  left_join(state_fit,
+            by = "state") %>% 
+  ggplot() +
+  # geom_sf(aes(fill = mean_per)) +
+  geom_sf(aes(fill = mean_per, text = paste(state, mean_per,"% of proportion"))) +
+  viridis::scale_fill_viridis("Average proportion per State", alpha = 0.8) +
+  facet_wrap(~ region + label, 
+             nrow = 2) +
+  labs(x = "Latitude", 
+       y = "Longitude") +
+  my_ggtheme_p(facet_tx_s = 12,
+               leg_pos = "bottom") +
+  theme(legend.key.width = unit(1,"line"))
+
+ggplotly(p,
+         tooltip = "text",
+         dynamicTicks = FALSE) %>% 
+    style(hoverlabel = list(bgcolor = "white"), hoveron = "fill")
+
 
 ```
 
@@ -722,6 +813,7 @@ state_fit <- historic_tif %>%
             by = c("year","region")) %>%
   mutate(percentage = state_value/total_value*100)
 
+# Plot me
 p <- ggplot(state_fit) +
   geom_area(
     aes(
@@ -749,7 +841,57 @@ This graph shows the proportion of each State smoothed over a *10 years running 
 
 *Note:* This plot is also interactive and thus, follows the same options of the previous one.
 
-```{r area_lm_plot, eval = T, echo = T, fig.height = 10, fig.width = 10}
+```{r paper_plot_area_ave, eval = F, echo = F, results='hide'}
+
+# group by state
+state_fit <- historic_tif %>% 
+  group_by(state,year,region) %>% 
+  summarise(state_value = sum(value,na.rm= T), .groups = "drop") %>% 
+  left_join(total_fited,
+            by = c("year","region")) %>%
+  mutate(percentage = state_value/total_value*100) %>% 
+  group_by(state,region) %>% 
+  mutate(RMean = zoo::rollmean(x = percentage, 
+                            10,
+                            fill = NA,
+                            na.rm=T)
+    ) %>% 
+  #Only show results for spring
+  filter(str_detect(region,"Spring"),
+         !is.na(RMean) # Remove NAs from rollmean
+         ) %>%  
+  left_join(state_lat)
+
+# Plot me
+ggplot(state_fit) +
+  geom_area(
+    aes(
+      x = year,
+      y = round(RMean),
+      fill = order
+      # fill = state
+    )
+  ) +
+  ylab("Propotion (10 yrs running average)") +
+  # viridis::scale_fill_viridis(discrete = T, alpha = 0.8) +
+  scale_fill_manual(
+    "State",
+    values = state_pallet,
+    labels = state_fit %>% arrange(order) %>%  pull(state) %>% unique()
+  ) +
+  my_ggtheme_p(leg_pos = "right") +
+  theme(legend.key.width = unit(1,"line")) + 
+  ggsave(filename = "area_plot_avg.jpg",
+         plot = ggplot2::last_plot(),
+         path = my_path("R","Figures"),
+         width = 8,
+         height = 6
+  )
+
+
+```
+
+```{r area_plot, eval = T, echo = T, fig.height = 10, fig.width = 10}
 
 # group by state
 state_fit <- historic_tif %>% 
@@ -763,7 +905,8 @@ state_fit <- historic_tif %>%
                             10,
                             fill = NA,
                             na.rm=T)
-    )
+    ) %>%  
+  left_join(state_lat)
 
 # Plot me
 p <- ggplot(state_fit) +
@@ -772,11 +915,15 @@ p <- ggplot(state_fit) +
       x = year,
       y = round(RMean),
       fill = state
+      # fill = order
     )
   ) +
   ylab("10 yrs running average (%)") +
-  # viridis::scale_fill_viridis(discrete = T, alpha = 0.8) +
-  scale_fill_manual(values = state_pallet) +
+  scale_fill_manual(
+    "State",
+    values = state_pallet,
+    # labels = state_fit %>% arrange(order) %>%  pull(state) %>% unique()
+  ) +
   MyFunctions::my_ggtheme_p() +
   facet_wrap(~region, ncol = 1)
 
