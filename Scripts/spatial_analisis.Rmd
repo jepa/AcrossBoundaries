@@ -947,14 +947,16 @@ This graph shows the proportion of the interpolation value each State has over t
 - *Two* clicks on any State to *isolate it* from the plot (other states can then be added by just clicking on them).
 - The bottom panel allows you to reduce the time frame
 
+### Dynamic aggregated plot
+
 ```{r area_plot, eval = T, echo = T, fig.height = 10, fig.width = 10}
 
-total_fited <- historic_tif %>% 
+total_fited <- historic_spp %>% 
   group_by(year,region) %>% 
   summarise(total_value = sum(value,na.rm=T),.groups = "drop")
 
 # group by state
-state_fit <- historic_tif %>% 
+state_fit <- historic_spp %>% 
   group_by(state,year,region) %>% 
   summarise(state_value = sum(value,na.rm= T), .groups = "drop") %>% 
   left_join(total_fited,
@@ -987,7 +989,57 @@ ggplotly(p,
 
 This graph shows the proportion of each State smoothed over a *10 years running mean**. It allows to better see increasing and decreasing trends.
 
+### Dynamic aggregated plot
+
 *Note:* This plot is also interactive and thus, follows the same options of the previous one.
+
+```{r area_plot, eval = T, echo = T, fig.height = 10, fig.width = 10}
+
+# group by state
+state_fit <- historic_tif %>% 
+  group_by(state,year,region,.groups = "drop") %>% 
+  summarise(state_value = sum(value,na.rm= T), .groups = "drop") %>% 
+  left_join(total_fited,
+            by = c("year","region")) %>%
+  mutate(percentage = state_value/total_value*100) %>% 
+  group_by(state,region) %>% 
+  mutate(RMean = zoo::rollmean(x = percentage, 
+                            10,
+                            fill = NA,
+                            na.rm=T)
+    ) %>%  
+  left_join(state_lat)
+
+# Plot me
+p <- ggplot(state_fit) +
+  geom_area(
+    aes(
+      x = year,
+      y = round(RMean),
+      fill = state
+      # fill = order
+    )
+  ) +
+  ylab("10 yrs running average (%)") +
+  scale_fill_manual(
+    "State",
+    values = state_pallet,
+    # labels = state_fit %>% arrange(order) %>%  pull(state) %>% unique()
+  ) +
+  MyFunctions::my_ggtheme_p() +
+  facet_wrap(~region, ncol = 1)
+
+suppressWarnings(
+ggplotly(p,
+         dynamicTicks = TRUE) %>% 
+  layout(hovermode = "x") %>% 
+  # add_trace() %>% 
+  rangeslider()
+)
+
+```
+
+### Aggregated Proportional change
 
 ```{r paper_plot_area_ave, eval = F, echo = F, results='hide'}
 
@@ -1044,48 +1096,63 @@ ggplot(state_fit) +
 
 ```
 
-```{r area_plot, eval = T, echo = T, fig.height = 10, fig.width = 10}
+
+### Per Species Proportional change
+
+```{r paper_plot_area_ave, eval = F, echo = F, results='hide'}
+
+total_fited <- historic_spp %>% 
+  group_by(year,region,spp) %>% 
+  summarise(total_value = sum(value,na.rm=T),.groups = "drop")
+
 
 # group by state
-state_fit <- historic_tif %>% 
-  group_by(state,year,region,.groups = "drop") %>% 
+state_fit <- historic_spp %>% 
+  group_by(state,year,region,spp) %>% 
   summarise(state_value = sum(value,na.rm= T), .groups = "drop") %>% 
   left_join(total_fited,
-            by = c("year","region")) %>%
+            by = c("year","region","spp")) %>%
   mutate(percentage = state_value/total_value*100) %>% 
-  group_by(state,region) %>% 
+  group_by(state,region,spp) %>% 
   mutate(RMean = zoo::rollmean(x = percentage, 
                             10,
                             fill = NA,
                             na.rm=T)
-    ) %>%  
+    ) %>% 
+  #Only show results for spring
+  filter(str_detect(region,"Spring"),
+         !is.na(RMean) # Remove NAs from rollmean
+         ) %>%  
   left_join(state_lat)
 
 # Plot me
-p <- ggplot(state_fit) +
+ggplot(state_fit) +
   geom_area(
     aes(
       x = year,
       y = round(RMean),
-      fill = state
-      # fill = order
+      fill = order
+      # fill = state
     )
   ) +
-  ylab("10 yrs running average (%)") +
+  ylab("Propotion (10 yrs running average)") +
+  # viridis::scale_fill_viridis(discrete = T, alpha = 0.8) +
   scale_fill_manual(
     "State",
     values = state_pallet,
-    # labels = state_fit %>% arrange(order) %>%  pull(state) %>% unique()
+    labels = state_fit %>% arrange(order) %>%  pull(state) %>% unique()
   ) +
-  MyFunctions::my_ggtheme_p() +
-  facet_wrap(~region, ncol = 1)
+  my_ggtheme_p(leg_pos = "right") +
+  theme(legend.key.width = unit(1,"line")) + 
+  facet_wrap(~spp, ncol = 1, strip.position = "right") +
+  ggsave(filename = "area_plot_avg_spp.jpg",
+         plot = ggplot2::last_plot(),
+         path = my_path("R","Figures"),
+         width = 10,
+         height = 12
+  )
 
-suppressWarnings(
-ggplotly(p,
-         dynamicTicks = TRUE) %>% 
-  layout(hovermode = "x") %>% 
-  # add_trace() %>% 
-  rangeslider()
-)
 
 ```
+
+
