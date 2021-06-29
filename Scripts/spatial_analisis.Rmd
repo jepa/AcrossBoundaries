@@ -794,7 +794,7 @@ Here we show the average proportion of the interpolation by State and time perio
 *Notes:* Figure represents the **Spring** survey. This computation considers the Overlapping of state waters.
 
 
-### Proportional change per species
+### Per species maps
 
 ```{r paper_figure_area_map, eval = F, echo = F, results='hide'}
 
