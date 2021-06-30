@@ -1,20 +1,26 @@
 ---
-title: "Managing across boundaries: shifts in stock distribution challenges United States' north Atlantic fisheries management"
-author: "Crosson Scott, Dumas Chris, Fujita Rod, Jensen Olaf, Levine Arielle, Longo Katie, Palacios-Abrantes Juliano"
+title: "Managing across boundaries: Shifts in stock distribution challenges United States’ northeastern Atlantic fisheries management"
+author: "Palacios-Abrantes Juliano, Crosson Scott, Dumas Chris, Fujita Rod, Jensen Olaf, Levine Arielle, Longo Catherine"
 output: word_document
 ---
 
-# Abstract 
-(Currently 202/250-300 words)
+# Abstract
+<!-- (Currently 202/250-300 words) -->
 
-Climate change is driving shifts in fish stock distributions that will affect resource availability across different jurisdictions around the world. Elinor Ostrom’s fundamental principles of common pool resource governance include a requirement for clear boundaries over resource units. However, when stock ranges shift, governance systems and boundaries are no longer aligned. This misalignment has already created conflicts around access and the re-distribution of benefits flowing from the stocks. Here, we look at the historical shift in the distribution of managed stocks across the North East Atlantic coast of the United States of America. We estimate the yearly abundance proportion that each State had from 1971 to 2019 and compare that to the current quota allocation policy. We found that, for many species, the stock proportion has shifted since the establishment of the allocations policy, creating a misalignment between the quota allocation and the stock's biomass distribution. Our findings have direct impact of on the management of stocks that cross jurisdictions highlighting the need for allocation strategies that can cope with such biomass changes. Moreover, the implementation of such strategies are challenged by the complexity of the Northeast Atlantic social-ecological system that expands multiple stakeholders and where changes can result in winner and looser States. Strategies that account for changes in stock distribution are key to maintain the sustainability of the stock but should consider strategies to address the potential re-distribution of benefits.
+Climate change is driving shifts in fish stock distributions that will affect resource availability across different jurisdictions around the world. Effective resource governance includes a requirement for clear boundaries over resource units. However, when stock ranges shift, governance systems and boundaries are no longer aligned. This misalignment has already created conflicts around access and the redistribution of benefits flowing from the stocks, e.g., on how to revise catch allocations across jurisdictions and/or recreational and industrial sectors. New allocation rules, for example using current species distributions to update relative quotas assigned, compensation schemes and gradual transition times, are difficult to evaluate when they may have controversial outcomes. Looking retrospectively at the effect one might have seen when implementing different rules in the past, helps explore their performance applied to real data, while still being only hypothetical. Here, we look at the historical shift in the distribution of managed stocks across the North East Atlantic coast of the United States of America. We estimate the yearly abundance proportion near each State from 1971 to 2019 and compare that to the current quota allocation policy. While this is ongoing work, we believe our findings could directly inform regulatory reform in the US where alternative approaches for managing stocks that cross State jurisdictions are being considered. Strategies that account for changes in stock distributions are key to managing them sustainability but, to be successful, will have to be designed so as to also address the consequences of potential re-distributions of benefits and how these are perceived by stakeholders.
 
 
 
-# Instructions
+<!-- # Instructions -->
 
-- Deadline to submit: 30 June
-- Your abstract must be uploaded as a Word file with 11 point Arial font.
-- Title
-- Author(s) (last name, first name). If there is more than one author, underline the name of the presenter.
-- The abstract should be between 250-300 words
+<!-- - Workshop title Workshop 3: Ocean governance and climate adaption: comparing responses, charting future courses -->
+<!-- - Workshop link https://imber.info/imbizo6-workshop-3/ -->
+<!-- - Deadline to submit: 30 June -->
+<!-- - Your abstract must be uploaded as a Word file with 11 point Arial font. -->
+<!-- - Title -->
+<!-- - Author(s) (last name, first name). If there is more than one author, underline the name of the presenter. -->
+<!-- - The abstract should be between 250-300 words -->
+
+<!-- ## Workshop objectives  -->
+
+<!-- The overall objective of this workshop is to share case study experiences on how ocean climate adaptation is faring at regional, national and local levels in order to draw out buoyant governance practices and lessons learned. These lessons can be based on learning from success, but also include learning from failure. Key multilevel governance questions will be explored in the case studies. Examples of the types of questions that may be addressed at the three different levels are listed below. These are not exhaustive and alternative questions for exploration are welcomed. -->
