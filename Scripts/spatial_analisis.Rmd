@@ -2,8 +2,8 @@
 title: "Spatial Analysis"
 author: "Juliano Palacios Abrantes"
 output:
-  html_document
-  # html_notebook:
+  # html_document
+  html_notebook:
     fig_width: 6
     fig_height: 4
     code_folding: hide
@@ -845,7 +845,7 @@ land_sf %>%
 
 ### Aggregated Proportional change
 
-```{r area_map_aggregated, eval = T, echo = T, fig.width = 10, fig.height=6}
+```{r area_map_aggregated_formans, eval = T, echo = T, fig.width = 10, fig.height=6}
 
 total_fited <- historic_spp %>% 
   group_by(year,region) %>% 
@@ -948,7 +948,7 @@ This graph shows the proportion of the interpolation value each State has over t
 
 ### Dynamic aggregated plot
 
-```{r area_plot, eval = T, echo = T, fig.height = 10, fig.width = 10}
+```{r dynamic_area_plot, eval = T, echo = T, fig.height = 10, fig.width = 10}
 
 total_fited <- historic_spp %>% 
   group_by(year,region) %>% 
@@ -995,7 +995,7 @@ This graph shows the proportion of each State smoothed over a *10 years running 
 ```{r area_plot, eval = T, echo = T, fig.height = 10, fig.width = 10}
 
 # group by state
-state_fit <- historic_tif %>% 
+state_fit <- historic_spp %>% 
   group_by(state,year,region,.groups = "drop") %>% 
   summarise(state_value = sum(value,na.rm= T), .groups = "drop") %>% 
   left_join(total_fited,
@@ -1040,7 +1040,7 @@ ggplotly(p,
 
 ### Aggregated Proportional change
 
-```{r paper_plot_area_ave, eval = F, echo = F, results='hide'}
+```{r plot_area_ave_agg, eval = F, echo = F, results='hide'}
 
 total_fited <- historic_spp %>% 
   group_by(year,region) %>% 
@@ -1098,7 +1098,7 @@ ggplot(state_fit) +
 
 ### Per Species Proportional change
 
-```{r paper_plot_area_ave, eval = F, echo = F, results='hide'}
+```{r paper_plot_area_ave_spp, eval = F, echo = F, results='hide'}
 
 total_fited <- historic_spp %>% 
   group_by(year,region,spp) %>% 
@@ -1250,7 +1250,6 @@ state_fit <- historic_spp %>%
   filter(str_detect(region,"Spring"))
 
 quota_df <- quota_allocation %>% 
-  gather("spp","quota",4:6) %>% 
   left_join(historic_spp) %>% 
   group_by(state,abrev,year,region,spp,quota) %>% 
   summarise(state_value = sum(value,na.rm= T), .groups = "drop") %>% 
@@ -1274,6 +1273,8 @@ quota_df <- quota_allocation %>%
     spp %in% quota_allocation$spp
   )
 
+head(quota_df) %>% 
+  kable()
 ```
 
 ### Difference line plot
@@ -1303,7 +1304,8 @@ quota_df %>%
     values = state_pallet,
     labels = quota_df %>% arrange(order) %>%  pull(state) %>% unique()
     ) +
-  facet_wrap(~type, nrow = 2, scales = "free")
+  facet_grid(type~spp, 
+             scales = "free")
 
 ```
 ### Linetype plot
@@ -1315,9 +1317,6 @@ Here, we plot the distributional quota (solid lines) with each State's allocatio
 
 quota_df %>% 
   gather("level","quota",Distribution:RMean) %>% 
-  filter(
-    spp =="Centropristis striata"
-  ) %>% 
   # mutate(diff = quota_per- percentage) %>% 
   # View()
   ggplot() +
@@ -1338,7 +1337,7 @@ quota_df %>%
     labels = quota_df %>% arrange(order) %>%  pull(state) %>% unique()
     ) +
   scale_linetype("Quota") +
-  facet_wrap(~level)
+  facet_grid(spp ~ level)
 
 ```
 ### Efficiency index
@@ -1348,17 +1347,20 @@ The idea here is create and *efficiency index* (Danger!) that computes the align
 $$ei = \frac{HistoricQuota}{DistributionProportion}$$ 
 So, in cases qhere *ei* = 1, the quota is aligned with the distribution; when *ei* > 1 then the historic quota is more than the stock's State's distribution, contrarily, *ei* < 1 means that the historic quota is less than what the State currently has.
 
+
+**Note:** There are some crazzy outliers that have been removed, for now... 
+
 ```{r}
 # Option one
 
 quota_df %>% 
-  filter(
-    spp =="Centropristis striata"
-  ) %>% 
-  mutate(index = Historic/Distribution,
-         index_rmean = Historic/RMean) %>%
+  # filter(
+  #   spp =="Centropristis striata"
+  # ) %>% 
+  mutate(index = Distribution/Historic,
+         index_rmean = RMean/Historic) %>%
   gather("level","index",index:index_rmean) %>%
-  filter(index < 5) %>% 
+  filter(index < 5) %>% # there are some craaaazy outliers
   # View()
   ggplot() +
   geom_line(
@@ -1377,6 +1379,15 @@ quota_df %>%
     values = state_pallet,
     labels = quota_df %>% arrange(order) %>%  pull(state) %>% unique()
     ) +
-  facet_wrap(~level, ncol = 1, scales = "free")
+  facet_grid(level~spp,
+             scales = "free")
 
 ```
+### Efficiency index
+
+```{r}
+
+s
+
+```
+
