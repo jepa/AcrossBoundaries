@@ -631,7 +631,11 @@ lapply(spp,
 
 # Results
 
-This section shows preliminary results for Black sea bass (*Centropristis striata*).
+Results are now for eight species managed under Mid-Atlantic Council Management Plans according to [NOAA](https://www.fisheries.noaa.gov/new-england-mid-atlantic/commercial-fishing/new-england-mid-atlantic-fishery-management-plans).
+
+
+*Scomber scombrus*, *Peprilus triacanthus* (butterfish), *Illex illecebrosus* (shortfin squid), *Paralichthys dentatus* (summer flounder), *Stenotomus chrysops* (Scoop), *Centropristis striata* (black sea bass), *Pomatomus saltatrix* (Bluefish), *Lopholatilus chamaeleonticeps* (Golden tilefish), *Caulolatilus microps* (blueline tilefish) and *Clupea harengus*
+
 
 ```{r load_data, eval = T, echo = T}
 
@@ -655,7 +659,7 @@ Species <- c(
   "Peprilus triacanthus", # butterfish
   "Illex illecebrosus", #shortfin squid
   "Paralichthys dentatus", #summer flounder
-  "Stenotomus chrysops", #Scoop"
+  "Stenotomus chrysops", #Scup"
   "Centropristis striata", # black sea bass
   "Pomatomus saltatrix", # Bluefish
   "Lopholatilus chamaeleonticeps", #golden tilefish
@@ -686,22 +690,17 @@ taxon_read <- paste0(my_path("R",extra_path = "Partial/Interpolation"),taxon_rea
 historic_spp <- bind_rows(lapply(taxon_read, fread)) %>% 
   mutate(state = str_to_sentence(state))
 
-
+unique(historic_spp$spp)
 
 # Spatial data
-
 States <- c("maine", "new hampshire", "massachusetts", "connecticut", "rhode island", "new york", "new jersey", "delaware", "maryland", "virginia", "north carolina") 
 
-
-
 # US State Map (land)
-
 land_sf <- st_as_sf(map("state", plot = FALSE, fill = TRUE)) %>% 
   filter(ID %in% States) %>% 
   mutate(abrev = c("CO","DE","ME","MD","MA","NH","NJ","NY","NC","RI","VI"),
          state = str_to_sentence(ID)
          )
-
 
 # Periods
 periods <-tibble(
@@ -722,12 +721,13 @@ periods <-tibble(
   )
 )
 
+
 state_lat <- historic_spp %>%
   group_by(state) %>% 
   summarise(
     order = mean(lat)
   ) %>% 
-  mutate(abrev = c("CO","DE","ME","MD","MA","NH","NJ","NY","NC","RI","VI")
+  mutate(abrev = c("CT","DE","ME","MD","MA","NH","NJ","NY","NC","RI","VA")
   ) %>% 
   arrange(desc(order)) %>% 
   mutate(order= letters[1:11])
@@ -747,7 +747,6 @@ state_pallet <- c(wes_palette(n = 5, name = "Darjeeling1"),
 # print for notebook
 head(historic_spp)
 ```
-
 
 ## Average proportion
 
@@ -1155,4 +1154,229 @@ ggplot(state_fit) +
 
 ```
 
+## Historic quota Vs distributions
 
+This section of the results explores the differences between the historic distribution of te stock and the historic quota allocation. We collected the proportion of the total quota that each State gets for each species.
+
+Right now the analysis only covers black sea bass, summer flounder and scup. But we can go speceis by species to see which ones have their quota allocated by state to include them in the analysis.
+
+- [Black Sea Bass; *Centropristis striata*](https://www.mafmc.org/newsfeed/2021/asmfc-and-mafmc-approve-bsb-commercial-allocation-changes)
+
+**Note:** We are using the new allocations based on the stock's most recent biomass distribution* 
+
+- [Summer flounder](http://www.asmfc.org/uploads/file/5f9af82a2019SummerFlounderFMP_Review.pdf)
+
+- [Scup](http://www.asmfc.org/uploads/file/5f99d0112019_Scup_FMP_Review_approved.pdf) Summer period
+
+For State-level managed species see the [Atlantic States Marine Fisheries Comission](http://www.asmfc.org/fisheries-management/program-overview) website and go species-by-species.
+
+
+```{r state_quota_tbl,eval= T, echo = T}
+
+quota_allocation <- state_lat %>% 
+  mutate(
+    "Centropristis striata" = c(
+      0.0040, #ME
+      0.0040, #NH
+      0.1564, #MA
+      0.1323, #RI
+      0.0367, #CT
+      0.0857, #NY
+      0.2010, #NJ
+      0.0411, #DE
+      0.0888, #MD
+      0.1614, #VA
+      0.0888 #NC
+    ),
+    "Paralichthys dentatus" = c(
+      0.0004756, #ME 
+      0.0000046, #NH 
+      0.0682046, #MA 
+      0.1568298, #RI 
+      0.0225708, #CT 
+      0.0764699, #NY 
+      0.1672499, #NJ 
+      0.0001779, #DE 
+      0.0203910, #MD
+      0.2131676, #VA
+      0.2744584 #NC
+    ),
+    "Stenotomus chrysops" = c(
+      0.0012101, #ME
+      0.0000000, #HN
+      0.2158729, #MA
+      0.5619456, #RI
+      0.0315399, #CT
+      0.1582466, #NY
+      0.0291667, #NJ
+      0.0000000, #DE
+      0.0001190, #MD
+      0.0016502, #VA
+      0.0002490 #NC
+    )
+  ) %>% 
+  gather("spp","quota",4:6)
+
+# Double check they all add to 1...
+quota_allocation %>% 
+  group_by(spp) %>% 
+  summarise_at(vars(quota),sum)
+
+
+quota_allocation %>% 
+  arrange(order) %>% 
+  select(-order) %>% 
+  spread(spp,quota) %>% 
+  kable()
+```
+
+
+### Prepare data
+
+```{r}
+
+total_fited <- historic_spp %>% 
+  group_by(year,region,spp) %>% 
+  summarise(total_value = sum(value,na.rm=T),.groups = "drop")
+
+# group by state
+state_fit <- historic_spp %>% 
+  group_by(state,year,region,spp) %>% 
+  summarise(state_value = sum(value,na.rm= T), .groups = "drop") %>% 
+  left_join(total_fited,
+            by = c("year","region","spp")) %>%
+  mutate(percentage = state_value/total_value*100) %>% 
+  #Only show results for spring
+  filter(str_detect(region,"Spring"))
+
+quota_df <- quota_allocation %>% 
+  gather("spp","quota",4:6) %>% 
+  left_join(historic_spp) %>% 
+  group_by(state,abrev,year,region,spp,quota) %>% 
+  summarise(state_value = sum(value,na.rm= T), .groups = "drop") %>% 
+  left_join(total_fited,
+            by = c("year","region","spp")) %>%
+  mutate(Distribution = state_value/total_value*100,
+         Historic = quota*100) %>% 
+  group_by(state,quota,spp) %>% 
+  mutate(RMean = zoo::rollmean(x = Distribution, 
+                            10,
+                            fill = NA,
+                            na.rm=T)
+    ) %>% 
+  #Only show results for spring
+  filter(str_detect(region,"Spring"),
+         !is.na(RMean) # Remove NAs from rollmean
+         ) %>%  
+  left_join(state_lat) %>% 
+  filter(
+    # spp =="Centropristis striata"
+    spp %in% quota_allocation$spp
+  )
+
+```
+
+### Difference line plot
+
+This version shows the difference between the Historic quota allocation and the distribution proportion of the stock:
+
+- diff < 0 = the distribution proportion is *larger* than the allocated quota
+- diff > 0 = the distribution proportion is *smaller* than the allocated quota 
+
+```{r}
+# Option one
+
+quota_df %>%
+  mutate(diff = Historic- Distribution,
+         diff_rmean = RMean- Distribution) %>% 
+  gather("type","value",diff:diff_rmean) %>% 
+  # View()
+  ggplot() +
+  geom_line(
+    aes(
+      x = year,
+      y = value,
+      color = order
+    )
+  ) +
+  scale_color_manual("State",
+    values = state_pallet,
+    labels = quota_df %>% arrange(order) %>%  pull(state) %>% unique()
+    ) +
+  facet_wrap(~type, nrow = 2, scales = "free")
+
+```
+### Linetype plot
+
+Here, we plot the distributional quota (solid lines) with each State's allocation with dashed (----) lines
+
+```{r}
+# Option one
+
+quota_df %>% 
+  gather("level","quota",Distribution:RMean) %>% 
+  filter(
+    spp =="Centropristis striata"
+  ) %>% 
+  # mutate(diff = quota_per- percentage) %>% 
+  # View()
+  ggplot() +
+  geom_line(
+    aes(
+      x = year,
+      y = quota,
+      color = order
+    )
+  ) +
+  labs(x = "Year",y = "Quota (%)") +
+  scale_fill_manual("State",
+    values = state_pallet,
+    labels = quota_df %>% arrange(order) %>%  pull(state) %>% unique()
+    ) +
+  scale_color_manual("State",
+    values = state_pallet,
+    labels = quota_df %>% arrange(order) %>%  pull(state) %>% unique()
+    ) +
+  scale_linetype("Quota") +
+  facet_wrap(~level)
+
+```
+### Efficiency index
+
+The idea here is create and *efficiency index* (Danger!) that computes the alignment between the distribution and the actual allocation. The index is simply;
+
+$$ei = \frac{HistoricQuota}{DistributionProportion}$$ 
+So, in cases qhere *ei* = 1, the quota is aligned with the distribution; when *ei* > 1 then the historic quota is more than the stock's State's distribution, contrarily, *ei* < 1 means that the historic quota is less than what the State currently has.
+
+```{r}
+# Option one
+
+quota_df %>% 
+  filter(
+    spp =="Centropristis striata"
+  ) %>% 
+  mutate(index = Historic/Distribution,
+         index_rmean = Historic/RMean) %>%
+  gather("level","index",index:index_rmean) %>%
+  filter(index < 5) %>% 
+  # View()
+  ggplot() +
+  geom_line(
+    aes(
+      x = year,
+      y = index,
+      color = state
+    ),
+  ) +
+  labs(x = "Year",y = "Efficiency index") +
+  scale_fill_manual("State",
+    values = state_pallet,
+    labels = quota_df %>% arrange(order) %>%  pull(state) %>% unique()
+    ) +
+  scale_color_manual("State",
+    values = state_pallet,
+    labels = quota_df %>% arrange(order) %>%  pull(state) %>% unique()
+    ) +
+  facet_wrap(~level, ncol = 1, scales = "free")
+
+```
