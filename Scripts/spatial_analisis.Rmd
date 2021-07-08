@@ -824,10 +824,60 @@ Here we show the average proportion of the interpolation by State and time perio
 
 *Notes:* Figure represents the **Spring** survey. This computation considers the Overlapping of state waters.
 
+### Dynamic figure: Aggregated Proportional change per survey
+
+```{r area_map_aggregated, eval = T, echo = T, fig.width = 10, fig.height=6}
+
+total_fited <- historic_spp %>% 
+  group_by(year,region) %>% 
+  summarise(total_value = sum(value,na.rm=T),.groups = "drop")
+
+
+state_fit <- historic_spp %>% 
+  group_by(state,year,region) %>% 
+  summarise(state_value = sum(value,na.rm= T), .groups = "drop") %>% 
+  left_join(total_fited,
+            by = c("year","region")) %>%
+  mutate(percentage = state_value/total_value*100) %>% 
+  left_join(periods,
+            by = "year") %>% 
+  group_by(state,order,label,region) %>% 
+  summarise(mean_per = round(mean(percentage)),.groups = "drop")
+
+# check percentages
+# state_fit %>% 
+#   group_by(period) %>% 
+#   summarise(sum(mean_per))
+
+
+p <- land_sf %>% 
+  left_join(state_fit,
+            by = "state") %>% 
+  ggplot() +
+  # geom_sf(aes(fill = mean_per)) +
+  geom_sf(aes(fill = mean_per, text = paste(state, mean_per,"% of proportion"))) +
+  viridis::scale_fill_viridis("Average proportion per State", alpha = 0.8) +
+  facet_wrap(~ region + label, 
+             nrow = 2) +
+  labs(x = "Latitude", 
+       y = "Longitude") +
+  my_ggtheme_p(facet_tx_s = 12,
+               leg_pos = "bottom") +
+  theme(legend.key.width = unit(1,"line")) +
+  theme_dark()
+
+ggplotly(p,
+         tooltip = "text",
+         dynamicTicks = FALSE) %>% 
+    style(hoverlabel = list(bgcolor = "white"), hoveron = "fill")
+
+
+```
+
 
 ### Paper figure; Per species maps
 
-```{r paper_figure_area_map, eval = F, echo = F, results='hide'}
+```{r paper_figure_area_map, eval = F, echo = T, results='hide'}
 
 total_fited <- historic_spp %>% 
   group_by(year,region,spp) %>% 
@@ -881,7 +931,7 @@ map_plot <- land_sf %>%
 ![Proportion change per species map for paper](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/proportion_chg_spp.jpg)
 
 
-### Aggregated Proportional change
+### Paper figure: Aggregated Proportional change
 
 ```{r area_map_aggregated_formans, eval = T, echo = T, fig.width = 10, fig.height=6}
 
@@ -903,7 +953,7 @@ state_fit <- historic_spp %>%
   filter(str_detect(region,"Spring"))
 
 
-land_sf %>% 
+agg_map <- land_sf %>% 
   left_join(state_fit,
             by = "state") %>% 
   ggplot() +
@@ -917,9 +967,10 @@ land_sf %>%
                leg_tl_s = 14,
                ax_tx_s = 10,
                ax_tl_s = 14) +
-  theme(legend.key.width = unit(2,"line")) +
+  theme(legend.key.width = unit(2,"line")) 
+
   ggsave(filename = "proportion_chg_agg.jpg",
-         plot = ggplot2::last_plot(),
+         plot = agg_map,
          path = my_path("R","Figures"),
          width = 9,
          height = 5
@@ -927,52 +978,8 @@ land_sf %>%
 
 ```
 
-```{r area_map_aggregated, eval = T, echo = T, fig.width = 10, fig.height=6}
+![Proportion change aggregated all species map for paper](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/proportion_chg_agg.jpg)
 
-total_fited <- historic_spp %>% 
-  group_by(year,region) %>% 
-  summarise(total_value = sum(value,na.rm=T),.groups = "drop")
-
-
-state_fit <- historic_spp %>% 
-  group_by(state,year,region) %>% 
-  summarise(state_value = sum(value,na.rm= T), .groups = "drop") %>% 
-  left_join(total_fited,
-            by = c("year","region")) %>%
-  mutate(percentage = state_value/total_value*100) %>% 
-  left_join(periods,
-            by = "year") %>% 
-  group_by(state,order,label,region) %>% 
-  summarise(mean_per = round(mean(percentage)),.groups = "drop")
-
-# check percentages
-# state_fit %>% 
-#   group_by(period) %>% 
-#   summarise(sum(mean_per))
-
-
-p <- land_sf %>% 
-  left_join(state_fit,
-            by = "state") %>% 
-  ggplot() +
-  # geom_sf(aes(fill = mean_per)) +
-  geom_sf(aes(fill = mean_per, text = paste(state, mean_per,"% of proportion"))) +
-  viridis::scale_fill_viridis("Average proportion per State", alpha = 0.8) +
-  facet_wrap(~ region + label, 
-             nrow = 2) +
-  labs(x = "Latitude", 
-       y = "Longitude") +
-  my_ggtheme_p(facet_tx_s = 12,
-               leg_pos = "bottom") +
-  theme(legend.key.width = unit(1,"line"))
-
-ggplotly(p,
-         tooltip = "text",
-         dynamicTicks = FALSE) %>% 
-    style(hoverlabel = list(bgcolor = "white"), hoveron = "fill")
-
-
-```
 
 ## Area plot
 
@@ -1013,7 +1020,8 @@ p <- ggplot(state_fit) +
   # viridis::scale_fill_viridis(discrete = T, alpha = 0.8) +
   scale_fill_manual(values = state_pallet) +
   MyFunctions::my_ggtheme_p() +
-  facet_wrap(~region, ncol = 1)
+  facet_wrap(~region, ncol = 1) +
+  theme_dark()
 
 ggplotly(p,
          dynamicTicks = TRUE) %>% 
@@ -1064,7 +1072,8 @@ p <- ggplot(state_fit) +
     # labels = state_fit %>% arrange(order) %>%  pull(state) %>% unique()
   ) +
   MyFunctions::my_ggtheme_p() +
-  facet_wrap(~region, ncol = 1)
+  facet_wrap(~region, ncol = 1) +
+  theme_dark()
 
 suppressWarnings(
 ggplotly(p,
@@ -1076,7 +1085,7 @@ ggplotly(p,
 
 ```
 
-### Aggregated Proportional change
+### Paper figure: Aggregated Proportional change
 
 ```{r plot_area_ave_agg, eval = F, echo = F, results='hide'}
 
@@ -1105,7 +1114,7 @@ state_fit <- historic_spp %>%
   left_join(state_lat)
 
 # Plot me
-ggplot(state_fit) +
+agg_area <- ggplot(state_fit) +
   geom_area(
     aes(
       x = year,
@@ -1122,9 +1131,11 @@ ggplot(state_fit) +
     labels = state_fit %>% arrange(order) %>%  pull(state) %>% unique()
   ) +
   my_ggtheme_p(leg_pos = "right") +
-  theme(legend.key.width = unit(1,"line")) + 
+  theme(legend.key.width = unit(1,"line"))
+
+
   ggsave(filename = "area_plot_avg_agg.jpg",
-         plot = ggplot2::last_plot(),
+         plot = agg_area,
          path = my_path("R","Figures"),
          width = 8,
          height = 6
@@ -1133,8 +1144,9 @@ ggplot(state_fit) +
 
 ```
 
+![Proportion change aggregated all species map for paper](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/area_plot_avg_agg.jpg)
 
-### Per Species Proportional change
+### Paper figure: Per Species Proportional change
 
 ```{r paper_plot_area_ave_spp, eval = F, echo = F, results='hide'}
 
@@ -1163,7 +1175,7 @@ state_fit <- historic_spp %>%
   left_join(state_lat)
 
 # Plot me
-ggplot(state_fit) +
+ssp_area <- ggplot(state_fit) +
   geom_area(
     aes(
       x = year,
@@ -1179,11 +1191,13 @@ ggplot(state_fit) +
     values = state_pallet,
     labels = state_fit %>% arrange(order) %>%  pull(state) %>% unique()
   ) +
-  my_ggtheme_p(leg_pos = "right") +
+  my_ggtheme_p(leg_pos = "bottom") +
   theme(legend.key.width = unit(1,"line")) + 
-  facet_wrap(~spp, ncol = 1, strip.position = "right") +
+  facet_wrap(~spp, ncol = 1, strip.position = "right")
+
+
   ggsave(filename = "area_plot_avg_spp.jpg",
-         plot = ggplot2::last_plot(),
+         plot = ssp_area,
          path = my_path("R","Figures"),
          width = 10,
          height = 12
@@ -1191,6 +1205,7 @@ ggplot(state_fit) +
 
 
 ```
+![Proportion change aggregated all species map for paper](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/area_plot_avg_spp.jpg)
 
 ## Historic quota Vs distributions
 
@@ -1269,7 +1284,7 @@ quota_allocation %>%
 ```
 
 
-### Prepare data
+### Get data ready
 
 ```{r}
 
@@ -1315,7 +1330,9 @@ head(quota_df) %>%
   kable()
 ```
 
-### Difference line plot
+### Exploring different ways to show the results
+
+#### Difference line plot
 
 This version shows the difference between the Historic quota allocation and the distribution proportion of the stock:
 
@@ -1343,10 +1360,11 @@ quota_df %>%
     labels = quota_df %>% arrange(order) %>%  pull(state) %>% unique()
     ) +
   facet_grid(type~spp, 
-             scales = "free")
+             scales = "free") +
+  theme_dark()
 
 ```
-### Linetype plot
+#### Linetype plot
 
 Here, we plot the distributional quota (solid lines) with each State's allocation with dashed (----) lines
 
@@ -1375,32 +1393,38 @@ quota_df %>%
     labels = quota_df %>% arrange(order) %>%  pull(state) %>% unique()
     ) +
   scale_linetype("Quota") +
-  facet_grid(spp ~ level)
+  facet_grid(spp ~ level)+
+  theme_dark()
 
 ```
-### Efficiency index
+#### Efficiency index
 
 The idea here is create and *efficiency index* (Danger!) that computes the alignment between the distribution and the actual allocation. The index is simply;
 
 $$ei = \frac{HistoricQuota}{DistributionProportion}$$ 
-So, in cases qhere *ei* = 1, the quota is aligned with the distribution; when *ei* > 1 then the historic quota is more than the stock's State's distribution, contrarily, *ei* < 1 means that the historic quota is less than what the State currently has.
+So, in cases where *ei* = 1, the quota is aligned with the distribution; when *ei* > 1 then the historic quota is more than the stock's State's distribution, contrarily, *ei* < 1 means that the historic quota is less than what the State currently has.
 
 
-**Note:** There are some crazzy outliers that have been removed, for now... 
+**Note:** 
+- There are some crazzy outliers that have been removed, for now... 
+- Bottom plot representing index as a Rmean
+
+##### As a normal year to year
 
 ```{r}
 # Option one
 
-quota_df %>% 
+eff_index <- quota_df %>% 
   # filter(
   #   spp =="Centropristis striata"
   # ) %>% 
   mutate(index = Distribution/Historic,
          index_rmean = RMean/Historic) %>%
   gather("level","index",index:index_rmean) %>%
-  filter(index < 5) %>% # there are some craaaazy outliers
+  filter(index < 5) # there are some craaaazy outliers
   # View()
-  ggplot() +
+  
+ggplot(eff_index) +
   geom_line(
     aes(
       x = year,
@@ -1418,15 +1442,7 @@ quota_df %>%
     labels = quota_df %>% arrange(order) %>%  pull(state) %>% unique()
     ) +
   facet_grid(level~spp,
-             scales = "free")
+             scales = "free")+
+  theme_dark()
 
 ```
-### Efficiency index
-
-```{r}
-
-
-
-
-```
-
