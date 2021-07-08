@@ -16,7 +16,7 @@ output:
 
 ```{r setup, include=FALSE}
 library(MyFunctions)
-MyFunctions::my_lib(c("ggmap","sf","tidyverse","tools","readr","data.table","maps","viridis","wesanderson","knitr","kableExtra","plotly","ggrepel","ggsflabel"))
+MyFunctions::my_lib(c("ggmap","sf","st","tidyverse","tools","readr","data.table","maps","viridis","wesanderson","knitr","kableExtra","plotly","ggrepel","ggsflabel","janitor","interp","rnaturalearth"))
 ```
 
 # Methods
@@ -52,23 +52,26 @@ land_sf <- st_as_sf(map("state", plot = FALSE, fill = TRUE)) %>%
 
 # US EEZ map
 
-# path_world <- MyFunctions::my_path("G", extra_path = "Spatial/SAU/SAU_Shapefile")
-path_world <- "~/Downloads/SAU_Shapefile"
+# path_world <- my_path("G", extra_path = "Spatial/SAU/SAU_Shapefile")
+path_world <- "~/OneDrive - UW-Madison/Spatial_data/World_EEZ_v11_20191118/"
 
 # The File
-fnam_world <- "SAUEEZ_July2015.shp"
+fnam_world <- "eez_boundaries_v11.shp"
 
 # Load it!
-eez_sf <- st_read(dsn = path_world,
-                        layer =file_path_sans_ext(fnam_world)) %>% 
-  rename(eez_name = Name) %>% 
-  st_transform(crs = 4326) %>% # 4326
-  st_simplify(preserveTopology = TRUE, dTolerance = 10000) %>% #0.1 for paper
-  filter(eez_name == "USA (East Coast)")
 
+eez_sf <- st_read(dsn = path_world,
+                        layer =file_path_sans_ext(fnam_world)) %>%
+  # rename(eez_name = Name) %>%
+  # st_transform(crs = 4326) %>% # 4326
+  filter(TERRITORY1 == "United States",
+         LENGTH_KM == 2734) #%>%
+  # filter(str_detect(EEZ1, "United States")) %>%
+  # st_simplify(preserveTopology = TRUE, dTolerance = 0.1) #0.1 for paper
 
 # ggplot(eez_sf) +
-# geom_sf(aes(),fill =NA)
+  # geom_sf()
+
 
 # ggplot() +
 #   geom_sf(data = World_eez_sf, aes(), color = "red") +
@@ -78,7 +81,7 @@ eez_sf <- st_read(dsn = path_world,
 # https://catalog.data.gov/dataset/federal-and-state-waters
 
 # us_state_w <- rgdal::readOGR(dsn = "~/Downloads/FederalAndStateWaters/FederalAndStateWaters.gdb")
-state_sf <-  st_read("~/Downloads/FederalAndStateWaters/FederalAndStateWaters.gdb") %>%
+state_sf <-  st_read("~/OneDrive - UW-Madison/Spatial_Data/USFedAndStateW/FederalAndStateWaters.gdb") %>%
   janitor::clean_names() %>% 
   mutate(jurisdicti = str_to_lower(jurisdicti)) %>% 
   filter(jurisdicti %in% States) %>% 
@@ -97,6 +100,13 @@ state_pallet <- c(wes_palette(n = 5, name = "Darjeeling1"),
                   )
 
 unique(land_sf$ID)
+
+
+ggplot() +
+  geom_sf(data = eez_sf, aes()) +
+  geom_sf(data = state_sf, aes(color = state), fill = NA) +
+  scale_color_manual(values = state_pallet)+
+  theme_dark()
 
 ```
 
@@ -127,9 +137,11 @@ state_bf = st_buffer(state_sf, 410000) %>%
 # ------------------------------ #
 
 state_bf_plot <- ggplot() +
+  geom_sf(data = state_sf, aes(color = state), fill = NA) +
   geom_sf(data = eez_sf, aes(), fill = NA) +
   geom_sf(data = state_bf, aes(color = state), fill = NA) +
-  scale_color_manual(values = state_pallet)
+  scale_color_manual(values = state_pallet)+
+  theme_dark()
 #   
 
 # ggsave("../Results/Partial/state_waters_buffer.png",state_bf_plot)
@@ -166,7 +178,7 @@ ne_grid <- expand.grid(
 state_sf %>%
   st_transform(4326) %>% # to match shape
   st_set_crs(4326) %>%
-  st_simplify(preserveTopology = TRUE, dTolerance = 10000) %>%
+  # st_simplify(preserveTopology = TRUE, dTolerance = 10000) %>%
   ggplot() +
   geom_sf(aes(color = state))+
   # geom_sf(data = eez_sf, aes(),fill =NA) +
@@ -179,7 +191,8 @@ state_sf %>%
             alpha = 0.2
   ) +
   scale_color_manual(values = state_pallet) +
-  theme_bw()
+  theme_bw()+
+  theme_dark()
 
 
 ```
@@ -215,17 +228,20 @@ grid_bf_dt <- as.data.frame(grid_sf) %>%
 gridExtra::grid.arrange(
   # Overall (overlapping) position
   ggplot(grid_sf) +
+    geom_sf(data = state_sf, aes(), fill = NA) +
     geom_sf(aes(color = state), alpha = 0.3) +
     geom_sf(data = eez_sf, aes(),fill =NA) + 
     scale_color_manual(values = state_pallet) +
+    theme_dark() +
     theme(legend.position = ""),
   # Showing each state separatley
   ggplot() +
     geom_sf(data = grid_sf, aes(color = state),size = 0.1, alpha = 0.5) +
     facet_wrap(~state) +
+    theme_dark() +
     theme(legend.position = "top") +
     scale_color_manual(values = state_pallet),
-  nrow = 1)
+  nrow = 1) 
 
 ```
 
@@ -238,11 +254,21 @@ Finally, we crop the grided buffers to within the EEZ to capture the actual wate
 ```{r buff_to_eez, eval =T, echo = T, message = F, warning = F}
 
 # I don't know how to undo st_simplify so need to re-load the shapefile
-eez_sf <- st_read(dsn = path_world,
-                        layer =file_path_sans_ext(fnam_world)) %>% 
+
+eez_sf <- st_read(my_path("G", extra_path = "Spatial/SAU/SAU_Shapefile", name = "SAUEEZ_July2015.shp")) %>% 
   rename(eez_name = Name) %>% 
   st_transform(crs = 4326) %>% # 4326
   filter(eez_name == "USA (East Coast)") 
+
+
+eez_sf <- st_read("/Volumes/Enterprise/Data/Spatial/World_EEZ_v11_20191118/eez_v11.shp") %>%
+  # rename(eez_name = Name) %>%
+  # st_transform(crs = 4326) %>% # 4326
+  filter(TERRITORY1 == "United States") %>% 
+  st_crop(xmin = -85, xmax = -60, ymin = 30, ymax = 50)
+
+# ggplot(eez_sf) +
+#   geom_sf()
 
 # Get the overlapping segments 
 # NOTE: Takes some gooooood time
@@ -258,17 +284,19 @@ grid_eez_df <- as.data.frame(grid_eez_sf) %>%
 
 # write_csv(grid_eez_df, paste0(my_path("R", "Partial"),"grid_eez_df.csv"))
 
-# Plot to make sure makes sense (Picasso syle)
+# Plot to make sure makes sense
 grid_eez_sf %>%
-  st_simplify(preserveTopology = TRUE, dTolerance = 10000) %>% #0.1 for paper
   ggplot() +
   geom_sf(aes(color = state), alpha = 0.3) +
-  scale_color_manual(values = state_pallet)
+  scale_color_manual(values = state_pallet) +
+  geom_sf(data = eez_sf,aes(), fill = NA) +
+  theme_dark()
 
 ```
 
+##### 3.1 Paper figure; buffer plot
 
-```{r cropped_plot_paper}
+```{r cropped_plot_paper, eval = F, echo = T}
 
 
 plot_data <-grid_eez_sf %>% 
@@ -319,6 +347,9 @@ p <- gridExtra::grid.arrange(
          )
 
 ```
+
+![Buffer figure for paper](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/buffer_figure.jpg)
+
 
 
 
@@ -1387,7 +1418,8 @@ quota_df %>%
 
 ```{r}
 
-s
+
+
 
 ```
 
