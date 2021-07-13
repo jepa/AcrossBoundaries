@@ -13,7 +13,7 @@
 
 # Get functions and shapefiles
 library(MyFunctions)
-MyFunctions::my_lib(c("ggmap","sf","tidyverse","tools","readr","data.table","maps","shiny","DT","plotly","wesanderson"))
+MyFunctions::my_lib(c("ggmap","sf","tidyverse","tools","readr","data.table","maps","shiny","DT","plotly","wesanderson","zoo"))
 
 us_map <- st_as_sf(map("state", plot = FALSE, fill = TRUE))
 
@@ -259,6 +259,7 @@ shinyServer(function(input, output) {
             species <- input$SppSelection #"Gadus morhua"
             survey <- input$SurveySelection #"Northeast US Fall"
             years <- seq(input$YearSelection[1],input$YearSelection[2],1) #seq(1971,2019,1)
+            # rmena_value <- ifelse(input$Rmean == 0,)
          
         
         total_fited <- tif_data() %>% 
@@ -276,13 +277,18 @@ shinyServer(function(input, output) {
             left_join(total_fited,
                       by = c("year","region")) %>%
             mutate(percentage = state_value/total_value*100) %>% 
-            group_by(state,region)
+            group_by(state,region) %>% 
+            mutate(RMean = zoo::rollmean(x = percentage,
+                                         input$Rmean,
+                                         fill = NA,
+                                         na.rm=T)
+            )
         
         p <- ggplot(state_fit) +
             geom_area(
                 aes(
                     x = year,
-                    y = round(percentage),
+                    y = round(RMean),
                     fill = state
                 )
             ) +

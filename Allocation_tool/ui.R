@@ -193,11 +193,17 @@ shinyUI(
                                                                "Allocation Area" = 4
                                                                ),
                                                            selected = 1
-                                        )
-                                    ),
+                                        ),
+                                    #Set RMean
+                                    sliderInput(inputId = "Rmean",
+                                                label = "Running average for allocation area",
+                                                min = 1,
+                                                max = 20,
+                                                value = 1)
+                                    ), # Close side panel
                                     # Show a plot of the generated distribution
                                     mainPanel(
-                                        # Cndition between plot and plotly
+                                        # Condition between plot and plotly
                                         conditionalPanel(
                                             condition = "input.PlotStyle != 4",
                                         plotOutput("distPlot")
