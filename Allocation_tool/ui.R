@@ -8,7 +8,7 @@
 #
 
 # Load libraries and data
-MyFunctions::my_lib(c("ggmap","sf","tidyverse","tools","readr","data.table","maps","shiny","plotly"))
+MyFunctions::my_lib(c("ggmap","sf","tidyverse","tools","readr","data.table","maps","shiny","plotly","formattable"))
 
 spp_survey <- read.csv("./data/spp_region.csv") %>% 
     filter(
@@ -218,8 +218,8 @@ shinyUI(
                                 br(),
                                 conditionalPanel(
                                     condition = "input.PlotStyle == 4",
-                                    p(h3(strong("Quota allocation table"))),
-                                    dataTableOutput("Allocation_tbl")
+                                    p(h3(strong("Proportion distribution across states"))),
+                                    formattableOutput("Allocation_tbl")
                                 ),
                                 # ----------- #
                                 # Instructions

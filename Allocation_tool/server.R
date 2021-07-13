@@ -13,7 +13,7 @@
 
 # Get functions and shapefiles
 library(MyFunctions)
-MyFunctions::my_lib(c("ggmap","sf","tidyverse","tools","readr","data.table","maps","shiny","DT","plotly","wesanderson","zoo"))
+MyFunctions::my_lib(c("ggmap","sf","tidyverse","tools","readr","data.table","maps","shiny","DT","plotly","wesanderson","zoo","formattable"))
 
 us_map <- st_as_sf(map("state", plot = FALSE, fill = TRUE))
 
@@ -55,7 +55,7 @@ shinyServer(function(input, output) {
         name <- paste0("tif_",str_replace(input$SppSelection," ","_"),".csv")
         
         data <- my_path("R","Partial/Interpolation",name = name, read = T)
-
+        
     })
     
     
@@ -260,102 +260,108 @@ shinyServer(function(input, output) {
             survey <- input$SurveySelection #"Northeast US Fall"
             years <- seq(input$YearSelection[1],input$YearSelection[2],1) #seq(1971,2019,1)
             # rmena_value <- ifelse(input$Rmean == 0,)
-         
-        
-        total_fited <- tif_data() %>% 
+            
+            
+            total_fited <- tif_data() %>% 
                 filter(spp %in% species,
                        region %in% survey,
                        year %in% years
-                       ) %>% 
-            group_by(year,region) %>% 
-            summarise(total_value = sum(value,na.rm=T), .groups = "drop")
-        
-        # group by state
-        state_fit <- tif_data() %>% 
-            group_by(state,year,region) %>% 
-            summarise(state_value = sum(value,na.rm= T), .groups = "drop") %>% 
-            left_join(total_fited,
-                      by = c("year","region")) %>%
-            mutate(percentage = state_value/total_value*100) %>% 
-            group_by(state,region) %>% 
-            mutate(RMean = zoo::rollmean(x = percentage,
-                                         input$Rmean,
-                                         fill = NA,
-                                         na.rm=T)
-            )
-        
-        p <- ggplot(state_fit) +
-            geom_area(
-                aes(
-                    x = year,
-                    y = round(RMean),
-                    fill = state
+                ) %>% 
+                group_by(year,region) %>% 
+                summarise(total_value = sum(value,na.rm=T), .groups = "drop")
+            
+            # group by state
+            state_fit <- tif_data() %>% 
+                group_by(state,year,region) %>% 
+                summarise(state_value = sum(value,na.rm= T), .groups = "drop") %>% 
+                left_join(total_fited,
+                          by = c("year","region")) %>%
+                mutate(percentage = state_value/total_value*100) %>% 
+                group_by(state,region) %>% 
+                mutate(RMean = zoo::rollmean(x = percentage,
+                                             input$Rmean,
+                                             fill = NA,
+                                             na.rm=T)
                 )
-            ) +
-            ylab("Percentage (%)") +
-            scale_fill_manual(values = state_pallet) +
-            MyFunctions::my_ggtheme_p() +
-            theme(legend.position = "top") #+
+            
+            p <- ggplot(state_fit) +
+                geom_area(
+                    aes(
+                        x = year,
+                        y = round(RMean),
+                        fill = state
+                    )
+                ) +
+                ylab("Percentage (%)") +
+                scale_fill_manual(values = state_pallet) +
+                MyFunctions::my_ggtheme_p() +
+                theme(legend.position = "top") #+
             # facet_wrap(~region, ncol = 1)
-        
-        ggplotly(p,
-                 dynamicTicks = TRUE,
-                 height = 600) %>% 
-            layout(hovermode = "x") %>% 
-            # add_trace() %>% 
-            rangeslider()
+            
+            ggplotly(p,
+                     dynamicTicks = TRUE,
+                     height = 600) %>% 
+                layout(hovermode = "x") %>% 
+                # add_trace() %>% 
+                rangeslider()
         }
     })
-        
+    
     
     # ---------------------------- #
     # Allocation Table ####
     # ---------------------------- #
-    output$Allocation_tbl <- renderDataTable({
+    # output$Allocation_tbl <- renderDataTable({
+    output$Allocation_tbl <- renderFormattable({
         
         if(input$PlotStyle == 4){
-
-        species <- input$SppSelection
-        survey <- input$SurveySelection
-        years <- input$YearSelection
-
-        # Set the plot data
-        total_fited <- tif_data() %>%
-        filter(#spp %in% species,
-               region %in% survey,
-               #year %in% years
-        ) %>% 
-        group_by(year,region) %>%
-            summarise(total_value = sum(value,na.rm=T), .groups = "drop")
-
-        # group by state
-        state_fit <- tif_data() %>%
-            filter(#spp %in% species,
-                region %in% survey,
-                #year %in% years
+            
+            species <- input$SppSelection
+            survey <- input$SurveySelection
+            years <- input$YearSelection
+            
+            # Set the plot data
+            total_fited <- tif_data() %>%
+                filter(#spp %in% species,
+                    region %in% survey,
+                    #year %in% years
                 ) %>% 
-            group_by(state,year,region) %>%
-            summarise(state_value = sum(value,na.rm= T), .groups = "drop") %>%
-            left_join(total_fited,
-                      by = c("year","region")) %>%
-            mutate(percentage = round(state_value/total_value*100)) %>%
-            group_by(state,region) %>%
-            filter(year %in% c(seq(1973,1977,1),seq(2015,2019,1))) %>%
-            ungroup() %>% 
-            select(state,year,percentage) %>% 
-            spread(year,percentage)
-
-        # Print data table
-        datatable(state_fit,
-                  rownames = FALSE,
-                  filter = 'top',
-                  escape = FALSE,
-                  options = list(pageLength = 12,
-                                 autoWidth = TRUE,
-                                 lengthMenu = c(10, 15, 20, 50)
-                  )
-        )
+                group_by(year,region) %>%
+                summarise(total_value = sum(value,na.rm=T), .groups = "drop")
+            
+            # group by state
+            state_fit <- tif_data() %>%
+                filter(#spp %in% species,
+                    region %in% survey,
+                    #year %in% years
+                ) %>% 
+                group_by(state,year,region) %>%
+                summarise(state_value = sum(value,na.rm= T), .groups = "drop") %>%
+                left_join(total_fited,
+                          by = c("year","region")) %>%
+                mutate(percentage = round(state_value/total_value*100)) %>%
+                group_by(state,region) %>%
+                filter(year %in% c(seq(1973,1977,1),seq(2014,2019,1))) %>%
+                ungroup() %>% 
+                select(state,year,percentage) %>% 
+                spread(year,percentage) %>% 
+                mutate(
+                    State = str_to_sentence(state),
+                    Change = ifelse(`2019` > `1973`,"Increase","Decrease")
+                ) %>% 
+                select(State,everything(),-state)
+            
+            #Print formattable
+            formattable(state_fit, 
+                        align =c("l",rep("c",10),"r"),
+                        list(
+                            area(col = c(`1973`: `2019`)) ~ normalize_bar("pink", 0.2),
+                            Change = formatter("span", 
+                                               x ~ icontext(ifelse(x == "Increase", "arrow-up", "arrow-down"), ifelse(x == "Increase", "Increase", "Decrease")), 
+                                               style = x ~ style(color = ifelse(x == "Increase", "green", "red")))
+                        )
+            ) # close formattable
         }
     })
-#     
+    #     
 }) # app closure
