@@ -187,10 +187,11 @@ shinyUI(
                                         checkboxGroupInput(inputId = "PlotStyle",
                                                            label = "Select Result",
                                                            choices = c(
-                                                               "Latitudinal Shift" = 1,
-                                                               "Survey Point" = 2, 
-                                                               "Distribution Map" = 3,
-                                                               "Allocation Area" = 4
+                                                               "Latitudinal Shift (P)" = 1,
+                                                               "Survey Points (P)" = 2, 
+                                                               "Distribution (M)" = 3,
+                                                               "Proportion change (M)" = 5,
+                                                               "Allocation Area (P)" = 4
                                                                ),
                                                            selected = 1
                                         ),
