@@ -191,6 +191,7 @@ shinyUI(
                                                                "Survey Points (P)" = 2, 
                                                                "Distribution (M)" = 3,
                                                                "Proportion change (M)" = 5,
+                                                               "Proportion change (Mp)" = 6,
                                                                "Allocation Area (P)" = 4
                                                                ),
                                                            selected = 1
@@ -210,7 +211,7 @@ shinyUI(
                                         plotOutput("distPlot")
                                         ),
                                         conditionalPanel(
-                                            condition = "input.PlotStyle == 4",
+                                            condition = "input.PlotStyle %in% c(4,6)",
                                             plotlyOutput("areaPlot")
                                         )
                                     )
