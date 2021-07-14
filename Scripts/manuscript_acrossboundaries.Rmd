@@ -1,0 +1,34 @@
+---
+title: "Challenges on quantifying fish range shifts across management boundaries"
+subtitle: "*target journal* PlosOne"
+output: word_document
+---
+
+
+<!-- # Journals -->
+<!-- Ecography, ecology oriented -->
+<!-- -	Conservation biology, -->
+<!-- -	Fisheries journals; Fisheries -->
+
+<!-- # Extra Ideas… -->
+
+<!-- - Expanding from US to international -->
+<!-- - Fishing communities and processing plans are fixed in time and space (e.g., Salmon in Canada, Peruvian anchoveta) -->
+
+
+
+# Introduction
+
+Fish range shifts have been occurring rapidly.  
+
+When harvested species shift across management boundaries, there can be a growing disconnect between the management jurisdictions in which fish are found and the management jurisdictions which hold harvest rights.  
+
+While the problem is increasingly well known, quantifying it is difficult for two reasons: (1) management jurisdiction in the ocean is often ill-defined, especially at the subnational level or beyond exclusive economic zones, and (2) quantifying fish distributions in relation to these boundaries is difficult, even where fishery-independent surveys exist, because of seasonal and interannual variation.
+
+Here we examine both of these challenges using fish distributions relative to states in the Northeast U.S. as an example.
+
+# Results
+-	Two boundaries methods
+-	Two surveys 
+
+
