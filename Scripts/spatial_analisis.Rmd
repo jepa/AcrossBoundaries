@@ -16,7 +16,18 @@ output:
 
 ```{r setup, include=FALSE}
 library(MyFunctions)
-MyFunctions::my_lib(c("ggmap","sf","st","tidyverse","tools","readr","data.table","maps","viridis","wesanderson","knitr","kableExtra","plotly","ggrepel","ggsflabel","janitor","interp","rnaturalearth"))
+MyFunctions::my_lib(c("ggmap","sf","st","tidyverse","tools","readr","data.table","maps","viridis","wesanderson","knitr","kableExtra","plotly","ggrepel","ggsflabel","janitor","interp","rnaturalearth","readxl"))
+
+# Fix new updats of sf package
+sf::sf_use_s2(use_s2 = FALSE)
+
+
+# Create specific state pallet from our friend Wes Andersson
+state_pallet <- c(wes_palette(n = 5, name = "Darjeeling1"),
+                               wes_palette(n = 5, name = "Darjeeling2"),
+                               wes_palette(n = 3, name = "Royal1")
+                  )
+
 ```
 
 # Methods
@@ -27,85 +38,143 @@ MyFunctions::my_lib(c("ggmap","sf","st","tidyverse","tools","readr","data.table"
 
 #### Maps data
 
-We use three different shapefiles for the continental U.S. land mass, the State waters of maine, new hampshire, massachusets, connecticut, rhode island, new york, new jersey, delaware, maryland, virginia, north carolina and the North East EEZ.
+We use three different shapefiles for the continental U.S. land mass, the State waters of maine, new hampshire, massachusets, connecticut, rhode island, new york, new jersey, delaware, maryland, virginia, north carolina and the North East EEZ. Moreover, we use the NOAA dataset of landings per port.
 
-1.- **Land shapefile;** covers the US land territory for visualization. Data provided from the `map` package.
+##### 1.- Land shapefile
 
-2.- **State waters;** covers the state waters of the NE US states. Data from [data.gov](https://catalog.data.gov/dataset/federal-and-state-waters).  
+Covers the US land territory for visualization. Data provided from the `map` package.
 
-*License: No license information was provided. If this work was prepared by an officer or employee of the United States government as part of that person's official duties it is considered a U.S. Government Work.*
 
-3.- **EEZ shapefile;** Used the *Sea Around Us* shapefle updated to June 2016.
-
-```{r maps_sf, eval = T, echo = T, results = 'hide'}
+```{r land_sf, eval = T, echo = T, results = 'hide'}
 
 States <- c("maine", "new hampshire", "massachusetts", "connecticut", "rhode island", "new york", "new jersey", "delaware", "maryland", "virginia", "north carolina") 
 
+# -------------- #
 # US State Map (land)
+# -------------- #
 
 land_sf <- st_as_sf(map("state", plot = FALSE, fill = TRUE)) %>% 
   filter(ID %in% States) %>% 
-  mutate(abrev = c("CO","DE","ME","MD","MA","NH","NJ","NY","NC","RI","VI"))
+  mutate(abrev = c("CO","DE","ME","MD","MA","NH","NJ","NY","NC","RI","VI"),
+         state = str_to_sentence(ID)
+         )
 
-# ggplot(us_map) +
-  # geom_sf()
+# Visual exploration (o.k! )
+ggplot(land_sf) +
+  geom_sf(aes(fill = state)) +
+  scale_fill_manual(values = state_pallet) +
+  theme_dark()
+          
+
+```
+
+#####  2.- EEZ shapefile
+
+Used the *Sea Around Us* shapefle updated to June 2016.
+
+```{r eez_sf, eval = T, echo = T}
 
 # US EEZ map
-
-# path_world <- my_path("G", extra_path = "Spatial/SAU/SAU_Shapefile")
-path_world <- "~/OneDrive - UW-Madison/Spatial_data/World_EEZ_v11_20191118/"
-
-# The File
-fnam_world <- "eez_boundaries_v11.shp"
+path_world <- my_path("G", extra_path = "Spatial/SAU/SAU_Shapefile", name = "SAUEEZ_July2015.shp")
 
 # Load it!
+eez_sf <- st_read(path_world) %>%
+  rename(eez_name = Name) %>%
+  st_transform(crs = 4326) %>% # 4326
+  filter(eez_name == "USA (East Coast)") %>%
+  st_simplify(preserveTopology = TRUE, dTolerance = 0.1) #0.1 for paper
 
-eez_sf <- st_read(dsn = path_world,
-                        layer =file_path_sans_ext(fnam_world)) %>%
-  # rename(eez_name = Name) %>%
-  # st_transform(crs = 4326) %>% # 4326
-  filter(TERRITORY1 == "United States",
-         LENGTH_KM == 2734) #%>%
-  # filter(str_detect(EEZ1, "United States")) %>%
-  # st_simplify(preserveTopology = TRUE, dTolerance = 0.1) #0.1 for paper
+# Visual exploration (o.k! )
+ggplot(eez_sf) +
+  geom_sf() +
+  theme_dark()
 
-# ggplot(eez_sf) +
-  # geom_sf()
+```
 
+#####  3.-  State waters
 
-# ggplot() +
-#   geom_sf(data = World_eez_sf, aes(), color = "red") +
-#   geom_sf(data = us_map, aes(), color = "blue")
+Covers the state waters of the NE US states. Data from [data.gov](https://catalog.data.gov/dataset/federal-and-state-waters).  
 
-# US state waters
-# https://catalog.data.gov/dataset/federal-and-state-waters
+*License: No license information was provided. If this work was prepared by an officer or employee of the United States government as part of that person's official duties it is considered a U.S. Government Work.*
 
-# us_state_w <- rgdal::readOGR(dsn = "~/Downloads/FederalAndStateWaters/FederalAndStateWaters.gdb")
+```{r state_sf, eval = T, echo = T}
+
+# us_state_file <- my_path("G", extra_path = "Spatial/USFedAndStateW/FederalAndStateWaters.gdb")
+
 state_sf <-  st_read("~/OneDrive - UW-Madison/Spatial_Data/USFedAndStateW/FederalAndStateWaters.gdb") %>%
   janitor::clean_names() %>% 
   mutate(jurisdicti = str_to_lower(jurisdicti)) %>% 
   filter(jurisdicti %in% States) %>% 
-  rename(state = jurisdicti) %>% 
-  # st_transform(crs = 4326)  # for matching projections
+  mutate(state = str_to_sentence(jurisdicti)) %>% 
+  st_transform(crs = 4326) %>%   # for matching projections
   st_simplify(preserveTopology = TRUE, dTolerance = 10000) #0.1 for paper
 
 
-grid_sf <-  st_read("/Volumes/Enterprise/Data/AcrossBoundaries/Data/Spatial/grid_sf/grid_eez_sf.shp")
+# Visual exploration (o.k! )
+ggplot(state_sf) +
+  geom_sf(aes(fill = state)) +
+  scale_fill_manual(values = state_pallet) +
+  theme_dark()
+
+```
+
+##### 5.- Fishing ports
+
+We used [Global Fishing Watch](https://globalfishingwatch.org/datasets-and-code-anchorages/)'s database on 
+Anchorages, Ports and Voyages.
+
+*The Global Fishing Watch anchorages dataset is a global database of anchorage locations where vessels congregate. The dataset contains over 160,000 individual anchorage locations, which are further grouped into nearly 32,000 ports when applicable.*
 
 
-# Create specific state pallet from our friend Wes Andersson
-state_pallet <- c(wes_palette(n = 5, name = "Darjeeling1"),
-                               wes_palette(n = 5, name = "Darjeeling2"),
-                               wes_palette(n = 3, name = "Royal1")
-                  )
+```{r ports_sf, eval = T, echo = T}
 
-unique(land_sf$ID)
+# ports_data <- my_path("D","NOAA", name = "SSmith_2015-2021 Landings_JUN 2021.xlsx", read = T) %>% 
+#   slice(-50) %>% # remove uneccessary row
+#   
 
 
+gfw_data <- my_path("D","Spatial",name = "gfw_portdata.csv", read = T) %>% 
+  filter(iso3 == "USA") 
+
+# Visualize data (o.k!)
+# ggplot(gfw_data) +
+#   geom_point(
+#     aes(
+#     x = lon,
+#     y = lat
+#   )
+#   )
+
+# Convert data to sf for mergig
+wpi_sf <- st_as_sf(wpi_data,
+             coords = c("longitude", "latitude"),
+             crs = 4326)
+
+# Merge data with state waters to,locate ports 
+port_sf <- st_join(wpi_sf,state_sf) %>% 
+  filter(!is.na(jurisdicti)) # remove points outside stat waters
+
+ggplot(port_sf)  +
+  geom_sf(aes(color = jurisdicti)) +
+  scale_color_manual(values = state_pallet) +
+  theme_dark()
+
+
+
+```
+
+This is how all the shapefiles look like together
+
+
+```{r all_sf, eval = T, echo = T}
+# Visual exploration of all together (o.k! )
 ggplot() +
   geom_sf(data = eez_sf, aes()) +
+  geom_sf(data = land_sf, aes(fill = state), alpha = 0.3) +
   geom_sf(data = state_sf, aes(color = state), fill = NA) +
-  scale_color_manual(values = state_pallet)+
+  geom_sf(data = port_sf, aes(color = state)) +
+  scale_color_manual(values = state_pallet) +
+  scale_fill_manual(values = state_pallet) +
   theme_dark()
 
 ```
@@ -113,15 +182,17 @@ ggplot() +
 
 ### Create base shapefile for computation
 
-As a first step we need to divide the NE US EEZ among the different states. For that we expanded state waters up to the 200 nautical miles to then estimate the percentage that each expanded-state-waters occupied. Note that in all cases these areas overlapped and percentages accounted for it. We did this by following these steps:
+As a first step we need to divide the NE US EEZ among the different states. For that, we expanded a buffer-polygon to the 200 nautical miles to then estimate the percentage that each expanded polygon occupied. For the initial buffer point we used two approaches; state waters and US ports. Note that in all cases these areas overlapped and percentages accounted for it. We did this by following these steps:
 
-- 1. Expand state waters using a buffer
+- 1. Expand state waters / US ports using a buffer
 
 - 2. Grid that buffer on a 0.3 resolution
 
 - 3. Crop the buffer to the EEZ
 
 #### 1. Expand Spatial regions (a.k.a  buffers)
+
+##### 1.1 State Waters
 
 We set a buffer of *410000* m (410 km, ~ 221 nm) that overshoots the EEZ a bit, but is eventually cropped
 
@@ -151,6 +222,39 @@ state_bf_plot <- ggplot() +
 state_bf_plot
 
 ```
+
+##### 1.1 US. Ports
+
+We set a buffer of *410000* m (410 km, ~ 221 nm) that overshoots the EEZ a bit, but is eventually cropped
+
+```{r buffer, eval = T, echo = T}
+
+# Buffer state waters
+state_bf = st_buffer(state_sf, 410000) %>% 
+  st_transform(4326) %>% # to match shape
+  st_set_crs(4326)
+
+# ------------------------------ #
+# Testing and visualizing the buffer 
+# ------------------------------ #
+
+state_bf_plot <- ggplot() +
+  geom_sf(data = state_sf, aes(color = state), fill = NA) +
+  geom_sf(data = eez_sf, aes(), fill = NA) +
+  geom_sf(data = state_bf, aes(color = state), fill = NA) +
+  scale_color_manual(values = state_pallet)+
+  theme_dark()
+#   
+
+# ggsave("../Results/Partial/state_waters_buffer.png",state_bf_plot)
+
+# ------------------------------ #
+
+state_bf_plot
+
+```
+
+
 
 #### 2. Expand grid within buffer
 
@@ -1445,4 +1549,36 @@ ggplot(eff_index) +
              scales = "free")+
   theme_dark()
 
+```
+
+# Recycling code
+## Sarah's data
+
+```{r}
+
+
+# This dataset includes all landings from 2015-July 2021. It includes the species landed, the port, and the Hull ID and vessel name for black sea bass and summer flounder.
+
+# *License, from Sarah Smith: This is confidential data, so please do not share this file with others. You may need to contact NOAA directly just to request permission. My contact has been Alison Ferguson (Alison.Ferguson@noaa.gov) in their data department.*
+
+
+### SRAH LANDING DATA
+# read_excel_allsheets <- function(filename, tibble = TRUE) {
+#     # I prefer straight data.frames
+#     # but if you like tidyverse tibbles (the default with read_excel)
+#     # then just pass tibble = TRUE
+#     sheets <- readxl::excel_sheets(filename)[2:8]
+#     x <- lapply(sheets, function(X) readxl::read_excel(filename, sheet = X))
+#     if(!tibble) x <- lapply(x, as.data.frame)
+#     names(x) <- sheets
+#     x
+# }
+# # Get data path
+# ports_path <- my_path("D","NOAA", name = "SSmith_2015-2021 Landings_JUN 2021.xlsx")
+# 
+# ports_data <- bind_rows(read_excel_allsheets(ports_path)) %>% 
+#   clean_names() %>% 
+#   mutate_if(is.character,
+#               ~ str_to_lower(.))
+  
 ```
