@@ -128,11 +128,7 @@ Anchorages, Ports and Voyages.
 
 ```{r ports_sf, eval = T, echo = T}
 
-# ports_data <- my_path("D","NOAA", name = "SSmith_2015-2021 Landings_JUN 2021.xlsx", read = T) %>% 
-#   slice(-50) %>% # remove uneccessary row
-#   
-
-
+# Get Global Fishig Watch data
 gfw_data <- my_path("D","Spatial",name = "gfw_portdata.csv", read = T) %>% 
   filter(iso3 == "USA") 
 
@@ -199,7 +195,7 @@ We set a buffer of *410000* m (410 km, ~ 221 nm) that overshoots the EEZ a bit, 
 ```{r buffer, eval = T, echo = T}
 
 # Buffer state waters
-state_bf = st_buffer(state_sf, 410000) %>% 
+state_bf = st_buffer(state_sf, 4) %>% 
   st_transform(4326) %>% # to match shape
   st_set_crs(4326)
 
@@ -225,12 +221,12 @@ state_bf_plot
 
 ##### 1.1 US. Ports
 
-We set a buffer of *410000* m (410 km, ~ 221 nm) that overshoots the EEZ a bit, but is eventually cropped
+We set a buffer of *4* deg (410 km, ~ 221 nm) that overshoots the EEZ a bit, but is eventually cropped
 
 ```{r buffer, eval = T, echo = T}
 
 # Buffer state waters
-state_bf = st_buffer(state_sf, 410000) %>% 
+ports_bf = st_buffer(port_sf, 4) %>% 
   st_transform(4326) %>% # to match shape
   st_set_crs(4326)
 
@@ -238,29 +234,20 @@ state_bf = st_buffer(state_sf, 410000) %>%
 # Testing and visualizing the buffer 
 # ------------------------------ #
 
-state_bf_plot <- ggplot() +
-  geom_sf(data = state_sf, aes(color = state), fill = NA) +
-  geom_sf(data = eez_sf, aes(), fill = NA) +
-  geom_sf(data = state_bf, aes(color = state), fill = NA) +
+ggplot() +
+  geom_sf(data = eez_sf, aes(),fill = NA) +
+  geom_sf(data = ports_bf, aes(color = state), fill = NA) +
   scale_color_manual(values = state_pallet)+
   theme_dark()
-#   
-
-# ggsave("../Results/Partial/state_waters_buffer.png",state_bf_plot)
-
-# ------------------------------ #
-
-state_bf_plot
 
 ```
-
 
 
 #### 2. Expand grid within buffer
 
 Here we expand a grid within the buffer so we can estimate the proportion of each state.
 
-*Note:* Dark grey shaded area is the grid
+*Note:* Dark grey shaded area is the grid and is the same for both approaches
 
 ```{r grid_indexing, eval = T, echo = T, message = F, warning = F}
 
@@ -295,7 +282,7 @@ state_sf %>%
             alpha = 0.2
   ) +
   scale_color_manual(values = state_pallet) +
-  theme_bw()+
+  theme_bw() +
   theme_dark()
 
 
@@ -303,7 +290,9 @@ state_sf %>%
 
 ##### 2.1 Merge grid and buffers
 
-Once we have a gridded area, we converted the grid to a `sf` so we can merge it with the buffered states and finally filter out everything outside the states polygon
+Once we have a gridded area, we converted the grid to a `sf` so we can merge it with the buffered statesand ports and finally filter out everything outside the states polygon
+
+###### 2.1.1 State Waters
 
 ```{r grid_buf_merge, eval = T, echo = T, message = F, warning = F, fig.width = 10}
 
