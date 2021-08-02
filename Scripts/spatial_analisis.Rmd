@@ -55,7 +55,7 @@ States <- c("maine", "new hampshire", "massachusetts", "connecticut", "rhode isl
 
 land_sf <- st_as_sf(map("state", plot = FALSE, fill = TRUE)) %>% 
   filter(ID %in% States) %>% 
-  mutate(abrev = c("CO","DE","ME","MD","MA","NH","NJ","NY","NC","RI","VI"),
+  mutate(abrev = c("CT","DE","ME","MD","MA","NH","NJ","NY","NC","RI","VA"),
          state = str_to_sentence(ID)
          )
 
@@ -118,7 +118,7 @@ ggplot(state_sf) +
 
 ```
 
-##### 5.- Fishing ports
+##### 4.- Fishing ports
 
 We used [Global Fishing Watch](https://globalfishingwatch.org/datasets-and-code-anchorages/)'s database on 
 Anchorages, Ports and Voyages.
@@ -142,27 +142,167 @@ gfw_data <- my_path("D","Spatial",name = "gfw_portdata.csv", read = T) %>%
 #   )
 
 # Convert data to sf for mergig
-wpi_sf <- st_as_sf(wpi_data,
-             coords = c("longitude", "latitude"),
+gfw_sf <- st_as_sf(gfw_data,
+             coords = c("lon", "lat"),
              crs = 4326)
 
 # Merge data with state waters to,locate ports 
-port_sf <- st_join(wpi_sf,state_sf) %>% 
+port_sf <- st_join(gfw_sf,state_sf) %>% 
   filter(!is.na(jurisdicti)) # remove points outside stat waters
 
 ggplot(port_sf)  +
-  geom_sf(aes(color = jurisdicti)) +
-  scale_color_manual(values = state_pallet) +
+  geom_sf(aes(color = distance_from_shore_m)) +
   theme_dark()
 
+```
+So...Looks like some ports are "far from shore" which I don't really know what it means. For now, I am only selecting those ports that ar 0 meter from shore. 
+
+
+```{r ports_inshore, eval = T, echo = F}
+
+# Get numner of ports per state
+ports_n_data <- port_sf %>% 
+  as.data.frame() %>% 
+    filter(distance_from_shore_m == 0) %>% 
+    group_by(state) %>% 
+    summarise(n_ports = n()) 
+
+# plot it
+gridExtra::grid.arrange(
+  port_sf %>% 
+    filter(distance_from_shore_m == 0) %>% 
+    ggplot()  +
+    geom_sf(aes(color = jurisdicti)) +
+    scale_color_manual(values = state_pallet) +
+    theme_dark() +
+    theme(legend.position = ""),
+  tableGrob(ports_n_data),
+  ncol = 2
+)
 
 
 ```
+
+
+There are still too many ports in each state (?). Specially New Jersey! One approach is to use NOAA's landing-per-port data to filter out... 
+
+###### 4.1 NOAA's data
+
+This dataset includes all landings from 2015-July 2021. It includes the species landed, the port, and the Hull ID and vessel name for black sea bass and summer flounder.
+
+*License, from Sarah Smith: This is confidential data, so please do not share this file with others. You may need to contact NOAA directly just to request permission. My contact has been Alison Ferguson (Alison.Ferguson@noaa.gov) in their data department.*
+
+```{r}
+
+### SRAH LANDING DATA
+read_excel_allsheets <- function(filename, tibble = TRUE) {
+    # I prefer straight data.frames
+    # but if you like tidyverse tibbles (the default with read_excel)
+    # then just pass tibble = TRUE
+    sheets <- readxl::excel_sheets(filename)[2:8]
+    x <- lapply(sheets, function(X) readxl::read_excel(filename, sheet = X))
+    if(!tibble) x <- lapply(x, as.data.frame)
+    names(x) <- sheets
+    x
+}
+# Get data path
+ports_path <- my_path("D","NOAA", name = "SSmith_2015-2021 Landings_JUN 2021.xlsx")
+
+# 
+ports_data <- bind_rows(read_excel_allsheets(ports_path)) %>%
+  clean_names() %>%
+  mutate_if(is.character,
+              ~ str_to_lower(.)) %>% 
+  mutate(landing_port = str_remove(landing_port,"[:blank:]\\(state\\)"))
+
+noaa_ports <- unique(ports_data$landing_port)
+
+noaa_port <- port_sf %>% 
+  filter(distance_from_shore_m == 0) %>% 
+  mutate(label = str_to_lower(label)) %>% 
+  filter(label %in% noaa_ports)
+
+# Get number of ports per state
+noaa_ports_n_data <- noaa_port %>% 
+  as.data.frame() %>% 
+    group_by(state) %>% 
+    summarise(noaa_ports = n()) 
+
+# Get number of ports in the NOAA database
+
+n_ports_data <- ports_data %>% 
+  group_by(landing_state) %>% 
+  summarise(noaa_ports = length(unique(landing_port))) %>% 
+  mutate(abrev = str_to_upper(landing_state)) %>% 
+  left_join(land_sf) %>% 
+  select(state,noaa_ports) %>% 
+  filter(!is.na(state)) %>% 
+  left_join(noaa_ports_n_data)
+
+# plot it
+gridExtra::grid.arrange(
+  port_sf %>% 
+    mutate(label = str_to_lower(label)) %>% 
+    filter(distance_from_shore_m == 0,
+           label %in% noaa_ports
+           ) %>% 
+    ggplot()  +
+    geom_sf(aes(color = jurisdicti)) +
+    scale_color_manual(values = state_pallet) +
+    theme_dark(),
+    # theme(legend.position = ""),
+  tableGrob(n_ports_data),
+  ncol = 2
+)
+  
+```
+
+
+This approach removes a lot of ports to the point that Delaware is completely port-less
+
+###### 4.2 World Port Index 
+
+In this approach we only use the ports categorized within the [WPI](https://msi.nga.mil/NGAPortal/MSI.portal?_nfpb=true&_pageLabel=msi_portal_page_62&pubCode=0015) and with `distance_from_shore_m == 0`  and `at_dock == TRUE`.
+
+- `at_dock` == Anchorages within a 450 meter buffer around a combined land shape file are considered at dock. 
+
+```{r wpi_approach, eval = T, echo = F}
+
+gridExtra::grid.arrange(
+  port_sf %>% 
+    filter(distance_from_shore_m == 0,
+           label_source %in% c("WPI_ports"),
+           at_dock == TRUE) %>% 
+    ggplot()  +
+    geom_sf(aes(color = jurisdicti)) +
+    scale_color_manual(values = state_pallet) +
+    theme_dark(),
+  port_sf %>% 
+    as.data.frame() %>% 
+    filter(distance_from_shore_m == 0,
+           label_source %in% c("WPI_ports"),
+           at_dock == TRUE) %>% 
+    group_by(state) %>% 
+    summarise(n_ports = n()) %>% 
+    tableGrob(),
+  ncol = 2
+)
+
+
+```
+
+This approach might be better suited. It also has teh advantage that we are using the WPI.
 
 This is how all the shapefiles look like together
 
 
 ```{r all_sf, eval = T, echo = T}
+
+port_sf <- port_sf %>% 
+    filter(distance_from_shore_m == 0,
+           label_source %in% c("WPI_ports"),
+           at_dock == TRUE)
+
 # Visual exploration of all together (o.k! )
 ggplot() +
   geom_sf(data = eez_sf, aes()) +
@@ -171,7 +311,8 @@ ggplot() +
   geom_sf(data = port_sf, aes(color = state)) +
   scale_color_manual(values = state_pallet) +
   scale_fill_manual(values = state_pallet) +
-  theme_dark()
+  theme_dark() +
+  coord_sf(ylim = c(33,48))
 
 ```
 
@@ -192,7 +333,7 @@ As a first step we need to divide the NE US EEZ among the different states. For 
 
 We set a buffer of *410000* m (410 km, ~ 221 nm) that overshoots the EEZ a bit, but is eventually cropped
 
-```{r buffer, eval = T, echo = T}
+```{r sw_buffer, eval = T, echo = T}
 
 # Buffer state waters
 state_bf = st_buffer(state_sf, 4) %>% 
@@ -221,12 +362,12 @@ state_bf_plot
 
 ##### 1.1 US. Ports
 
-We set a buffer of *4* deg (410 km, ~ 221 nm) that overshoots the EEZ a bit, but is eventually cropped
+We set a buffer of *5* deg (510 km, ~ 221 nm) that overshoots the EEZ a bit, but is eventually cropped
 
-```{r buffer, eval = T, echo = T}
+```{r fp_buffer, eval = T, echo = T}
 
 # Buffer state waters
-ports_bf = st_buffer(port_sf, 4) %>% 
+port_bf = st_buffer(port_sf, 5) %>% # port
   st_transform(4326) %>% # to match shape
   st_set_crs(4326)
 
@@ -236,7 +377,7 @@ ports_bf = st_buffer(port_sf, 4) %>%
 
 ggplot() +
   geom_sf(data = eez_sf, aes(),fill = NA) +
-  geom_sf(data = ports_bf, aes(color = state), fill = NA) +
+  geom_sf(data = port_bf, aes(color = state), fill = NA) +
   scale_color_manual(values = state_pallet)+
   theme_dark()
 
@@ -290,16 +431,16 @@ state_sf %>%
 
 ##### 2.1 Merge grid and buffers
 
-Once we have a gridded area, we converted the grid to a `sf` so we can merge it with the buffered statesand ports and finally filter out everything outside the states polygon
+Once we have a gridded area, we converted the grid to a `sf` so we can merge it with the buffered states and ports and finally filter out everything outside the states polygon
 
 ###### 2.1.1 State Waters
 
-```{r grid_buf_merge, eval = T, echo = T, message = F, warning = F, fig.width = 10}
+```{r grid_sw_buf_merge, eval = T, echo = T, message = F, warning = F, fig.width = 10}
 
 # ---------------- #
 # Convert grid to sf
 # ---------------- #
-grid_sf <- st_as_sf(ne_grid,
+grid_sw_sf <- st_as_sf(ne_grid,
              coords = c("lon", "lat"),
              crs = 4326) %>% 
   st_join(state_bf) %>% 
@@ -307,7 +448,7 @@ grid_sf <- st_as_sf(ne_grid,
 
 # Create data frame for future computations
 # Note, will be used in next chunk
-grid_bf_dt <- as.data.frame(grid_sf) %>%
+grid_sw_bf_dt <- as.data.frame(grid_sw_sf) %>%
     select(index,state)
     # group_by(state) %>% 
     # summarise(length(index))
@@ -320,7 +461,7 @@ grid_bf_dt <- as.data.frame(grid_sf) %>%
 
 gridExtra::grid.arrange(
   # Overall (overlapping) position
-  ggplot(grid_sf) +
+  ggplot(grid_sw_sf) +
     geom_sf(data = state_sf, aes(), fill = NA) +
     geom_sf(aes(color = state), alpha = 0.3) +
     geom_sf(data = eez_sf, aes(),fill =NA) + 
@@ -329,12 +470,56 @@ gridExtra::grid.arrange(
     theme(legend.position = ""),
   # Showing each state separatley
   ggplot() +
-    geom_sf(data = grid_sf, aes(color = state),size = 0.1, alpha = 0.5) +
+    geom_sf(data = grid_sw_sf, aes(color = state),size = 0.1, alpha = 0.5) +
     facet_wrap(~state) +
     theme_dark() +
     theme(legend.position = "top") +
     scale_color_manual(values = state_pallet),
   nrow = 1) 
+
+```
+
+###### 2.1.1 Fishing Ports
+
+```{r grid_fp_buf_merge, eval = T, echo = T, message = F, warning = F, fig.width = 10}
+
+# ---------------- #
+# Convert grid to sf
+# ---------------- #
+grid_fp_sf <- st_as_sf(ne_grid,
+             coords = c("lon", "lat"),
+             crs = 4326) %>% 
+  st_join(port_bf) %>% # join to port sf
+  filter(!is.na(state)) %>% 
+  distinct(index,state, .keep_all = TRUE) #removes like 400K overlapping rows
+
+# Create data frame for future computations
+# Note, will be used in next chunk
+grid_fp_bf_dt <- as.data.frame(grid_fp_sf) %>%
+    select(index,state)
+
+# ---------------- #
+# [TEST] 
+# Visualization of grid
+# ---------------- #
+
+gridExtra::grid.arrange(
+  # Overall (overlapping) position
+  ggplot(grid_fp_sf) +
+    geom_sf(data = port_sf, aes(), fill = NA) +
+    geom_sf(aes(color = state), alpha = 0.3) +
+    geom_sf(data = eez_sf, aes(),fill =NA) + 
+    scale_color_manual(values = state_pallet) +
+    theme_dark() +
+    theme(legend.position = ""),
+  # Showing each state separately
+  ggplot() +
+    geom_sf(data = grid_fp_sf, aes(color = state),size = 0.1, alpha = 0.5) +
+    facet_wrap(~state) +
+    theme_dark() +
+    theme(legend.position = "top") +
+    scale_color_manual(values = state_pallet),
+  nrow = 1)
 
 ```
 
@@ -344,7 +529,9 @@ Finally, we crop the grided buffers to within the EEZ to capture the actual wate
 
 *Note:* This step takes quite a while because of the size of the EEZ shapefile. No, you cannot use `st_simplify()` here
 
-```{r buff_to_eez, eval =T, echo = T, message = F, warning = F}
+#### 3.1 State Waters
+
+```{r buff_sw_to_eez, eval =T, echo = T, message = F, warning = F}
 
 # I don't know how to undo st_simplify so need to re-load the shapefile
 
@@ -353,24 +540,15 @@ eez_sf <- st_read(my_path("G", extra_path = "Spatial/SAU/SAU_Shapefile", name = 
   st_transform(crs = 4326) %>% # 4326
   filter(eez_name == "USA (East Coast)") 
 
-
-eez_sf <- st_read("/Volumes/Enterprise/Data/Spatial/World_EEZ_v11_20191118/eez_v11.shp") %>%
-  # rename(eez_name = Name) %>%
-  # st_transform(crs = 4326) %>% # 4326
-  filter(TERRITORY1 == "United States") %>% 
-  st_crop(xmin = -85, xmax = -60, ymin = 30, ymax = 50)
-
-# ggplot(eez_sf) +
-#   geom_sf()
-
 # Get the overlapping segments 
-# NOTE: Takes some gooooood time
-grid_eez_sf <- st_intersection(grid_sf,eez_sf)
-
+# NOTE: Takes some gooooood time (~20 min)
+Sys.time()
+grid_eez_sf_sw <- st_intersection(grid_sw_sf,eez_sf)
+Sys.time()
 # write_sf(grid_eez_sf, paste0(my_path("D", "Spatial"),"grid_eez_sf.shp"))
 
 # Get final df with index
-grid_eez_df <- as.data.frame(grid_eez_sf) %>%
+grid_eez_sw_df <- as.data.frame(grid_eez_sf_sw) %>%
   select(state,index) %>%
   left_join(ne_grid,
             by = "index")
@@ -378,11 +556,90 @@ grid_eez_df <- as.data.frame(grid_eez_sf) %>%
 # write_csv(grid_eez_df, paste0(my_path("R", "Partial"),"grid_eez_df.csv"))
 
 # Plot to make sure makes sense
-grid_eez_sf %>%
+
+eez_sf <- eez_sf %>% 
+  st_simplify(preserveTopology = TRUE, dTolerance = 0.1) #0.1 for paper
+
+grid_eez_sf_sw %>%
   ggplot() +
   geom_sf(aes(color = state), alpha = 0.3) +
   scale_color_manual(values = state_pallet) +
   geom_sf(data = eez_sf,aes(), fill = NA) +
+  theme_dark()
+
+```
+
+
+#### 3.2 Fishing Ports
+
+```{r buff_fp_to_eez, eval =T, echo = T, message = F, warning = F}
+
+# Get the overlapping segments 
+# NOTE: Takes some gooooood time (~20 min)
+Sys.time()
+grid_eez_fp_sw <- st_intersection(grid_fp_sf,eez_sf)
+Sys.time()
+# write_sf(grid_eez_sf, paste0(my_path("D", "Spatial"),"grid_eez_sf.shp"))
+
+# Get final df with index
+grid_eez_fp_df <- as.data.frame(grid_eez_fp_sw) %>%
+  select(state,index) %>%
+  left_join(ne_grid,
+            by = "index")
+
+# write_csv(grid_eez_df, paste0(my_path("R", "Partial"),"grid_eez_df.csv"))
+
+# Plot to make sure makes sense
+grid_eez_fp_sw %>%
+  ggplot() +
+  geom_sf(aes(color = state), alpha = 0.3) +
+  scale_color_manual(values = state_pallet) +
+  geom_sf(data = eez_sf,aes(), fill = NA) +
+  theme_dark()
+
+```
+
+#### 3.3 Differences at cropede level
+
+By looking at the plots we do not see that the number of grid cells that each state has is slightly different depending on the approach. This comes to light when we count the number of gridcells that each state gets in each approach. We see that the state waters one is substantially higher.
+
+We can visualize the difference of the cropped area for each state next. Again, the fishing port approach results in less area for all states, but such area is not proportional among states. For example, Delaware looses roughly 35% of fishing grounds with this approach
+
+```{r state_bf_diff_tbl, eval = T, echo = T}
+
+grid_eez_sw_df %>% 
+  mutate(approach = "state_waters") %>% 
+  bind_rows(grid_eez_fp_df) %>%
+  mutate(approach = ifelse(is.na(approach),"fishing_port",approach)) %>% 
+  group_by(state,approach) %>% 
+  summarise(n_grid = n()) %>% 
+  spread(approach,n_grid) %>% 
+  mutate(difference =state_waters-fishing_port,
+         percentage_sw = round((difference/state_waters)*100)
+         )
+
+```
+
+And here is the map visualization of the cropped difference
+
+```{r state_bf_diff_map, eval = T, echo = T}
+
+grid_eez_sw_df %>% 
+  mutate(approach = "state_waters") %>% 
+  bind_rows(grid_eez_fp_df) %>%
+  mutate(approach = ifelse(is.na(approach),"fishing_port",approach)) %>% 
+  ggplot() +
+  geom_tile(
+    aes(
+      x = lon,
+      y = lat,
+      color = approach,
+      fill = approach
+    )
+  ) +
+  facet_wrap(~state) +
+  scale_color_brewer(palette = "Set2") +
+  scale_fill_brewer(palette = "Set2") +
   theme_dark()
 
 ```
@@ -823,7 +1080,7 @@ States <- c("maine", "new hampshire", "massachusetts", "connecticut", "rhode isl
 # US State Map (land)
 land_sf <- st_as_sf(map("state", plot = FALSE, fill = TRUE)) %>% 
   filter(ID %in% States) %>% 
-  mutate(abrev = c("CO","DE","ME","MD","MA","NH","NJ","NY","NC","RI","VI"),
+  mutate(abrev = c("CT","DE","ME","MD","MA","NH","NJ","NY","NC","RI","VA"),
          state = str_to_sentence(ID)
          )
 
@@ -1540,34 +1797,3 @@ ggplot(eff_index) +
 
 ```
 
-# Recycling code
-## Sarah's data
-
-```{r}
-
-
-# This dataset includes all landings from 2015-July 2021. It includes the species landed, the port, and the Hull ID and vessel name for black sea bass and summer flounder.
-
-# *License, from Sarah Smith: This is confidential data, so please do not share this file with others. You may need to contact NOAA directly just to request permission. My contact has been Alison Ferguson (Alison.Ferguson@noaa.gov) in their data department.*
-
-
-### SRAH LANDING DATA
-# read_excel_allsheets <- function(filename, tibble = TRUE) {
-#     # I prefer straight data.frames
-#     # but if you like tidyverse tibbles (the default with read_excel)
-#     # then just pass tibble = TRUE
-#     sheets <- readxl::excel_sheets(filename)[2:8]
-#     x <- lapply(sheets, function(X) readxl::read_excel(filename, sheet = X))
-#     if(!tibble) x <- lapply(x, as.data.frame)
-#     names(x) <- sheets
-#     x
-# }
-# # Get data path
-# ports_path <- my_path("D","NOAA", name = "SSmith_2015-2021 Landings_JUN 2021.xlsx")
-# 
-# ports_data <- bind_rows(read_excel_allsheets(ports_path)) %>% 
-#   clean_names() %>% 
-#   mutate_if(is.character,
-#               ~ str_to_lower(.))
-  
-```
