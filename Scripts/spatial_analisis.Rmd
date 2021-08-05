@@ -2,8 +2,8 @@
 title: "Spatial Analysis"
 author: "Juliano Palacios Abrantes"
 output:
-  # html_document
-  html_notebook:
+  html_document:
+  # html_notebook:
     fig_width: 6
     fig_height: 4
     code_folding: hide
@@ -18,7 +18,7 @@ output:
 library(MyFunctions)
 MyFunctions::my_lib(c("ggmap","sf","st","tidyverse","tools","readr","data.table","maps","viridis","wesanderson","knitr","kableExtra","plotly","ggrepel","ggsflabel","janitor","interp","rnaturalearth","readxl"))
 
-# Fix new updats of sf package
+# Fix new updates of sf package
 sf::sf_use_s2(use_s2 = FALSE)
 
 
@@ -160,7 +160,7 @@ So...Looks like some ports are "far from shore" which I don't really know what i
 
 ```{r ports_inshore, eval = T, echo = F}
 
-# Get numner of ports per state
+# Get number of ports per state
 ports_n_data <- port_sf %>% 
   as.data.frame() %>% 
     filter(distance_from_shore_m == 0) %>% 
@@ -577,20 +577,21 @@ grid_eez_sf_sw %>%
 # Get the overlapping segments 
 # NOTE: Takes some gooooood time (~20 min)
 Sys.time()
-grid_eez_fp_sw <- st_intersection(grid_fp_sf,eez_sf)
+grid_eez_sf_fp <- st_intersection(grid_fp_sf,eez_sf)
 Sys.time()
-# write_sf(grid_eez_sf, paste0(my_path("D", "Spatial"),"grid_eez_sf.shp"))
+
+# write_sf(grid_eez_sf_fp, paste0(my_path("D", "Spatial/grid_eez_fp_sf"),"grid_eez_fp.shp"))
 
 # Get final df with index
-grid_eez_fp_df <- as.data.frame(grid_eez_fp_sw) %>%
+grid_eez_fp_df <- as.data.frame(grid_eez_sf_fp) %>%
   select(state,index) %>%
   left_join(ne_grid,
             by = "index")
 
-# write_csv(grid_eez_df, paste0(my_path("R", "Partial"),"grid_eez_df.csv"))
+write_csv(grid_eez_fp_df, paste0(my_path("R", "Partial"),"grid_eez_fp_df.csv"))
 
 # Plot to make sure makes sense
-grid_eez_fp_sw %>%
+grid_eez_sf_fp %>%
   ggplot() +
   geom_sf(aes(color = state), alpha = 0.3) +
   scale_color_manual(values = state_pallet) +
@@ -599,13 +600,13 @@ grid_eez_fp_sw %>%
 
 ```
 
-#### 3.3 Differences at cropede level
+#### 3.3 Differences at croped level
 
 By looking at the plots we do not see that the number of grid cells that each state has is slightly different depending on the approach. This comes to light when we count the number of gridcells that each state gets in each approach. We see that the state waters one is substantially higher.
 
 We can visualize the difference of the cropped area for each state next. Again, the fishing port approach results in less area for all states, but such area is not proportional among states. For example, Delaware looses roughly 35% of fishing grounds with this approach
 
-```{r state_bf_diff_tbl, eval = T, echo = T}
+```{r state_bf_diff_ntbl, eval = T, echo = T}
 
 grid_eez_sw_df %>% 
   mutate(approach = "state_waters") %>% 
@@ -644,63 +645,146 @@ grid_eez_sw_df %>%
 
 ```
 
-##### 3.1 Paper figure; buffer plot
+
+
+#### 3.4 Paper plot; Buffer plot
 
 ```{r cropped_plot_paper, eval = F, echo = T}
 
+#### Data needed ####
 
-plot_data <-grid_eez_sf %>% 
-    mutate(state = str_to_sentence(state)) %>% 
-    left_join(state_lat)
+# Get state order from North to south
+state_order <- my_path("R","Partial/", name = "grid_eez_fp_df.csv",read = T) %>%
+  group_by(state) %>% 
+  summarise(
+    order = mean(lat)
+  ) %>% 
+  mutate(abrev = c("CT","DE","ME","MD","MA","NH","NJ","NY","NC","RI","VA")
+  ) %>% 
+  arrange(desc(order)) %>% 
+  mutate(order= c("b","a",letters[3:11])) # weirdly maine goes below
 
-p <- gridExtra::grid.arrange(
+
+
+# Load grid of state waters
+grid_eez_sw_sf <- st_read(my_path("D","Spatial/grid_eez_sw_sf", name = "grid_eez_sf.shp")) %>% 
+  select(index,state,geometry) %>% 
+  mutate(method = "state_waters",
+         state = str_to_sentence(state)) %>% 
+  left_join(state_order)
+
+grid_eez_sw_sf$group <- factor(grid_eez_sw_sf$abrev,      # Reordering group factor levels
+                               levels = state_order$abrev)
+
+
+# Load grid of fishing ports
+grid_eez_fp_sf <- st_read(my_path("D","Spatial/grid_eez_fp_sf", name = "grid_eez_fp.shp")) %>% 
+  select(index,state = jursdct,geometry) %>% 
+  mutate(method = "fishing_port",
+         state = str_to_sentence(state))%>% 
+  left_join(state_order)
+
+
+grid_eez_fp_sf$group <- factor(grid_eez_fp_sf$abrev,      # Reordering group factor levels
+                               levels = state_order$abrev)
+
+
+# Plotting 
+# Make sure st_simplify() is run for eez sf
+
+# State waters plot
+
+p_sw <- gridExtra::grid.arrange(
   # Overall (overlapping) position
-  ggplot(plot_data) +
+  ggplot(grid_eez_sw_sf) +
     geom_sf(data = eez_sf, aes(), fill = "white") + 
-    geom_sf(aes(color = order, fill = order), alpha = 0.3) +
+    geom_sf(aes(color =abrev , fill = abrev), alpha = 0.3) +
     geom_sf(data = land_sf, aes()) +
-    geom_sf_label_repel(data = land_sf, aes(label= abrev), 
-                      size = 2,
-                      box.padding = 0.10,
-                      hjust = 1) +
+    ggsflabel::geom_sf_label_repel(data = land_sf, aes(label= abrev), 
+                                   size = 4,
+                                   box.padding = 0.10,
+                                   hjust = 1) +
     scale_color_manual(values = state_pallet) +
     scale_fill_manual(values = state_pallet) +
     my_ggtheme_p(leg_pos = "",
-                 ax_tx_s = 12) +
+                 ax_tx_s = 13) +
     coord_sf(ylim = c(30,48)) +
     scale_y_continuous(breaks = c(30,35,40,45))+
-    labs(x = "", y = ""),
+    labs(x = "", y = "", title = "A) State waters extrapolation") +
+    theme(plot.title = element_text(size = 20)),
   # Showing each state separately
-  
-    ggplot(plot_data) +
+  ggplot(grid_eez_sw_sf) +
     geom_sf(data = land_sf, aes(), fill = "grey80") +
-    geom_sf( aes(color = order),size = 0.1, alpha = 0.8) +
-    facet_wrap(~ state) +
+    geom_sf(aes(color = abrev),size = 0.1, alpha = 0.3) +
+    facet_wrap(~ group) +
     theme(legend.position = "top") +
     scale_color_manual(values = state_pallet,
-                       labels = plot_data %>% arrange(order) %>%  pull(state) %>% unique()) +
+                       # labels = unique(grid_eez_sw_sf$group)) +
+                       labels = grid_eez_sw_sf %>% arrange(order) %>%  pull(state) %>% unique()) +
+    ggtitle("") +
     my_ggtheme_p(leg_pos = "",
-                 ax_tx_s = 6,
+                 ax_tx_s = 11,
                  axx_tx_ang = 45,
                  hjust = 1
-                 ),
-  nrow = 1,
-  bottom = "Longitude",
-  left = "Latitude")
+    ),
+  nrow = 1)
 
 
-  ggsave(filename = "buffer_figure.jpg",
-         plot = p,
-         path = my_path("R","Figures"),
-         width = 10,
-         height = 5
-         )
+##### ------------- ####
+# Fishing Ports plot
+##### ------------- ####
+
+p_fp <- gridExtra::grid.arrange(
+  # Overall (overlapping) position
+  ggplot(grid_eez_fp_sf) +
+    geom_sf(data = eez_sf, aes(), fill = "white") + 
+    geom_sf(aes(color = abrev, fill = abrev), alpha = 0.3) +
+    geom_sf(data = land_sf, aes()) +
+    ggsflabel::geom_sf_label_repel(data = land_sf, aes(label= abrev), 
+                                   size = 4,
+                                   box.padding = 0.10,
+                                   hjust = 1) +
+    scale_color_manual(values = state_pallet) +
+    scale_fill_manual(values = state_pallet) +
+    my_ggtheme_p(leg_pos = "",
+                 ax_tx_s = 13) +
+    coord_sf(ylim = c(30,48)) +
+    scale_y_continuous(breaks = c(30,35,40,45)) +
+    labs(x = "", y = "", title = "B) Fishing ports extrapolation") +
+    theme(plot.title = element_text(size = 20)),
+  # Showing each state separately
+  ggplot(grid_eez_fp_sf) +
+    geom_sf(data = land_sf, aes(), fill = "grey80") +
+    geom_sf(aes(color = abrev),size = 0.1, alpha = 0.3) +
+    facet_wrap(~ group) +
+    theme(legend.position = "top") +
+    scale_color_manual(values = state_pallet,
+                       # labels = unique(grid_eez_fp_sf$group)) +
+                       labels = grid_eez_fp_sf %>% arrange(order) %>%  pull(state) %>% unique()) +
+    ggtitle("") +
+    my_ggtheme_p(leg_pos = "",
+                 ax_tx_s = 11,
+                 axx_tx_ang = 45,
+                 hjust = 1
+    ),
+  nrow = 1)
+
+
+
+combined_plot <- gridExtra::grid.arrange(p_sw,p_fp,
+                                         bottom = "Longitude",
+                                         left = "Latitude")
+
+ggsave(filename = "buffer_figure_b.jpg",
+       plot = combined_plot,
+       path = my_path("R","Figures"),
+       width = 11,
+       height = 11
+)
 
 ```
 
-![Buffer figure for paper](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/buffer_figure.jpg)
-
-
+![Buffer figure for paper](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/buffer_figure_b.jpg)
 
 
 ```{r remove_pen, eval = F, echo = F}
@@ -1068,7 +1152,7 @@ taxon_read <- paste0(my_path("R",extra_path = "Partial/Interpolation"),taxon_rea
 
 
 # Load all sp in one table
-historic_spp <- bind_rows(lapply(taxon_read, fread)) %>% 
+historic_spp_sw <- bind_rows(lapply(taxon_read, fread)) %>% 
   mutate(state = str_to_sentence(state))
 
 
@@ -1796,4 +1880,3 @@ ggplot(eff_index) +
   theme_dark()
 
 ```
-
