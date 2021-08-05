@@ -900,14 +900,14 @@ This is a sub-function that runs the `tis()` function by taxa and region. It sav
 ```{r interpol_run_fun, eval = T, echo = T}
 
 
-run_tis <- function(input_data, grid, years, taxa, reg){
+run_tis <- function(input_data, grid, years, taxa, reg, method){
   
   
   # Run tis for species and surveys
   for(r in 1:2){
     
     partial_df <- bind_rows(
-      lapply(years,tis,input_data = ocean_data, grid = grid_eez_df, taxa = taxa, reg = regions[r])
+      lapply(years,tis,input_data = input_data, grid = grid, taxa = taxa, reg = reg[r])
     )
     
     if(r == 1){
@@ -925,8 +925,10 @@ run_tis <- function(input_data, grid, years, taxa, reg){
   # Set file name
   name <- paste0("tif_",str_replace(taxa," ","_"),".csv")
   
+  complement <- paste0("Partial/Interpolation/",method)
+  
   # Set path name
-  save_path <- my_path("R","Partial/Interpolation")
+  save_path <- my_path("R",complement)
   
   # Set complete path
   save_name <- paste0(save_path,name)
@@ -947,7 +949,7 @@ run_tis <- function(input_data, grid, years, taxa, reg){
 }
 
 # Test me
-    # run_tis(input_data = ocean_data, grid = grid_eez_df, taxa = "Centropristis striata", years = years, reg = regions)
+    # run_tis(input_data = ocean_data, grid = grid_eez_fp_df, taxa = "Centropristis striata", years = seq(1970,1980), reg = regions, method = "testa")
 
 ```
 
