@@ -2,13 +2,13 @@
 title: "Spatial Analysis"
 author: "Juliano Palacios Abrantes"
 output:
-  html_document:
-  # html_notebook:
+  # html_document:
+  html_notebook:
     fig_width: 6
     fig_height: 4
     code_folding: hide
     toc: yes
-    toc_depth: 3
+    toc_depth: 6
     toc_float:
       collapsed: false
     theme: darkly
@@ -1033,7 +1033,11 @@ This is where we load the required data and prepare to run the interpolation fun
 ```{r contro_pannel, eval = T, echo = T}
 
 # Load grid df
-grid_eez_df <- my_path("D","Spatial","grid_eez_df.csv", read = T)
+# For fishing ports
+grid_eez_fp_df <- my_path("D","Spatial/grid_eez_fp_sf","grid_eez_fp_df.csv", read = T)
+
+# For state waters
+# grid_eez_sw_df <- my_path("D","Spatial/grid_eez_fp_sf","grid_eez_fp_df.csv", read = T)
 
 # Run interpolation for all years
 years <- seq(1973,2019,1)
@@ -1051,7 +1055,7 @@ spp <- ocean_data %>%
 
 # Double check runs
 
-spp_runs <- tibble(taxa = (list.files(my_path("R","Partial/Interpolation")))) %>%
+spp_runs <- tibble(taxa = (list.files(my_path("R","Partial/Interpolation/fp")))) %>%
   mutate(
     taxa = str_remove(taxa, "tif_"),
     taxa = str_remove(taxa, ".csv"),
@@ -1075,22 +1079,24 @@ Here we just run the routine for each of the species present in the Northeast US
 
 ```{r run_routine, eval = T, echo = T}
 
-# single species run
+# # single species run
 # run_tis(input_data = ocean_data,
-#         grid = grid_eez_df,
+#         grid = grid_eez_fp_df,
 #         years = years,
 #         reg = regions,
-#         taxa = "Illex illecebrosus"
+#         taxa = "Illex illecebrosus",
+#         method = "fp"
 # )
 
 
 # Run them all in parallel
 lapply(spp,
-                   run_tis, 
-                   input_data = ocean_data,
-                   grid = grid_eez_df,
-                   years = years,
-                   reg = regions
+       run_tis, 
+       input_data = ocean_data,
+       grid = grid_eez_fp_df,
+       years = years,
+       reg = regions,
+       method = "fp"
 )
 
 
