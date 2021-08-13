@@ -2,8 +2,8 @@
 title: "Spatial Analysis"
 author: "Juliano Palacios Abrantes"
 output:
-  # html_document:
-  html_notebook:
+  html_document:
+  # html_notebook:
     fig_width: 6
     fig_height: 4
     code_folding: hide
@@ -654,7 +654,7 @@ grid_eez_sw_df %>%
 #### Data needed ####
 
 # Get state order from North to south
-state_order <- my_path("R","Partial/", name = "grid_eez_fp_df.csv",read = T) %>%
+state_order <- my_path("D","Spatial/grid_eez_fp_sf", name = "grid_eez_fp_df.csv",read = T) %>%
   group_by(state) %>% 
   summarise(
     order = mean(lat)
@@ -662,7 +662,8 @@ state_order <- my_path("R","Partial/", name = "grid_eez_fp_df.csv",read = T) %>%
   mutate(abrev = c("CT","DE","ME","MD","MA","NH","NJ","NY","NC","RI","VA")
   ) %>% 
   arrange(desc(order)) %>% 
-  mutate(order= c("b","a",letters[3:11])) # weirdly maine goes below
+  mutate(order= c("b","a",letters[3:11])) %>% # weirdly maine goes below
+  arrange(order)
 
 
 
@@ -688,7 +689,7 @@ grid_eez_fp_sf <- st_read(my_path("D","Spatial/grid_eez_fp_sf", name = "grid_eez
 grid_eez_fp_sf$group <- factor(grid_eez_fp_sf$abrev,      # Reordering group factor levels
                                levels = state_order$abrev)
 
-
+grid_eez_fp_sf <- arrange(grid_eez_fp_sf,group)
 # Plotting 
 # Make sure st_simplify() is run for eez sf
 
@@ -698,7 +699,7 @@ p_sw <- gridExtra::grid.arrange(
   # Overall (overlapping) position
   ggplot(grid_eez_sw_sf) +
     geom_sf(data = eez_sf, aes(), fill = "white") + 
-    geom_sf(aes(color =abrev , fill = abrev), alpha = 0.3) +
+    geom_sf(aes(color =group , fill = group), alpha = 0.3) +
     geom_sf(data = land_sf, aes()) +
     ggsflabel::geom_sf_label_repel(data = land_sf, aes(label= abrev), 
                                    size = 4,
@@ -710,12 +711,12 @@ p_sw <- gridExtra::grid.arrange(
                  ax_tx_s = 13) +
     coord_sf(ylim = c(30,48)) +
     scale_y_continuous(breaks = c(30,35,40,45))+
-    labs(x = "", y = "", title = "A) State waters extrapolation") +
+    labs(x = "", y = "", title = "A) State waters approach") +
     theme(plot.title = element_text(size = 20)),
   # Showing each state separately
   ggplot(grid_eez_sw_sf) +
     geom_sf(data = land_sf, aes(), fill = "grey80") +
-    geom_sf(aes(color = abrev),size = 0.1, alpha = 0.3) +
+    geom_sf(aes(color = group),size = 0.1, alpha = 0.3) +
     facet_wrap(~ group) +
     theme(legend.position = "top") +
     scale_color_manual(values = state_pallet,
@@ -738,7 +739,7 @@ p_fp <- gridExtra::grid.arrange(
   # Overall (overlapping) position
   ggplot(grid_eez_fp_sf) +
     geom_sf(data = eez_sf, aes(), fill = "white") + 
-    geom_sf(aes(color = abrev, fill = abrev), alpha = 0.3) +
+    geom_sf(aes(color = group, fill = abrev), alpha = 0.3) +
     geom_sf(data = land_sf, aes()) +
     ggsflabel::geom_sf_label_repel(data = land_sf, aes(label= abrev), 
                                    size = 4,
@@ -750,12 +751,12 @@ p_fp <- gridExtra::grid.arrange(
                  ax_tx_s = 13) +
     coord_sf(ylim = c(30,48)) +
     scale_y_continuous(breaks = c(30,35,40,45)) +
-    labs(x = "", y = "", title = "B) Fishing ports extrapolation") +
+    labs(x = "", y = "", title = "B) Fishing ports approach") +
     theme(plot.title = element_text(size = 20)),
   # Showing each state separately
   ggplot(grid_eez_fp_sf) +
     geom_sf(data = land_sf, aes(), fill = "grey80") +
-    geom_sf(aes(color = abrev),size = 0.1, alpha = 0.3) +
+    geom_sf(aes(color = group),size = 0.1, alpha = 0.3) +
     facet_wrap(~ group) +
     theme(legend.position = "top") +
     scale_color_manual(values = state_pallet,
@@ -775,7 +776,7 @@ combined_plot <- gridExtra::grid.arrange(p_sw,p_fp,
                                          bottom = "Longitude",
                                          left = "Latitude")
 
-ggsave(filename = "buffer_figure_b.jpg",
+ggsave(filename = "buffer_figure.jpg",
        plot = combined_plot,
        path = my_path("R","Figures"),
        width = 11,
@@ -1080,13 +1081,13 @@ Here we just run the routine for each of the species present in the Northeast US
 ```{r run_routine, eval = T, echo = T}
 
 # # single species run
-# run_tis(input_data = ocean_data,
-#         grid = grid_eez_fp_df,
-#         years = years,
-#         reg = regions,
-#         taxa = "Illex illecebrosus",
-#         method = "fp"
-# )
+run_tis(input_data = ocean_data,
+        grid = grid_eez_fp_df,
+        years = years,
+        reg = regions,
+        taxa = "Stenotomus chrysops",
+        method = "fp"
+)
 
 
 # Run them all in parallel
@@ -1105,6 +1106,9 @@ lapply(spp,
 # Results
 
 Results are now for eight species managed under Mid-Atlantic Council Management Plans according to [NOAA](https://www.fisheries.noaa.gov/new-england-mid-atlantic/commercial-fishing/new-england-mid-atlantic-fishery-management-plans).
+
+
+State allocations of the commercial black sea bass coastwide quota were originally implemented in 2003 as part of Amendment 13, loosely based on historical landings from 1980- 2001. 
 
 
 *Scomber scombrus*, *Peprilus triacanthus* (butterfish), *Illex illecebrosus* (shortfin squid), *Paralichthys dentatus* (summer flounder), *Stenotomus chrysops* (Scoop), *Centropristis striata* (black sea bass), *Pomatomus saltatrix* (Bluefish), *Lopholatilus chamaeleonticeps* (Golden tilefish), *Caulolatilus microps* (blueline tilefish) and *Clupea harengus*
@@ -1141,7 +1145,7 @@ Species <- c(
   )
 
 
-spp_paths <- list.files(my_path("R",extra_path = "Partial/Interpolation"))
+spp_paths <- list.files(my_path("R",extra_path = "Partial/Interpolation/sw"))
 
 # Some gibiris for names
 taxon_list <- gsub("_"," ",spp_paths)
@@ -1156,15 +1160,25 @@ taxon_read <- gsub(" ","_",taxon_read)
 
 taxon_read <- spp_paths[spp_paths %in% taxon_read]
 
-taxon_read <- paste0(my_path("R",extra_path = "Partial/Interpolation"),taxon_read)
+#### Load sw interpolation 
+
+taxon_sw <- my_path("R",extra_path = "Partial/Interpolation/sw", name = taxon_read)
+
+taxon_fp <- my_path("R",extra_path = "Partial/Interpolation/fp", name = taxon_read)
 
 
 # Load all sp in one table
-historic_spp_sw <- bind_rows(lapply(taxon_read, fread)) %>% 
-  mutate(state = str_to_sentence(state))
+historic_spp <- bind_rows(lapply(taxon_sw, fread)) %>% 
+  mutate(spatial = "sw") %>% 
+  bind_rows(
+    bind_rows(lapply(taxon_fp, fread))
+  ) %>% 
+  mutate(state = str_to_sentence(state),
+         spatial = ifelse(is.na(spatial),"fp",spatial))
 
 
 unique(historic_spp$spp)
+unique(historic_spp$spatial)
 
 # Spatial data
 States <- c("maine", "new hampshire", "massachusetts", "connecticut", "rhode island", "new york", "new jersey", "delaware", "maryland", "virginia", "north carolina") 
@@ -1193,7 +1207,7 @@ periods <-tibble(
            seq(1997,2008,1),
            seq(2009,2019,1)
   )
-)
+  )
 
 
 state_lat <- historic_spp %>%
@@ -1230,10 +1244,10 @@ This map shows the aggregated extrapolated value from all three species per Stat
 
 ```{r area_map_state, eval = T, echo = T, fig.width=10, fig.height=12}
 
- data_grid <- historic_spp %>% 
-  group_by(state,lat,lon,region) %>% 
+data_grid <- historic_spp %>% 
+  group_by(state,lat,lon,region,spatial) %>% 
   summarise(sum = sum(value,na.rm= T), .groups = "drop") %>% # sum of all species
-  group_by(state,lat,lon,region) %>% 
+  group_by(state,lat,lon,region,spatial) %>% 
   summarise(mean = mean(sum,na.rm= T), .groups = "drop") # average of all years
 
 
@@ -1247,8 +1261,7 @@ ggplot(data = subset(data_grid, !is.na(mean))) +
     )
   ) +
   geom_sf(data = land_sf, aes()) +
-  facet_wrap(~ state  +  region,
-             ncol = 4) +
+  facet_wrap(~ state  +  region + spatial) +
   labs(x = "Longitude", y = "Latitude") +
   scale_fill_viridis("Mean Interpolation", alpha = 0.8) +
   scale_color_viridis("Mean Interpolation", alpha = 0.8) +
@@ -1271,19 +1284,19 @@ Here we show the average proportion of the interpolation by State and time perio
 ```{r area_map_aggregated, eval = T, echo = T, fig.width = 10, fig.height=6}
 
 total_fited <- historic_spp %>% 
-  group_by(year,region) %>% 
+  group_by(year,region,spatial) %>% 
   summarise(total_value = sum(value,na.rm=T),.groups = "drop")
 
 
 state_fit <- historic_spp %>% 
-  group_by(state,year,region) %>% 
+  group_by(state,year,region,spatial) %>% 
   summarise(state_value = sum(value,na.rm= T), .groups = "drop") %>% 
   left_join(total_fited,
-            by = c("year","region")) %>%
+            by = c("year","region","spatial")) %>%
   mutate(percentage = state_value/total_value*100) %>% 
   left_join(periods,
             by = "year") %>% 
-  group_by(state,order,label,region) %>% 
+  group_by(state,order,label,region,spatial) %>% 
   summarise(mean_per = round(mean(percentage)),.groups = "drop")
 
 # check percentages
@@ -1299,7 +1312,7 @@ p <- land_sf %>%
   # geom_sf(aes(fill = mean_per)) +
   geom_sf(aes(fill = mean_per, text = paste(state, mean_per,"% of proportion"))) +
   viridis::scale_fill_viridis("Average proportion per State", alpha = 0.8) +
-  facet_wrap(~ region + label, 
+  facet_wrap(~ region + label +spatial, 
              nrow = 2) +
   labs(x = "Latitude", 
        y = "Longitude") +
@@ -1322,34 +1335,51 @@ ggplotly(p,
 ```{r paper_figure_area_map, eval = F, echo = T, results='hide'}
 
 total_fited <- historic_spp %>% 
-  group_by(year,region,spp) %>% 
+  group_by(year,region,spp,spatial) %>% 
   summarise(total_value = sum(value,na.rm=T),.groups = "drop")
 
 
 state_fit <- historic_spp %>% 
-  group_by(state,year,region,spp) %>% 
+  group_by(state,year,region,spp,spatial) %>% 
   summarise(state_value = sum(value,na.rm= T), .groups = "drop") %>% 
   left_join(total_fited,
-            by = c("year","region","spp")) %>%
-  mutate(percentage = state_value/total_value*100) %>% 
-  left_join(periods,
-            by = "year") %>% 
-  group_by(state,order,label,region,spp) %>% 
+            by = c("year","region","spp","spatial")) %>%
+  mutate(percentage = state_value/total_value*100,
+         label = ifelse(year >= 1980 & year <= 2001,"Reference",
+                         ifelse(year > 2001,"Today",NA)
+                         )
+         ) %>% 
+  # left_join(periods,
+  #           by = "year") %>% 
+  group_by(state,label,region,spp,spatial) %>% 
   summarise(mean_per = round(mean(percentage)),.groups = "drop") %>% 
   #Only show results for spring
-  filter(str_detect(region,"Spring")) %>% 
-  mutate(spp = gsub(" ","\n",spp))
+  filter(str_detect(region,"Spring"),
+         !is.na(label)) %>% 
+  spread(spatial,mean_per) %>% 
+  mutate(difference = (fp-sw)/((fp+sw)/2)*100,
+         difference = ifelse(difference > 100,100,
+                             ifelse(difference < -100,-100,difference)
+         )
+  ) %>% 
+  gather("spatial","mean_per",fp:difference) %>% 
+  mutate(spp = gsub(" ","\n",spp),
+         spatial = ifelse(spatial == "fp","Fishing ports",
+                          ifelse(spatial == "sw","State Waters","Difference")
+         )
+  )
 
 # The plot
 map_plot <- land_sf %>% 
   left_join(state_fit,
             by = "state") %>% 
+  filter(spatial != "Difference") %>% 
   ggplot() +
   geom_sf(aes(fill = mean_per)) +
   viridis::scale_fill_viridis("Average proportion per State", alpha = 0.8) +
-  facet_grid(spp ~ label) +
-  labs(x = "Longitude", 
-       y = "Latitude") +
+  facet_grid(spatial~ spp+label) +
+  labs(x = "", 
+       y = "") +
   my_ggtheme_p(facet_tx_s = 20,
                leg_pos = "bottom",
                axx_tx_ang = 45,
@@ -1359,18 +1389,190 @@ map_plot <- land_sf %>%
   theme(legend.key.width = unit(4,"line")) 
 
 
-  ggsave(filename = "proportion_chg_spp.jpg",
-         plot = map_plot,
-         path = my_path("R","Figures"),
-         width = 14,
-         height = 14
-         )
+diff_plot <- land_sf %>% 
+  left_join(state_fit,
+            by = "state") %>% 
+  filter(spatial == "Difference") %>% 
+  ggplot() +
+  geom_sf(aes(fill = mean_per)) +
+  viridis::scale_fill_viridis("Percentage difference", alpha = 0.8) +
+  facet_grid(spatial~ spp+label) +
+  labs(x = "", 
+       y = "") +
+  my_ggtheme_p(facet_tx_s = 20,
+               leg_pos = "bottom",
+               axx_tx_ang = 45,
+               ax_tx_s = 12,
+               ax_tl_s = 18,
+               hjust = 1) +
+  theme(legend.key.width = unit(4,"line"),
+        strip.background = element_blank(),
+        strip.text.x = element_blank()
+        ) 
 
+
+# Cowplot option
+p <- ggdraw() +
+  # Revenue circular
+  draw_plot(map_plot, x = 0, y = 0.2, width = 1, height = 0.8) +
+  # Catch circular
+  draw_plot(diff_plot, x = 0, y = 0, width = 1, height = 0.4) +
+  draw_plot_label(label = c("Latitude", "Longitude"), 
+                  size = 18,
+                  angle = c(90,0),
+                  x = c(0,0.45), 
+                  y = c(0.45,0.15)
+  )
+  
+
+save_plot(
+  path = my_path("R","Figures"),
+  "proportion_chg_spp_spatial.jpg",
+  p,
+  base_height = 14,
+  base_width = 14
+)
+
+```
+
+### Proportion change realtive to past
+
+```{r paper_figure_area_map, eval = F, echo = T, results='hide'}
+
+total_fited <- historic_spp %>%
+  group_by(year,region,spp,spatial) %>%
+  summarise(total_value = sum(value,na.rm=T),.groups = "drop")
+
+
+state_change <-historic_spp %>% 
+  group_by(state,year,region,spp,spatial) %>% 
+  summarise(state_value = sum(value,na.rm= T), .groups = "drop") %>% 
+  left_join(total_fited,
+            by = c("year","region","spp","spatial")) %>%
+  mutate(percentage = state_value/total_value*100,
+         label = ifelse(year >= 1980 & year <= 2001,"Reference",
+                         ifelse(year > 2001,"Today",NA)
+                         )
+         ) %>% 
+  # left_join(periods,
+            # by = "year") %>% 
+  group_by(state,label,region,spp,spatial) %>% 
+  summarise(mean_per = round(mean(percentage)),.groups = "drop") %>% 
+  #Only show results for spring
+  filter(str_detect(region,"Spring"),
+         !is.na(label)
+         ) %>% 
+  select(-region) %>% 
+  spread(label,mean_per) %>% 
+  mutate(change = (Today-Reference)/(Today)*100,
+         change = ifelse(change > 100,100,
+                         ifelse(change < -100,-100,change)
+         )
+  ) %>%
+  select(-4,-5) %>% 
+  spread(spatial,change) %>% 
+  mutate(difference = (fp-sw)/((fp+sw)/2)*100,
+         difference = ifelse(difference > 100,100,
+                             ifelse(difference < -100,-100,difference)
+         )
+  ) %>% 
+  gather("spatial","mean_per",fp:difference) %>% 
+  mutate(
+         spatial = ifelse(spatial == "fp","Fishing ports",
+                          ifelse(spatial == "sw","State Waters","Difference")
+         )
+  )
+
+# The plot
+prop_chng_map <- land_sf %>% 
+  left_join(state_change,
+            by = "state") %>% 
+  filter(spatial != "Difference") %>% 
+  ggplot() +
+  geom_sf(aes(fill = mean_per)) +
+  viridis::scale_fill_viridis("Change in proportion today\n relative to 1973-1984\n(%)", alpha = 0.8,
+                              limits = c(-100,100),
+                              breaks = seq(-100,100,25),
+                              labels = c(seq(-100,75,25),">100")
+                              ) +
+  facet_grid(spatial~ spp) +
+  labs(x = "", 
+       y = "") +
+  my_ggtheme_p(facet_tx_s = 20,
+               leg_pos = "bottom",
+               axx_tx_ang = 45,
+               ax_tx_s = 12,
+               ax_tl_s = 18,
+               hjust = 1) +
+  theme(legend.key.width = unit(4,"line"),
+        legend.title.align=0.5) 
+
+
+
+ggsave(filename = "temp_proportion_chng.jpg",
+         plot = prop_chng_map,
+         path = my_path("R","Figures"),
+         width = 10,
+         height = 10
+  )
+
+
+#### Option with differences
+
+prop_chng_map_diff <- land_sf %>% 
+  left_join(state_change,
+            by = "state") %>% 
+  filter(spatial == "Difference") %>% 
+  ggplot() +
+  geom_sf(aes(fill = mean_per)) +
+  viridis::scale_fill_viridis("Change in proportion\n relative to 1980-2001 (%)", 
+                              alpha = 0.8,
+                              # option = "C"
+                              limits = c(-100,100),
+                              breaks = seq(-100,100,25),
+                              labels = c(seq(-100,75,25),">100")
+                              ) +
+  facet_grid(spatial~ spp) +
+  labs(x = "", 
+       y = "") +
+  my_ggtheme_p(facet_tx_s = 20,
+               leg_pos = "bottom",
+               axx_tx_ang = 45,
+               ax_tx_s = 12,
+               ax_tl_s = 18,
+               hjust = 1) +
+  theme(legend.key.width = unit(4,"line"),
+        legend.title.align=0.5,
+        strip.background = element_blank(),
+        strip.text.x = element_blank())
+
+
+# Cowplot option
+p <- ggdraw() +
+  # Revenue circular
+  draw_plot(prop_chng_map, x = 0, y = 0.25, width = 1, height = 0.65) +
+  # Catch circular
+  draw_plot(prop_chng_map_diff, x = 0.101, y = 0, width = 0.798, height = 0.4) +
+  draw_plot_label(label = c("Latitude", "Longitude"), 
+                  size = 16,
+                  angle = c(90,0),
+                  x = c(0.1,0.45), 
+                  y = c(0.45,0.11)
+  )
+    
+
+save_plot(
+  path = my_path("R","Figures"),
+  "proportion_chg_diff.jpg",
+  p,
+  base_height = 14,
+  base_width = 14
+)
 
 ```
 
 
-![Proportion change per species map for paper](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/proportion_chg_spp.jpg)
+![Proportion change per species map for paper](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/temp_proportion_chng.jpg)
 
 
 ### Paper figure: Aggregated Proportional change
@@ -1378,45 +1580,104 @@ map_plot <- land_sf %>%
 ```{r area_map_aggregated_formans, eval = T, echo = T, fig.width = 10, fig.height=6}
 
 total_fited <- historic_spp %>% 
-  group_by(year,region) %>% 
+  group_by(year,region,spatial) %>% 
   summarise(total_value = sum(value,na.rm=T),.groups = "drop")
 
 
 state_fit <- historic_spp %>% 
-  group_by(state,year,region) %>% 
+  group_by(state,year,region,spatial) %>% 
   summarise(state_value = sum(value,na.rm= T), .groups = "drop") %>% 
   left_join(total_fited,
-            by = c("year","region")) %>%
-  mutate(percentage = state_value/total_value*100) %>% 
-  left_join(periods,
-            by = "year") %>% 
-  group_by(state,order,label,region) %>% 
+            by = c("year","region","spatial")) %>%
+  mutate(percentage = state_value/total_value*100, 
+  # left_join(periods,
+            # by = "year") %>% 
+  label = ifelse(year >= 1980 & year <= 2001,"Reference",
+                         ifelse(year > 2001,"Today",NA)
+                         )
+         ) %>% 
+  group_by(state,label,region,spatial) %>% 
   summarise(mean_per = round(mean(percentage)),.groups = "drop") %>% 
-  filter(str_detect(region,"Spring"))
+  filter(str_detect(region,"Spring"),
+         !is.na(label)
+         ) %>% 
+  spread(spatial,mean_per) %>% 
+  mutate(difference = (fp-sw)/((fp+sw)/2)*100,
+         difference = ifelse(difference > 100,100,
+                             ifelse(difference < -100,-100,difference)
+         )
+  ) %>% 
+  gather("spatial","mean_per",fp:difference) %>% 
+  mutate(
+         spatial = ifelse(spatial == "fp","Fishing ports",
+                          ifelse(spatial == "sw","State Waters","Difference")
+         )
+  )
 
 
-agg_map <- land_sf %>% 
+# Spatial map
+agg_sppatial_map <- land_sf %>% 
   left_join(state_fit,
             by = "state") %>% 
+  filter(spatial != "Difference") %>% 
   ggplot() +
   geom_sf(aes(fill = mean_per)) +
-  viridis::scale_fill_viridis("Average proportion per State", alpha = 0.8) +
-  facet_wrap(~ label, nrow = 1) +
-  labs(x = "Longitude", 
-       y = "Latitude") +
+  viridis::scale_fill_viridis("Distribution\nProportion", alpha = 0.8) +
+  facet_grid(spatial~ label) +
+  labs(x = "", 
+       y = "") +
   my_ggtheme_p(facet_tx_s = 16,
-               leg_pos = "bottom",
+               leg_pos = "right",
                leg_tl_s = 14,
                ax_tx_s = 10,
                ax_tl_s = 14) +
-  theme(legend.key.width = unit(2,"line")) 
+theme(legend.title.align=0.5)
 
-  ggsave(filename = "proportion_chg_agg.jpg",
-         plot = agg_map,
-         path = my_path("R","Figures"),
-         width = 9,
-         height = 5
-         )
+# Difference map
+agg_diff_map <- land_sf %>% 
+  left_join(state_fit,
+            by = "state") %>% 
+  filter(spatial == "Difference") %>% 
+  ggplot() +
+  geom_sf(aes(fill = mean_per)) +
+  viridis::scale_fill_viridis("Percentage\nDifference",option = "C", alpha = 0.8) +
+  facet_grid(spatial~ label) +
+  labs(x = "", 
+       y = "") +
+  my_ggtheme_p(facet_tx_s = 16,
+               leg_pos = "right",
+               leg_tl_s = 14,
+               ax_tx_s = 10,
+               ax_tl_s = 14)+
+  theme(
+        strip.background = element_blank(),
+        strip.text.x = element_blank(),
+        legend.title.align=0.5
+        ) 
+
+  
+# Cowplot option
+p <- ggdraw() +
+  # Revenue circular
+  draw_plot(agg_sppatial_map, x = 0, y = 0.35, width = 1, height = 0.65) +
+  # Catch circular
+  draw_plot(agg_diff_map, x = 0.093, y = 0.05, width = 0.814, height = 0.4) +
+  draw_plot_label(label = c("Latitude", "Longitude"), 
+                  size = 10,
+                  angle = c(90,0),
+                  x = c(0,0.35), 
+                  y = c(0.45,0.11)
+  )
+    
+
+save_plot(
+  path = my_path("R","Figures"),
+  "proportion_chg_agg.jpg",
+  p,
+  base_height = 8,
+  base_width = 8
+)
+
 
 ```
 
@@ -1532,18 +1793,18 @@ ggplotly(p,
 ```{r plot_area_ave_agg, eval = F, echo = F, results='hide'}
 
 total_fited <- historic_spp %>% 
-  group_by(year,region) %>% 
+  group_by(year,region,spatial) %>% 
   summarise(total_value = sum(value,na.rm=T),.groups = "drop")
 
 
 # group by state
 state_fit <- historic_spp %>% 
-  group_by(state,year,region) %>% 
+  group_by(state,year,region,spatial) %>% 
   summarise(state_value = sum(value,na.rm= T), .groups = "drop") %>% 
   left_join(total_fited,
-            by = c("year","region")) %>%
+            by = c("year","region","spatial")) %>%
   mutate(percentage = state_value/total_value*100) %>% 
-  group_by(state,region) %>% 
+  group_by(state,region,spatial) %>% 
   mutate(RMean = zoo::rollmean(x = percentage, 
                             10,
                             fill = NA,
@@ -1553,7 +1814,13 @@ state_fit <- historic_spp %>%
   filter(str_detect(region,"Spring"),
          !is.na(RMean) # Remove NAs from rollmean
          ) %>%  
-  left_join(state_lat)
+  left_join(state_lat) %>% 
+  mutate(
+         spatial = ifelse(spatial == "fp","Fishing ports",
+                          ifelse(spatial == "sw","State Waters","Difference")
+         )
+  )
+
 
 # Plot me
 agg_area <- ggplot(state_fit) +
@@ -1565,18 +1832,28 @@ agg_area <- ggplot(state_fit) +
       # fill = state
     )
   ) +
+  annotate(geom= "rect",
+           xmin = 1980, xmax = 2001, 
+           ymin = 0, ymax = 100,
+            fill = "gray90",
+           colour = NA,
+           alpha = 0.5) +
   ylab("Propotion (10 yrs running average)") +
   # viridis::scale_fill_viridis(discrete = T, alpha = 0.8) +
   scale_fill_manual(
-    "State",
+    "State\n(Latitudinal order)",
     values = state_pallet,
     labels = state_fit %>% arrange(order) %>%  pull(state) %>% unique()
   ) +
-  my_ggtheme_p(leg_pos = "right") +
-  theme(legend.key.width = unit(1,"line"))
+  scale_x_continuous(breaks = seq(1979,2015,9),limits = c(1979,2015))+
+  xlab("Year") +
+  my_ggtheme_p(leg_pos = "right", hjust = 1,ax_tx_s = 10,leg_tx_s = 10, leg_tl_s = 12,ax_tl_s = 12) +
+  theme(legend.key.width = unit(1,"line"),
+        legend.title.align=0.5) +
+  facet_wrap(~spatial) 
 
 
-  ggsave(filename = "area_plot_avg_agg.jpg",
+    ggsave(filename = "area_plot_avg_agg_sptl.jpg",
          plot = agg_area,
          path = my_path("R","Figures"),
          width = 8,
@@ -1586,25 +1863,25 @@ agg_area <- ggplot(state_fit) +
 
 ```
 
-![Proportion change aggregated all species map for paper](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/area_plot_avg_agg.jpg)
+![Proportion change aggregated all species map for paper](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/area_plot_avg_agg_sptl.jpg)
 
 ### Paper figure: Per Species Proportional change
 
 ```{r paper_plot_area_ave_spp, eval = F, echo = F, results='hide'}
 
 total_fited <- historic_spp %>% 
-  group_by(year,region,spp) %>% 
+  group_by(year,region,spp,spatial) %>% 
   summarise(total_value = sum(value,na.rm=T),.groups = "drop")
 
 
 # group by state
 state_fit <- historic_spp %>% 
-  group_by(state,year,region,spp) %>% 
+  group_by(state,year,region,spp,spatial) %>% 
   summarise(state_value = sum(value,na.rm= T), .groups = "drop") %>% 
   left_join(total_fited,
-            by = c("year","region","spp")) %>%
+            by = c("year","region","spp","spatial")) %>%
   mutate(percentage = state_value/total_value*100) %>% 
-  group_by(state,region,spp) %>% 
+  group_by(state,region,spp,spatial) %>% 
   mutate(RMean = zoo::rollmean(x = percentage, 
                             10,
                             fill = NA,
@@ -1614,7 +1891,12 @@ state_fit <- historic_spp %>%
   filter(str_detect(region,"Spring"),
          !is.na(RMean) # Remove NAs from rollmean
          ) %>%  
-  left_join(state_lat)
+  left_join(state_lat) %>% 
+  mutate(
+         spatial = ifelse(spatial == "fp","Fishing ports",
+                          ifelse(spatial == "sw","State Waters","Difference")
+         )
+  )
 
 # Plot me
 ssp_area <- ggplot(state_fit) +
@@ -1626,28 +1908,37 @@ ssp_area <- ggplot(state_fit) +
       # fill = state
     )
   ) +
+  annotate(geom= "rect",
+           xmin = 1980, xmax = 2001, 
+           ymin = 0, ymax = 100,
+            fill = "gray90",
+           colour = NA,
+           alpha = 0.5) +
   ylab("Propotion (10 yrs running average)") +
   # viridis::scale_fill_viridis(discrete = T, alpha = 0.8) +
   scale_fill_manual(
-    "State",
+    "State\n(Latitudinal order)",
     values = state_pallet,
     labels = state_fit %>% arrange(order) %>%  pull(state) %>% unique()
   ) +
-  my_ggtheme_p(leg_pos = "bottom") +
-  theme(legend.key.width = unit(1,"line")) + 
-  facet_wrap(~spp, ncol = 1, strip.position = "right")
+  facet_grid(spp~spatial) +
+  scale_x_continuous(breaks = seq(1979,2015,9),limits = c(1979,2015))+
+  xlab("Year") +
+  my_ggtheme_p(leg_pos = "right", hjust = 0.9,ax_tx_s = 14,leg_tx_s = 16, leg_tl_s = 18,ax_tl_s = 18,facet_tx_s = 16) +
+  theme(legend.key.width = unit(1,"line"),
+        legend.title.align=0.5)
 
 
-  ggsave(filename = "area_plot_avg_spp.jpg",
+  ggsave(filename = "area_plot_avg_spp_sptl.jpg",
          plot = ssp_area,
          path = my_path("R","Figures"),
-         width = 10,
-         height = 12
+         width = 12,
+         height = 10
   )
 
 
 ```
-![Proportion change aggregated all species map for paper](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/area_plot_avg_spp.jpg)
+![Proportion change aggregated all species map for paper](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/area_plot_avg_spp_sptl.jpg)
 
 ## Historic quota Vs distributions
 
