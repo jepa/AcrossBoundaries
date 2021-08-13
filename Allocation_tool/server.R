@@ -54,7 +54,7 @@ shinyServer(function(input, output) {
         
         name <- paste0("tif_",str_replace(input$SppSelection," ","_"),".csv")
         
-        data <- my_path("R","Partial/Interpolation",name = name, read = T)
+        data <- my_path("R","Partial/Interpolation/sw",name = name, read = T)
         
     })
     
