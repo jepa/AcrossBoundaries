@@ -27,8 +27,23 @@ While the problem is increasingly well known, quantifying it is difficult for tw
 
 Here we examine both of these challenges using fish distributions relative to states in the Northeast U.S. as an example.
 
+# Methods
+
+We expanded the grid following two methods (Fig. 1).
+
+![Figure 1. Spatial regions within the United States' North East Exclusive Economic Zone. A) Spatial buffers from each State's waters. B) Spatial buffers from the main fishing ports. States are aligned by average latitude from north to south. ME = Maine; NH, New Hampshire; MA, Massachusetts; RI, Rhode Island; CT, Connecticut; NY, New York; NY, New Jersey; DE, Delaware; MD, Maryland; VA Virginia; North Carolina.](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/F1_buffer_figure.jpg)
+
 # Results
--	Two boundaries methods
--	Two surveys 
+
+![Figure 2. Change in the proportion of species distribution per State in recent years (2002 - 2014) relative to the reference years (1990-2001) following the fishing ports (top) and State waters (middle) approach. Bottom pannel showing the percentage difference between both approaches. ](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/F2_proportion_chg_diff.jpg)
+
+
+
+![Figure 3. Aggregated distribution proportion per state of Paralichthys dentatus, Stenotomus chrysops and Centropristis striata over time. Each color represent a State ordered latitudinal. Grey box represents the base-period used for the fisheries quota allocation ](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/F3_area_plot_avg_agg_sptl.jpg)
+
+
+
+
+![Figure 4. Proportion of the distribution of Paralichthys dentatus, Stenotomus chrysops and Centropristis striata over time. Each color represent a State ordered latitudinal. Grey box represents the base-period used for the fisheries quota allocation ](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/F4_area_plot_avg_spp_sptl.jpg)
 
 
