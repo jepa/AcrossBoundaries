@@ -1,7 +1,10 @@
 ---
 title: "Challenges on quantifying fish range shifts across management boundaries"
-subtitle: "*target journal* PlosOne"
-output: word_document
+subtitle: "DRAFT. Target journal *PlosOne*"
+output: 
+  bookdown::word_document2:
+    number_section: no
+    toc: no
 ---
 
 
@@ -15,35 +18,162 @@ output: word_document
 <!-- - Expanding from US to international -->
 <!-- - Fishing communities and processing plans are fixed in time and space (e.g., Salmon in Canada, Peruvian anchoveta) -->
 
+```{r setup, include=FALSE}
 
+library(MyFunctions)
+MyFunctions::my_lib(c("dplyr","tibble","knitr","kableExtra","png","grid"))
+
+
+
+```
 
 # Introduction
 
-Fish range shifts have been occurring rapidly.  
+Range shifts are among the most documented responses of marine fauna to the effects of climate change in the ocean [@Poloczanska]. From zooplankton to bony fish to seabirds, marine fauna have been documented to expand their distribution up to 800 km per decade or to contract it for about 200 km per decade [@Poloczanska]. Such change is often due to marine species following a poleward temperature gradient in the search for colder waters, although, in some cases such species are following local environmental factors such as upwelling systems [@Clarke:2020], or moving to deeper colder waters [@Pinsky:2013]. Regardless of the shift direction, species distributions are projected to continue to happen in the incoming years [@Cheung:2010; @Barange2014; @IPCC2019], even if society engages in a strong mitigation climate change scenario (i.e., limiting increased global temperature to $1.5^o$) as proposed by the Paris Agreement [@Cheung:2016].
 
-When harvested species shift across management boundaries, there can be a growing disconnect between the management jurisdictions in which fish are found and the management jurisdictions which hold harvest rights.  
+The change in species distribution will be particularly challenging for the management of stocks shared across management jurisdictions [@PalaciosAbrantes:2020sr]. When a stock is subjected to two or more spatial regulatory regions, managers must often coordinate efforts to maintain sustainability of the stock [@Clark1979; @Munro2004]. However, there can be a growing disconnect between the region of the ocean where fish are found and the management jurisdictions which hold harvest rights [@PalaciosAbrantes:2020sr]. Such mismatch is of specific concern as species shift their known distribution due to climate change [@PalaciosAbrantes_2020pn; @oremus_2020, @pinsky_2018; @Baudron2020; @Miller2013]. Historical shifts in important fish stocks have resulted in both unsustainable harvest and international conflict as in the case of the United States and Canada over sockeye salmon (*Oncorhynchus nerka*) and the European Union and Ireland over mackerel (*Scomber scombrus*) [@miller2013; @spijkers2017].
 
-While the problem is increasingly well known, quantifying it is difficult for two reasons: (1) management jurisdiction in the ocean is often ill-defined, especially at the subnational level or beyond exclusive economic zones, and (2) quantifying fish distributions in relation to these boundaries is difficult, even where fishery-independent surveys exist, because of seasonal and interannual variation.
+In the United States (US) North East (NE) Atlantic, many important fished species such as american lobster (*Homarus americanus*), yellowtail flounder (*Limanda ferruginea*), summer flounder (*Paralichthys dentatus*) and red hake (*Urophycis chuss*) have been shifting their distribution poleward  [@pinsky_fogarty_2012], and modelling exercises suggest that NE Atlantic species will shift will average over 600 km towards the end of the $21^{st}$ century under a high emission climate change scenario [@Morley:2018]. The mismatch between implemented management strategies and shifts in stocks across management jurisdictions compromises management and sustainability [@Baudron2020; @pinsky_fogarty_2012]. Fishers in the NE Atlantic have been adapting to such shifts by following the fish, in some cases, or changing target speices, in others [@polo_2021]. While this problem of shifting stocks across management jurisdictions is increasingly well known, quantifying it is difficult for two main reasons: (*i*) management jurisdiction in the ocean are often ill-defined, especially at the sub-national level or beyond Exclusive Economic Zones (EEZ), and (*ii*) quantifying fish distributions in relation to these boundaries is difficult, even where fishery-independent surveys exist, because of seasonal and interannual variation.
 
-Here we examine both of these challenges using fish distributions relative to states in the Northeast U.S. as an example.
+Here, we examine both of these challenges by quantifying the historical distributions of three important fished species relative to 11 states of the Northeast Atlantic U.S that jointly manage these stocks. Specifically, we set two main objectives. First, we examine the difference between two different approaches to define spatial management jurisdictions within the U.S. Federal waters. Second, we examine differences in the species' historical distribution between Spring and Fall to examine seasonal variation in these stock's distributions. We use bottom trawl surveys for Spring and Fall from 1971 to 2019 and apply a triangular irregular surface method to extrapolate fish biomass across the U.S. North East EEZ. We then draw spatial polygons for each State up to the EEZ from two different starting points; the state waters and main fishing ports. Our results suggest that...
 
 # Methods
 
-We expanded the grid following two methods (Fig. 1).
+The current analysis focused on black sea bass (*Centropristis striata*), summer flounder (*Paralichthys dentatus*) and scup (*Stenotomus chrysops*), all species managed under the Mid-Atlantic Council Management Plans [(MAFMC)](https://www.fisheries.noaa.gov/new-england-mid-atlantic/commercial-fishing/new-england-mid-atlantic-fishery-management-plans) since 1996. The management unit extends from the U.S.-Canadian border to the southern border of North Carolina for summer flounder, and Cape Hatteras (North Carolina) for scup and black sea bass [MAFMC](https://www.mafmc.org/sf-s-bsb/). The fisheries are managed cooperatively by the States through the Commission in state waters (0-3 miles), and through the MAFMC and NOAA Fisheries in federal waters (3-200 miles). An annual coast wide commercial quota is implemented and since 2003 further allocated to the States of Maine, New Hampshire, Massachusetts, Rhode Island, Connecticut, New York, New Jersey, Delaware, Maryland, Virginia and North Carolina [@REFMACMP-memorandum] (Table \@ref(tab:QuotaTable)). The State-wide quota allocation is based on the historical landings from 1980-2001, approximately.
 
-![Figure 1. Spatial regions within the United States' North East Exclusive Economic Zone. A) Spatial buffers from each State's waters. B) Spatial buffers from the main fishing ports. States are aligned by average latitude from north to south. ME = Maine; NH, New Hampshire; MA, Massachusetts; RI, Rhode Island; CT, Connecticut; NY, New York; NY, New Jersey; DE, Delaware; MD, Maryland; VA Virginia; North Carolina.](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/F1_buffer_figure.jpg)
+
+```{r QuotaTable, eval = F, echo = F}
+
+tibble(
+  "State" = c(
+    "Maine (ME)",
+    "New Hampshire (NH)",
+    "Massachusetts (MA)",
+    "Rhode Island (RI)",
+    "Connecticut (CT)",
+    "New York (NY)",
+    "New Jersey (NJ)",
+    "Delaware (DE)",
+    "Maryland (MD)",
+    "Virginia (VA)",
+    "North Carolina (NC)"
+  ),
+    "Centropristis striata" = c(
+      0.0040, #ME
+      0.0040, #NH
+      0.1564, #MA
+      0.1323, #RI
+      0.0367, #CT
+      0.0857, #NY
+      0.2010, #NJ
+      0.0411, #DE
+      0.0888, #MD
+      0.1614, #VA
+      0.0888 #NC
+    ),
+    "Paralichthys dentatus" = c(
+      0.0004756, #ME 
+      0.0000046, #NH 
+      0.0682046, #MA 
+      0.1568298, #RI 
+      0.0225708, #CT 
+      0.0764699, #NY 
+      0.1672499, #NJ 
+      0.0001779, #DE 
+      0.0203910, #MD
+      0.2131676, #VA
+      0.2744584 #NC
+    ),
+    "Stenotomus chrysops" = c(
+      0.0012101, #ME
+      0.0000000, #HN
+      0.2158729, #MA
+      0.5619456, #RI
+      0.0315399, #CT
+      0.1582466, #NY
+      0.0291667, #NJ
+      0.0000000, #DE
+      0.0001190, #MD
+      0.0016502, #VA
+      0.0002490 #NC
+    )
+) %>% 
+  mutate_if(is.numeric,round,3) %>% 
+  mutate_if(is.numeric,~.*100) %>% 
+  # readr::write_csv("quota_table.csv")
+  # group_by() %>% #just checking they add up
+  # summarise_if(is.numeric,sum)
+  kable("latex",
+        caption = "State wide commercial quota allocation for black sea bass (*Centropristis striata*), summer flounder (*Paralichthys dentatus*) and scup (*Stenotomus chrysops*) according to the 2003 implementation. Values shown as percentage of total quota. States ordered latitudinally"
+        )
+```
+
+
+Biomass data for all three species was gathered from NOAA's yearly Northeast Fisheries Science Center Spring and Fall Bottom Trawl Surveys [data](https://www.fisheries.noaa.gov/region/new-england-mid-atlantic#science) provided by [Ocean adapt](https://oceanadapt.rutgers.edu/) and standardized as catch per unit of effort (CPUE) [@Pinsky2013]. The analysis was retrospective in nature, covering the time period from 1971 to 2019 with two comparative periods; the average of 1980 to 2000 representing the state allocations of the commercial fisheries originally implemented in 2003 [@RefDocument], and the average of 2009 to 2019 representing a more recent time period.
+
+We extrapolated fish CPUE observational data to the NE Atlantic EEZ from the southern border of North Carolina to the US-Canadian border by following a triangular irregular surface (TIS) method using the *R* package *interp* [@REFInterp]. Overall, the TIS method creates multiple non-overlapping triangles that cover the entire extrapolated region (i.e., the EEZ) from an initial set of sample points (i.e., NOAAs survey) generating a spatially-continuous surface [@REF; @REF].
+
+Federal U.S. waters are not sub-dived into state-owned fisheries management regions. Thus, we created state-polygons to allocate the extrapolated CPUE to each fishing State. This step allowed us to further determine what proportion of the species distribution was in each state-polygon. The state-polygons were created by first expanding multiple polygons within the 200 nautical miles of the EEZ using the *st* package in *R* [@REF]. Second, we gridded the EEZ into 3 x 3 gridcells and overlay the grid with the state-polygons to then estimate the number of grids that each expanded polygon occupied. Note that a gridcell would be allocated to multiple States in cases where state-polygons overlay. Finally, the buffers were limited to the size and shape of the North East US EEZ.
+
+Creating these state-polygons was key to allocate the distribution of any stock directly influencing the proportion of the stock linked to a state. For example, the amount of the distribution that each State has will be influenced by the size of the state-polygon. Here, we used two different sources as starting points for the state-polygons expansion; state waters and US ports (Figure \@ref(fig:bufferFig)). For the state waters approach we used the [NOAA-data.gov](https://catalog.data.gov/dataset/federal-and-state-waters) shapefile. Note that in this case, the extent of the final state-polygons was related to the size of the State's coast with North Carolina and Maine having the largest polygons. For the ports approach we used the [Global Fishing Watch](https://globalfishingwatch.org/datasets-and-code-anchorages/)'s database on Anchorages, Ports and Voyages. We only considered ports classified within the World Port Index ([WPI](https://msi.nga.mil/NGAPortal/MSI.portal?_nfpb=true&_pageLabel=msi_portal_page_62&pubCode=0015)). In this case, the number of ports varied among States with New Jersey and Massachusetts having the largest amounts (117 and 187, respectively) and Delaware and New Hampshire having the leaser (2 and 14, respectively). However, rather than the number of ports per State, in this case what influences the size of the state-polygon was the distribution of ports within the State's waters as two ports in opposite latitudes will result in a larger polygon than two ports closed together (Figure \@ref(fig:bufferFig)).
+
+
+```{r bufferFig, eval = F, echo = T, fig.width = 3, fig.height = 2, echo=FALSE, fig.cap="Spatial regions within the United States' North East Exclusive Economic Zone. A) Spatial buffers from each State's waters. B) Spatial buffers from the main fishing ports. States are aligned by average latitude from north to south. ME, Maine; NH, New Hampshire; MA, Massachusetts; RI, Rhode Island; CT, Connecticut; NY, New York; NY, New Jersey; DE, Delaware; MD, Maryland; VA Virginia; North Carolina."}
+
+# Call the image
+img <- readPNG("/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/F1_buffer_figure.png")
+# Print the image
+grid.raster(img)
+```
+
+![Figure 1. Spatial regions within the United States' North East Exclusive Economic Zone. A) Spatial buffers from each State's waters. B) Spatial buffers from the main fishing ports. States are aligned by average latitude from north to south. ME, Maine; NH, New Hampshire; MA, Massachusetts; RI, Rhode Island; CT, Connecticut; NY, New York; NY, New Jersey; DE, Delaware; MD, Maryland; VA Virginia; North Carolina. ](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/F1_buffer_figure.png)
+
+For each approach we then overlay each specie's interpolation with the state-polygons and estimated the distribution and biomass proportion of each state. The interpolated biomass was divided equally in cases where two or more States had the same grid. For example, if New York and New Jersey both shared one grid, then the proportion of that grid would be allocated 50% to each state, alternatively, if Connecticut was also sharing the grid, then the proportion would be 33.3% to each state. Note that this step does not affect the interpolation method but the way the biomass is allocated by State. 
+
+All of the analysis was done on RStudio statistical software and *R* version 4.1.0 (*Camp Pontanezen*) and associated packages *ggmap*, *sf* [@REF], *st* [@REF], *tidyverse* [@REF], *tools* [@REF], *readr* [@REF], *data.table* [@REF], *maps* [@REF], *viridis* [@REF], *wesanderson* [@REF], *knitr* [@REF], *kableExtra* [@REF], *plotly* [@REF], *ggrepel* [@REF], *ggsflabel* [@REF], *janitor* [@REF], *interp* [@REF], *rnaturalearth* [@REF], and *readxl* [@REF]. All code can be found in https://github.com/jepa/AcrossBoundaries.
+
 
 # Results
 
-![Figure 2. Change in the proportion of species distribution per State in recent years (2002 - 2014) relative to the reference years (1990-2001) following the fishing ports (top) and State waters (middle) approach. Bottom pannel showing the percentage difference between both approaches. ](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/F2_proportion_chg_diff.jpg)
+Our results suggest that the current distribution of all three species has changed relative to 1980-2001 from North Carolina to Maine. Biomass has increased in average 30% $\pm$ 11% in Connecticut, Maine, Massachusetts, New hampshire, Rhode island relative to the historical proportion regardless of the season and the spatial approach. On the other hand, Delaware, Maryland, New jersey, New york, North carolina, and Virginia have seen an average biomass loss of 39% $\pm$ 29% relative to the historical proportion for all approaches and seasons (Supplement Table 1). Specific cases of no change exist for Connecticut and New Jersey in the fishing ports approach for Spring and Fall, respectiveley, and New York in all but the Spring-fishig ports approach. 
+
+Differences in the intensity of change varies among spatial and seasonal estimations (Figure \@ref{fig:figaggpropcnhg}). Aggregated biomass seems to have changed more drastically in Spring following the State waters approach with a max reduction of over -100% for North Carolina (a 40% difference between seasons) and increase of 50% for Maine (a 17% difference between seasons). On the other hand, Fall proportion max reduction was -66% for Maryland (a 44% difference between seasons) and max increase was 33% for Maine regardless of the approach (Figure \@ref{fig:figaggpropcnhg}A). Differences between approaches (i.e., State Waters v.s. Fishing Ports and Spring v.s. Fall) were larger for the State water approach (mean 14% $\pm$ 15%; max  44%) and smallest in Spring (mean 9% $\pm$ 7%; max 23%). It is worth noticing that all approaches had cases with no difference between options (Figure \@ref{fig:figaggpropcnhg}BC).
 
 
+```{r figaggpropcnhg, eval = F, echo = T, fig.width = 3, fig.height = 2, echo=FALSE, fig.cap= "Change in the proportion of the distribution today (2014-2019) relative to 1973-1985. A) row-wise showing seasonal changes, column-wise showing changes by spatial approach. B) Differnces between seasons for each spatial approach. C) Differences between spatial approaches for each season."}
 
-![Figure 3. Aggregated distribution proportion per state of Paralichthys dentatus, Stenotomus chrysops and Centropristis striata over time. Each color represent a State ordered latitudinal. Grey box represents the base-period used for the fisheries quota allocation ](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/F3_area_plot_avg_agg_sptl.jpg)
+# Call the image
+img <- readPNG("/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/F2_proportion_chng_agg")
+# Print the image
+grid.raster(img)
+```
+
+![Figure 2. Change in the proportion of the distribution today (2014-2019) relative to 1973-1985. A) row-wise showing seasonal changes, column-wise showing changes by spatial approach. B) Differnces between seasons for each spatial approach. C) Differences between spatial approaches for each season.](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/F2_proportion_chng_agg)
+
+The historical proportion of State-shared aggregated biomass is sensitive to the spatial approach. When looking at the fishing ports apprach we can see that the main shifts in proportion are between northern and southern States (Figure \@ref{fig:figAggHist}- Fishing ports). While southern States like Virginia and North Carolina have lost substantial proportion of the shared biomass over time, northern states like Maine, New Hampshire and Massachusetts have stand to win. Changes in the biomass proportion of the in-between states are very subtle. Yet the State waters approach offers another picture. Here, there seems to be clear biomass proportion winners and losers over the last 40 years (Figure \@ref{fig:figAggHist}-State Waters). New Jersey, Delaware, Maryland, Virginia and North Carolina have all seen a constant decrease in the proportion of the shared biomass while States from New York to Maine have seen a year-by-year increase (Figure \@ref{fig:figAggHist}). 
+
+```{r figAggHist, eval = F, echo = T, fig.width = 3, fig.height = 2, echo=FALSE, fig.cap = "Historical proportion of aggregated biomass per state and spatial approach. States organized latitudinally. Grey-white box showing the quota-based historical period"}
+
+# Call the image
+img <- readPNG("/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/F3_area_plot_avg_agg_sptl.png")
+# Print the image
+grid.raster(img)
+```
+
+![Figure 3. Aggregated distribution proportion per state of Paralichthys dentatus, Stenotomus chrysops and Centropristis striata over time. Each color represent a State ordered latitudinal. Grey box represents the base-period used for the fisheries quota allocation ](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/F3_area_plot_avg_agg_sptl.png)
+
+Changes will be different when looked at the species level (Figure \@ref{fig:figSppHist}). All three species show a reduction in biomass proportion for southern states (namely Virginia and North Carolina) with black sea bass and scup having the larger declines. Biomass increases are less clear. For black sea bass, biomass has increased from Maine all the way down to Rhode Island in the Fishing ports approach, and New York for the State waters approach. In the State waters approach the species has just recently "arrived" to Maine and New Hampshire waters (Figure \@ref{fig:figSppHist}- State waters). For scup, only Maine and New Hampshire seem to have gain biomass following the Fishing ports approach while the State waters approach resulted in gains for all States northern than New York. Similar to black sea bass, Virginia and North Carolina are the main biomass losers in both approaches. Finally, there does not appear to be clear evidence of shifts in biomass for summer flounder. Decreases are seen for Virginia and North Carolina for both approaches and increases for Maine and New Hampshire for the fishing ports approach, yet, these are almost imperceptible (Figure \@ref{fig:figSppHist}).
 
 
+```{r figSppHist, eval = F, echo = T, fig.width = 3, fig.height = 2, echo=FALSE, fig.cap = "Historical proportion of each species' biomass per state and spatial approach. States organized latitudinally. Grey-white box showing the quota-based historical period"}
+
+# Call the image
+img <- readPNG("/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/F4_area_plot_avg_spp_sptl.png")
+# Print the image
+grid.raster(img)
+```
 
 
-![Figure 4. Proportion of the distribution of Paralichthys dentatus, Stenotomus chrysops and Centropristis striata over time. Each color represent a State ordered latitudinal. Grey box represents the base-period used for the fisheries quota allocation ](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/F4_area_plot_avg_spp_sptl.jpg)
+![Figure 4. Proportion of the distribution of Paralichthys dentatus, Stenotomus chrysops and Centropristis striata over time. Each color represent a State ordered latitudinal. Grey box represents the base-period used for the fisheries quota allocation ](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/F4_area_plot_avg_spp_sptl.png)
 
-
+# Discussion 
