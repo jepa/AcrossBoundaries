@@ -900,7 +900,9 @@ tis <- function(input_data, grid, yr, taxa, reg){
         mutate(year = yr,
                region = reg,
                spp = taxa) %>% 
-        select(index, state, year, region, spp, lon=x, lat=y, value = z)
+        select(index, 
+               # state,
+               year, region, spp, lon=x, lat=y, value = z)
       
     }
    
@@ -925,7 +927,7 @@ This is a sub-function that runs the `tis()` function by taxa and region. It sav
 ```{r interpol_run_fun, eval = T, echo = T}
 
 
-run_tis <- function(input_data, grid, years, taxa, reg, method){
+run_tis <- function(input_data, grid, years, taxa, reg){
   
   
   # Run tis for species and surveys
@@ -950,7 +952,7 @@ run_tis <- function(input_data, grid, years, taxa, reg, method){
   # Set file name
   name <- paste0("tif_",str_replace(taxa," ","_"),".csv")
   
-  complement <- paste0("Partial/Interpolation/",method)
+  complement <- paste0("Partial/Interpolation/")
   
   # Set path name
   save_path <- my_path("R",complement)
@@ -1059,7 +1061,7 @@ This is where we load the required data and prepare to run the interpolation fun
 
 # Load grid df
 # For fishing ports
-inter_grid <- my_path("D","Spatial","grid_eez_fp_df.csv", read = T)
+inter_grid <- my_path("D","Spatial","inter_grid_df.csv", read = T)
 
 # Run interpolation for all years
 years <- seq(1973,2019,1)
@@ -1112,13 +1114,12 @@ run_tis(input_data = ocean_data,
 
 
 # Run them all in parallel
-lapply(species,
+lapply(Species,
        run_tis, 
        input_data = ocean_data,
-       grid = grid_eez_fp_df,
+       grid = inter_grid,
        years = years,
-       reg = regions,
-       method = "fp"
+       reg = regions
 )
 
 
@@ -1163,7 +1164,7 @@ Species <- c(
   "Centropristis striata"#, # black sea bass
   )
 
-spp_paths <- list.files(my_path("R",extra_path = "Partial/Interpolation/sw"))
+spp_paths <- list.files(my_path("R",extra_path = "Partial/Interpolation/"))
 
 # Some gibiris for names
 taxon_list <- gsub("_"," ",spp_paths)
@@ -1180,31 +1181,30 @@ taxon_read <- spp_paths[spp_paths %in% taxon_read]
 
 #### Load sw interpolation 
 
-taxon_sw <- my_path("R",extra_path = "Partial/Interpolation/sw", name = taxon_read)
+taxon_sw <- my_path("R",extra_path = "Partial/Interpolation/", name = taxon_read)
 
 # Load all sp in one table
 historic_spp <- bind_rows(lapply(taxon_sw, fread)) %>% 
-  mutate(state = str_to_sentence(state)) %>% 
-  # dplyr::select(-lon,-lat) %>% 
-  full_join(grids,
-            by = c("index","state")
-            )
+  left_join(grids,
+            by = c("index","lon","lat")
+            ) %>%
+  filter(!is.na(spatial))
 
-historic_spp %>% 
-  filter(is.na(spatial)) %>% 
-  filter(year == 1973,
-         region == "Northeast US Fall") %>% 
-  ggplot() +
-    geom_tile(
-      aes(
-        x = lon.x,
-        y = lat.x,
-        fill = index
-      )
-    ) +
-  facet_grid(spp~state) + 
-  geom_sf(data = land_sf,aes()) +
-  geom_sf(data = eez_sf, aes(), fill =NA)
+# historic_spp %>% 
+#   filter(is.na(spatial)) %>% 
+#   filter(year == 1973,
+#          region == "Northeast US Fall") %>% 
+#   ggplot() +
+#     geom_tile(
+#       aes(
+#         x = lon,
+#         y = lat,
+#         fill = index
+#       )
+#     ) +
+#   facet_grid(spp~state) + 
+#   geom_sf(data = land_sf,aes()) +
+#   geom_sf(data = eez_sf, aes(), fill =NA)
 
 unique(historic_spp$spp)
 unique(historic_spp$spatial)
@@ -1250,7 +1250,8 @@ state_lat <- historic_spp %>%
   mutate(abrev = c("CT","DE","ME","MD","MA","NH","NJ","NY","NC","RI","VA")
   ) %>% 
   arrange(desc(order)) %>% 
-  mutate(order= letters[1:11])
+  mutate(lat = order,
+    order = letters[1:11])
 
 
 
@@ -1595,7 +1596,7 @@ p <- ggdraw() +
 
 save_plot(
   path = my_path("R","Figures"),
-  "proportion_chg_diff.jpg",
+  "proportion_chg_diffN.jpg",
   p,
   base_height = 14,
   base_width = 14
@@ -1637,34 +1638,44 @@ state_change <- historic_spp %>%
   # select(-region) %>% 
   # Estimate percentage change
   spread(label,mean_per) %>% 
-  mutate(change = (today-reference)/(today)*100,
-         change = ifelse(change > 100,100,
-                         ifelse(change < -100,-100,change)
+  mutate(raw_change = (today-reference)/(today)*100,
+         change = ifelse(raw_change > 100,100,
+                         ifelse(raw_change < -100,-100,raw_change)
          )
   ) %>%
   select(-reference,-today) 
 
 
+#### Average
+state_change %>% 
+  mutate(
+    wl = ifelse(change < 0, "L",
+                ifelse(change == 0, "NC","W"))
+  ) %>% 
+  # View()
+  # group_by(wl) %>% 
+  group_by(region,spatial,wl) %>% 
+  summarise(
+    states = paste(unique(state),collapse = ", "),
+    mean(raw_change),
+    sd(raw_change)
+  ) %>% 
+  write_csv("../Results/state_relative_chng.csv")
+  View()
+
+
+
   # Estimate spatial differences in percentage change
-season_diff <- state_change %>% 
-  spread(spatial,change) %>% 
-  mutate(difference_season = (fp-sw)/((fp+sw)/2)*100,
-         difference_season = ifelse(difference_season > 100,100,
-                                  ifelse(difference_season < -100,-100,difference_season)
-         )
-  ) %>% 
-  select(state, category = region, diff = difference_season)
-
-# Estimate regional differences in percentage change
 spatial_diff <- state_change %>% 
-  spread(region,change) %>%  
-  mutate(difference_spat = (`Northeast US Fall`-`Northeast US Spring`)/((`Northeast US Fall`+`Northeast US Spring`)/2)*100,
-         difference_spat = ifelse(difference_spat > 100,100,
-                                 ifelse(difference_spat < -100,-100,difference_spat)
-         )
-  ) %>% 
-  select(state,category = spatial,diff = difference_spat)
+  spread(spatial,change) %>% 
+  mutate(spatial_diff = abs(fp-sw)) %>% 
+  select(state, category = region, diff = spatial_diff)
 
+# Estimate seasonal differences in percentage change
+season_diff <- state_change %>% 
+  spread(region,change) %>%  
+  mutate(season_diff = abs(`Northeast US Fall`-`Northeast US Spring`)) %>% 
+  select(state,category = spatial,diff = season_diff)
 
 differences <- season_diff %>% 
   bind_rows(spatial_diff) %>% 
@@ -1673,6 +1684,16 @@ differences <- season_diff %>%
                           ifelse(category == "sw","State Waters",category)
          )
   )
+
+# For in text differences
+differences %>% 
+  group_by(category) %>%
+  summarise_at(vars(diff),
+    c(mean = mean,
+      sd =sd,
+      min = min,
+      max= max))
+
 
 # The main plot
 prop_chng_map <- land_sf %>% 
@@ -1701,7 +1722,7 @@ prop_chng_map <- land_sf %>%
         strip.background = element_blank(),
         ) 
 
-ggsave(filename = "proportion_chng_agg.jpg",
+ggsave(filename = "proportion_chng_agg.png",
          plot = prop_chng_map,
          path = my_path("R","Figures"),
          width = 10,
@@ -1722,9 +1743,8 @@ spat_diff <- land_sf %>%
   viridis::scale_fill_viridis("Differences", 
                               alpha = 0.8,
                               option = "C",
-                              limits = c(-100,100),
-                              breaks = seq(-100,100,25),
-                              labels = c(seq(-100,75,25),">100")
+                              limits = c(0,50),
+                              breaks = seq(0,50,10)
                               ) +
   facet_wrap(~ label,
              ncol = 2) +
@@ -1741,7 +1761,7 @@ spat_diff <- land_sf %>%
         strip.background = element_blank(),
         strip.text.x = element_blank())
 
-ggsave(filename = "spat_diff.jpg",
+ggsave(filename = "spat_diff.png",
          plot = spat_diff,
          path = my_path("R","Figures"),
          width = 8,
@@ -1758,9 +1778,8 @@ seas_diff <- land_sf %>%
   viridis::scale_fill_viridis("Differences", 
                               alpha = 0.8,
                               option = "C",
-                              limits = c(-100,100),
-                              breaks = seq(-100,100,25),
-                              labels = c(seq(-100,75,25),">100")
+                              limits = c(0,50),
+                              breaks = seq(0,50,10)
                               ) +
   facet_wrap(~ label,
              ncol = 1,
@@ -1779,7 +1798,7 @@ seas_diff <- land_sf %>%
         axis.line.y = element_blank()
         )
 
-ggsave(filename = "seas_diff.jpg",
+ggsave(filename = "seas_diff.png",
          plot = seas_diff,
          path = my_path("R","Figures"),
          width = 8,
