@@ -119,72 +119,6 @@ ggplot(state_sf) +
 
 ##### 4.- Fishing ports
 
-We used [Global Fishing Watch](https://globalfishingwatch.org/datasets-and-code-anchorages/)'s database on 
-Anchorages, Ports and Voyages.
-
-*The Global Fishing Watch anchorages dataset is a global database of anchorage locations where vessels congregate. The dataset contains over 160,000 individual anchorage locations, which are further grouped into nearly 32,000 ports when applicable.*
-
-
-```{r ports_sf, eval = T, echo = T}
-
-# Get Global Fishig Watch data
-gfw_data <- my_path("D","Spatial",name = "gfw_portdata.csv", read = T) %>% 
-  filter(iso3 == "USA") 
-
-# Visualize data (o.k!)
-# ggplot(gfw_data) +
-#   geom_point(
-#     aes(
-#     x = lon,
-#     y = lat
-#   )
-#   )
-
-# Convert data to sf for mergig
-gfw_sf <- st_as_sf(gfw_data,
-             coords = c("lon", "lat"),
-             crs = 4326)
-
-# Merge data with state waters to,locate ports 
-port_sf <- st_join(gfw_sf,state_sf) %>% 
-  filter(!is.na(jurisdicti)) # remove points outside stat waters
-
-ggplot(port_sf)  +
-  geom_sf(aes(color = distance_from_shore_m)) +
-  theme_dark()
-
-```
-So...Looks like some ports are "far from shore" which I don't really know what it means. For now, I am only selecting those ports that ar 0 meter from shore. 
-
-
-```{r ports_inshore, eval = T, echo = F}
-
-# Get number of ports per state
-ports_n_data <- port_sf %>% 
-  as.data.frame() %>% 
-    filter(distance_from_shore_m == 0) %>% 
-    group_by(state) %>% 
-    summarise(n_ports = n()) 
-
-# plot it
-gridExtra::grid.arrange(
-  port_sf %>% 
-    filter(distance_from_shore_m == 0) %>% 
-    ggplot()  +
-    geom_sf(aes(color = jurisdicti)) +
-    scale_color_manual(values = state_pallet) +
-    theme_dark() +
-    theme(legend.position = ""),
-  tableGrob(ports_n_data),
-  ncol = 2
-)
-
-
-```
-
-
-There are still too many ports in each state (?). Specially New Jersey! One approach is to use NOAA's landing-per-port data to filter out... 
-
 ###### 4.1 NOAA's data
 
 This dataset includes all landings from 2015-July 2021. It includes the species landed, the port, and the Hull ID and vessel name for black sea bass and summer flounder.
@@ -211,8 +145,8 @@ ports_path <- my_path("D","NOAA", name = "SSmith_2015-2021 Landings_JUN 2021.xls
 ports_data <- bind_rows(read_excel_allsheets(ports_path)) %>%
   clean_names() %>%
   mutate_if(is.character,
-              ~ str_to_lower(.)) %>% 
-  mutate(landing_port = str_remove(landing_port,"[:blank:]\\(state\\)"))
+              ~ str_to_lower(.)) %>%
+    filter(species_name %in% c("summer flounder","black sea bass","scup"))
 
 noaa_ports <- unique(ports_data$landing_port)
 
@@ -256,58 +190,111 @@ gridExtra::grid.arrange(
   
 ```
 
+######4.2 Data from NOAA fisheries 
+https://www.fisheries.noaa.gov/foss/f?p=215:11:15514950376034::NO:::
 
-This approach removes a lot of ports to the point that Delaware is completely port-less
+Delaware data was colected from NOAA's [Snapshots of Human Communities and Fisheries in the Northeast
+](https://apps-nefsc.fisheries.noaa.gov/read/socialsci/communitySnapshots.php)
 
-###### 4.2 World Port Index 
 
-In this approach we only use the ports categorized within the [WPI](https://msi.nga.mil/NGAPortal/MSI.portal?_nfpb=true&_pageLabel=msi_portal_page_62&pubCode=0015) and with `distance_from_shore_m == 0`  and `at_dock == TRUE`.
+NOTES:
 
-- `at_dock` == Anchorages within a 450 meter buffer around a combined land shape file are considered at dock. 
+- There is no Maine, Delaware, nor New Hamshire in the data. Took them from NOAA as main ports of all fisheries
 
-```{r wpi_approach, eval = T, echo = F}
 
-gridExtra::grid.arrange(
-  port_sf %>% 
-    filter(distance_from_shore_m == 0,
-           label_source %in% c("WPI_ports"),
-           at_dock == TRUE) %>% 
-    ggplot()  +
-    geom_sf(aes(color = jurisdicti)) +
-    scale_color_manual(values = state_pallet) +
-    theme_dark(),
-  port_sf %>% 
-    as.data.frame() %>% 
-    filter(distance_from_shore_m == 0,
-           label_source %in% c("WPI_ports"),
-           at_dock == TRUE) %>% 
-    group_by(state) %>% 
-    summarise(n_ports = n()) %>% 
-    tableGrob(),
-  ncol = 2
-)
+```{r sarahs_word_data}
+ 
+noaa_ports <- data.table(
+  port =str_to_sentence(c(
+    "POINT JUDITH, RI", #41.359907914553574,-71.48323250872187,
+    "BEAUFORT, NC", #34.7138879654054,-76.66239630117921,
+    "HAMPTON, VA", #36.98600366773327, -76.35038306859545,
+    "PT. PLEASANT, NJ", #40.08351847675102,-73.99190094110679,
+    "NEWPORT NEWS, VA", #37.00933919295183, -76.48565862613168,
+    "BELFORD, NJ", # 40.43918784734024, -74.0763054899462
+    "MONTAUK, NY", #41.07342262868038, -71.93585836088813
+    "HOBUCKEN, NC", #34.94844567982384, -76.74333419560425
+    "WANCHESE, NC", #35.83524984550334, -75.61121671722921
+    "NEW BEDFORD, MA", # 41.630494052326306, -70.91580669134055
+    "CAPE MAY, NJ", # 38.94979719126508, -74.90280944790463
+    "ORIENTAL, NC", # 35.013571084373126, -76.66793114333704
+    "CHINCOTEAGUE, VA", # 37.91788094070204, -75.35947580478219
+    "ENGELHARD, NC", # 35.262929243118776, -76.08680452670508
+    "STONINGTON, CT", # 41.327282204484035, -71.9223721359251
+    "LONG BEACH/BARNEGAT LIGHT, NJ", #39.752855929900484, -74.11329310115902
+    "OCEAN CITY, MD", #38.3802922004859, -75.05089736920318
+    "Indian river, DE",
+    "Portland, ME", #43.66344794728992, -70.22937554378885
+    "Portsmouth, NH" #43.05334694203953, -70.7126760833714
+  )),
+  lat = c(
+    41.359907914553574,
+    34.7138879654054,
+    36.98600366773327, 
+    40.08351847675102,
+    37.00933919295183, 
+    40.43918784734024, 
+    41.07342262868038,
+    34.94844567982384, 
+    35.83524984550334,
+    41.630494052326306,
+    38.94979719126508,
+    35.013571084373126,
+    37.91788094070204, 
+    35.262929243118776, 
+    41.327282204484035, 
+    39.752855929900484, 
+    38.3802922004859,
+    38.62113593403746,
+    43.66344794728992,
+    43.05334694203953
+  ),
+  lon = c(
+    -71.48323250872187,
+    -76.66239630117921,
+    -76.35038306859545,
+    -73.99190094110679,
+    -76.48565862613168,
+    -74.0763054899462,
+    -71.93585836088813,
+    -76.74333419560425,
+    -75.61121671722921,
+    -70.91580669134055,
+    -74.90280944790463,
+    -76.66793114333704,
+    -75.35947580478219,
+    -76.08680452670508,
+    -71.9223721359251,
+    -74.11329310115902,
+    -75.05089736920318,
+    -75.06397021718345,
+     -70.22937554378885,
+    -70.7126760833714
+  )
+) %>% 
+  separate(port, into = c("port","abrev"), sep = ',') %>% 
+  mutate(abrev = str_squish(str_to_upper(abrev))) %>% 
+  left_join(as.data.frame(land_sf)) %>% 
+  left_join(noaa_ports) %>% 
+  select(port,state = ID,lat,lon) %>% 
+  mutate(state = str_to_sentence(state))
 
+noaa_ports
 
 ```
 
-This approach might be better suited. It also has teh advantage that we are using the WPI.
 
-This is how all the shapefiles look like together
+<!-- This is how all the shapefiles look like together -->
 
 
 ```{r all_sf, eval = T, echo = T}
-
-port_sf <- port_sf %>% 
-    filter(distance_from_shore_m == 0,
-           label_source %in% c("WPI_ports"),
-           at_dock == TRUE)
 
 # Visual exploration of all together (o.k! )
 ggplot() +
   geom_sf(data = eez_sf, aes()) +
   geom_sf(data = land_sf, aes(fill = state), alpha = 0.3) +
   geom_sf(data = state_sf, aes(color = state), fill = NA) +
-  geom_sf(data = port_sf, aes(color = state)) +
+  geom_point(data = noaa_ports, aes(x = lon, y = lat)) +
   scale_color_manual(values = state_pallet) +
   scale_fill_manual(values = state_pallet) +
   theme_dark() +
@@ -364,6 +351,10 @@ state_bf_plot
 We set a buffer of *5* deg (510 km, ~ 221 nm) that overshoots the EEZ a bit, but is eventually cropped
 
 ```{r fp_buffer, eval = T, echo = T}
+
+port_sf <- st_as_sf(noaa_ports,
+                    coords =c("lon","lat"),
+                    crs = 4326)
 
 # Buffer state waters
 port_bf <- st_buffer(port_sf, 5) %>% # port
@@ -425,7 +416,6 @@ state_sf %>%
   theme_bw() +
   theme_dark()
 
-
 ```
 
 ##### 2.1 Create grid for interpolation
@@ -442,7 +432,7 @@ inter_grid_df <- as.data.frame(inter_grid_sf) %>%
   select(index) %>% 
   left_join(ne_grid)
 
-write_csv(inter_grid_df, paste0(my_path("D", "Spatial"),"inter_grid_df.csv"))
+# write_csv(inter_grid_df, paste0(my_path("D", "Spatial"),"inter_grid_df.csv"))
 
 
 ggplot(inter_grid_sf) +
@@ -507,7 +497,7 @@ gridExtra::grid.arrange(
 ```{r grid_fp_buf_merge, eval = T, echo = T, message = F, warning = F, fig.width = 10}
 
 # ---------------- #
-# Convert grid to sf
+# Convert grid to sf 
 # ---------------- #
 grid_fp_sf <- st_as_sf(ne_grid,
              coords = c("lon", "lat"),
@@ -569,22 +559,23 @@ Sys.time()
 grid_eez_sw_sf <- st_intersection(grid_sw_sf,eez_sf)
 Sys.time()
 
-write_sf(grid_eez_sw_sf, paste0(my_path("D", "Spatial/grid_eez_sw_sf"),"grid_eez_sw_sf.shp"))
+# write_sf(grid_eez_sw_sf, paste0(my_path("D", "Spatial/grid_eez_sw_sf"),"grid_eez_sw_sf.shp"))
+grid_eez_sw_sf <- my_path("D","Spatial/grid_eez_sw_sf", name = "grid_eez_sw_df.csv",read = T)
 
 # Get final df with index
-grid_eez_sw_df <- as.data.frame(grid_eez_sf_sw) %>%
+grid_eez_sw_df <- as.data.frame(grid_eez_sw_sf) %>%
   select(state,index) %>%
   left_join(ne_grid,
             by = "index")
 
-write_csv(grid_eez_sw_df, paste0(my_path("D", "Spatial/grid_eez_sw_sf","grid_eez_sw_df.csv")))
+# write_csv(grid_eez_sw_df, paste0(my_path("D", "Spatial/grid_eez_sw_sf","grid_eez_sw_df.csv")))
 
 # Plot to make sure makes sense
 
 eez_sf <- eez_sf %>% 
   st_simplify(preserveTopology = TRUE, dTolerance = 0.1) #0.1 for paper
 
-grid_eez_sf_sw %>%
+grid_eez_sw_df %>%
   ggplot() +
   geom_sf(aes(color = state), alpha = 0.3) +
   scale_color_manual(values = state_pallet) +
@@ -692,8 +683,7 @@ state_order <- my_path("D","Spatial/grid_eez_sw_sf", name = "grid_eez_sw_df.csv"
 
 
 # Load grid of state waters
-grid_eez_sw_sf <- grid_eez_sw_sf %>% 
-  # st_read(my_path("D","Spatial/grid_eez_sw_sf", name = "grid_eez_sw_sf.shp")) %>%
+grid_eez_sw_sf <-  st_read(my_path("D","Spatial/grid_eez_sw_sf", name = "grid_eez_sw_sf.shp")) %>%
   select(index,state,geometry) %>% 
   mutate(method = "state_waters",
          state = str_to_sentence(state)) %>% 
@@ -704,8 +694,7 @@ grid_eez_sw_sf$group <- factor(grid_eez_sw_sf$abrev,      # Reordering group fac
 
 
 # Load grid of fishing ports
-grid_eez_fp_sf <- grid_eez_sf_fp %>% 
-  # st_read(my_path("D","Spatial/grid_eez_fp_sf", name = "grid_eez_fp.shp")) %>% 
+grid_eez_fp_sf <-  st_read(my_path("D","Spatial/grid_eez_fp_sf", name = "grid_eez_fp.shp")) %>%
   select(index,state,geometry) %>% 
   mutate(method = "fishing_port",
          state = str_to_sentence(state))%>% 
@@ -802,7 +791,7 @@ combined_plot <- gridExtra::grid.arrange(p_sw,p_fp,
                                          bottom = "Longitude",
                                          left = "Latitude")
 
-ggsave(filename = "buffer_figureb.jpg",
+ggsave(filename = "buffer_figurec.jpg",
        plot = combined_plot,
        path = my_path("R","Figures"),
        width = 11,
@@ -1150,8 +1139,8 @@ grids <- my_path("D", "Spatial/grid_eez_fp_sf", name = "grid_eez_fp_df.csv", rea
   ) %>% 
   mutate(
     spatial = ifelse(is.na(spatial),"sw",spatial)
-  ) %>% 
-  spread(spatial,index)
+  )# %>% 
+  # spread(spatial,index)
 
 # Species data
 
@@ -1207,7 +1196,6 @@ historic_spp <- bind_rows(lapply(taxon_sw, fread)) %>%
 #   geom_sf(data = eez_sf, aes(), fill =NA)
 
 unique(historic_spp$spp)
-unique(historic_spp$spatial)
 unique(historic_spp$region)
 
 
@@ -2067,6 +2055,107 @@ ssp_area <- ggplot(state_fit) +
 ```
 ![Proportion change aggregated all species map for paper](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/area_plot_avg_spp_sptl.jpg)
 
+# Old code
+
+## Fishing ports WPI
+
+We used [Global Fishing Watch](https://globalfishingwatch.org/datasets-and-code-anchorages/)'s database on 
+Anchorages, Ports and Voyages.
+
+*The Global Fishing Watch anchorages dataset is a global database of anchorage locations where vessels congregate. The dataset contains over 160,000 individual anchorage locations, which are further grouped into nearly 32,000 ports when applicable.*
+
+
+```{r ports_sf, eval = T, echo = T}
+
+# Get Global Fishig Watch data
+gfw_data <- my_path("D","Spatial",name = "gfw_portdata.csv", read = T) %>% 
+  filter(iso3 == "USA") 
+
+# Visualize data (o.k!)
+# ggplot(gfw_data) +
+#   geom_point(
+#     aes(
+#     x = lon,
+#     y = lat
+#   )
+#   )
+
+# Convert data to sf for mergig
+gfw_sf <- st_as_sf(gfw_data,
+             coords = c("lon", "lat"),
+             crs = 4326)
+
+# Merge data with state waters to,locate ports 
+port_sf <- st_join(gfw_sf,state_sf) %>% 
+  filter(!is.na(jurisdicti)) # remove points outside stat waters
+
+ggplot(port_sf)  +
+  geom_sf(aes(color = distance_from_shore_m)) +
+  theme_dark()
+
+```
+So...Looks like some ports are "far from shore" which I don't really know what it means. For now, I am only selecting those ports that ar 0 meter from shore. 
+
+
+```{r ports_inshore, eval = T, echo = F}
+
+# Get number of ports per state
+ports_n_data <- port_sf %>% 
+  as.data.frame() %>% 
+    filter(distance_from_shore_m == 0) %>% 
+    group_by(state) %>% 
+    summarise(n_ports = n()) 
+
+# plot it
+gridExtra::grid.arrange(
+  port_sf %>% 
+    filter(distance_from_shore_m == 0) %>% 
+    ggplot()  +
+    geom_sf(aes(color = jurisdicti)) +
+    scale_color_manual(values = state_pallet) +
+    theme_dark() +
+    theme(legend.position = ""),
+  tableGrob(ports_n_data),
+  ncol = 2
+)
+
+
+```
+
+
+There are still too many ports in each state (?). Specially New Jersey! One approach is to use NOAA's landing-per-port data to filter out... 
+
+###### 4.2 World Port Index 
+
+In this approach we only use the ports categorized within the [WPI](https://msi.nga.mil/NGAPortal/MSI.portal?_nfpb=true&_pageLabel=msi_portal_page_62&pubCode=0015) and with `distance_from_shore_m == 0`  and `at_dock == TRUE`.
+
+- `at_dock` == Anchorages within a 450 meter buffer around a combined land shape file are considered at dock. 
+
+```{r wpi_approach, eval = T, echo = F}
+
+gridExtra::grid.arrange(
+  port_sf %>% 
+    filter(distance_from_shore_m == 0,
+           label_source %in% c("WPI_ports"),
+           at_dock == TRUE) %>% 
+    ggplot()  +
+    geom_sf(aes(color = jurisdicti)) +
+    scale_color_manual(values = state_pallet) +
+    theme_dark(),
+  port_sf %>% 
+    as.data.frame() %>% 
+    filter(distance_from_shore_m == 0,
+           label_source %in% c("WPI_ports"),
+           at_dock == TRUE) %>% 
+    group_by(state) %>% 
+    summarise(n_ports = n()) %>% 
+    tableGrob(),
+  ncol = 2
+)
+
+
+```
+
 ## Historic quota Vs distributions
 
 This section of the results explores the differences between the historic distribution of te stock and the historic quota allocation. We collected the proportion of the total quota that each State gets for each species.
@@ -2304,5 +2393,152 @@ ggplot(eff_index) +
   facet_grid(level~spp,
              scales = "free")+
   theme_dark()
+
+```
+
+## NOAAs port approach
+
+```{r noaa_landings, eval = F, echo = F}
+
+noaa_landings <- read.csv("/Volumes/Enterprise/Data/AcrossBoundaries/Data/NOAA/landings_by_top_us_ports.csv")
+
+
+noaa_landings %>% 
+  clean_names() %>% 
+  View()
+
+state_totals <- as.data.frame(str_split_fixed(noaa_landings$Port., ",",2)) %>% 
+  rename(name = V1,
+         abrv = V2) %>% 
+  bind_cols(noaa_landings) %>% 
+  mutate(abrv = str_squish(abrv)) %>% 
+  clean_names() %>% 
+  filter(abrv %in%  c("CT","DE","ME","MD","MA","NH","NJ","NY","NC","RI","VA")) %>% 
+  filter(year >= 2010) %>% 
+  group_by(abrv) %>% 
+  summarise(total_pounds_million = sum(millions_of_pounds),
+            total_dlr_million = sum(x_millions_of_dollars)
+  )
+
+# Estimate percentages
+port_data <- as.data.frame(str_split_fixed(noaa_landings$Port., ",",2)) %>% 
+  rename(name = V1,
+         abrv = V2) %>% 
+  bind_cols(noaa_landings) %>% 
+  mutate(abrv = str_squish(abrv)) %>% 
+  clean_names() %>% 
+  filter(abrv %in%  c("CT","DE","ME","MD","MA","NH","NJ","NY","NC","RI","VA")) %>% 
+  filter(year >= 2010) %>% 
+  group_by(abrv,name,port) %>% 
+  summarise(sum_pounds_million = sum(millions_of_pounds),
+            sum_dlr_million = sum(x_millions_of_dollars)
+            ) %>% 
+  left_join(state_totals) %>% 
+  mutate(
+    per_sum = sum_dlr_million/total_dlr_million*100,
+    per_pnds = sum_pounds_million/total_pounds_million*100,
+    cum_per_sum = cumsum(sum_dlr_million/total_dlr_million*100),
+    cum_per_pnds = cumsum(sum_pounds_million/total_pounds_million*100)
+  )
+
+ 
+
+
+  # Function to get percentiles
+      # https://www.tidyverse.org/blog/2020/03/dplyr-1-0-0-summarise/
+      quibble <- function(x, q = p) {
+        tibble(x = quantile(x, q), q = q)
+      }
+      # Get the percentile treshold per year, ensemble and neighbour id
+    percentile <- port_data %>% 
+        group_by(abrv) %>%
+        do(quibble(.$com_sum, 0.50)) %>% 
+      left_join(port_data) %>% 
+      mutate(drop = ifelse(x < sum_dlr_million,"drop","keep" )) %>% 
+      filter(drop == "keep")
+
+ 
+ 
+# Number of ports per state
+percentile %>%
+  group_by(abrv) %>%
+  summarise(n()) %>% 
+  left_join(original_n) %>% View()
+
+
+unique(port_data$abrv)
+length(unique(port_data$abrv))
+
+# Get rank by dolar
+top_dlr <- port_data %>% 
+  group_by(abrv) %>%
+  # View()
+  top_n(10,sum_dlr_million)
+
+# Get rank by landing
+top_pnd <- port_data %>% 
+  group_by(abrv) %>%
+  # View()
+  top_n(10,sum_pounds_million)
+
+# Bind ports and manually set corrdinates
+top_ports <- top_dlr %>% 
+  full_join(top_pnd) %>% 
+  arrange(abrv) %>% 
+  group_by(abrv) %>% 
+  summarise(n())
+  
+  
+  
+  
+  # Manually estimated from google maps
+  bind_cols(
+    lat = c(41.3345476816744,
+            41.34138388600569,
+            41.636467065626505,
+            38.32347787720262, 
+            44.15386541519202, 
+            43.66617357876293,
+            35.90400984508054, 
+            43.1123838312889,
+            38.971394018750296, 
+            41.05268318179009, 
+            41.37054800823896, 
+            36.992858601329836, 
+            37.839637137249234
+            ),
+    long = c(-71.91332744028196,
+             -72.08202556545858,
+             -70.91964446265216,
+             -75.1014183484163,
+             -68.66402196775981,
+             -70.2288380196981,
+             -75.55554059613718,
+             -70.85815866495484,
+             -74.8122413826507,
+             -71.9688254628936,
+             -71.48032452726083,
+             -76.26817146730399,
+              -76.24292771914955
+             )
+  ) %>% 
+  # Delaware
+  bind_rows(
+    data.frame(abrv = "DE",
+      name = "Indian river",
+      port = "Indian river, DE",
+      lat = as.double(38.62113593403746),
+      long = -75.06397021718345
+      )
+  )
+
+# write_csv(top_ports,"top_neus_ports.csv")
+
+
+  port_data %>% 
+    filter(com_mean >= 75) %>% 
+    group_by(abrv) %>% 
+    View()
+    summarise(n())
 
 ```
