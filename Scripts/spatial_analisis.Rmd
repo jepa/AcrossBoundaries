@@ -644,7 +644,7 @@ grid_eez_sw_sf <- my_path("D","Spatial/grid_eez_sw_sf", name = "grid_eez_sw_df.c
 
 # Get final df with index
 grid_eez_sw_df <- as.data.frame(grid_eez_sw_sf) %>%
-  select(state,index) %>%
+  select(state,abrev,index) %>%
   left_join(ne_grid,
             by = "index")
 
@@ -669,6 +669,10 @@ grid_eez_sw_df %>%
 
 ```{r buff_fp_to_eez, eval =T, echo = T, message = F, warning = F}
 
+state_names <- grid_eez_sw_df %>% 
+  select(state,abrev) %>% 
+  distinct(.keep_all = T)
+
 # Get the overlapping segments 
 # NOTE: Takes some gooooood time (~20 min)
 Sys.time()
@@ -679,9 +683,10 @@ write_sf(grid_eez_sf_fp, paste0(my_path("D", "Spatial/grid_eez_fp_sf"),"grid_eez
 
 # Get final df with index
 grid_eez_fp_df <- as.data.frame(grid_eez_sf_fp) %>%
-  select(index,landing_port,species_name) %>% 
+  select(index,landing_port,abrev=landing_state,spp=species_name) %>% 
   left_join(ne_grid,
-            by = "index")
+            by = "index") %>% 
+  left_join(state_names)
 
 write_csv(grid_eez_fp_df, paste0(my_path("D", "Spatial/grid_eez_fp_sf"),"grid_eez_fp_df.csv"))
 
@@ -1189,6 +1194,15 @@ State allocations of the commercial black sea bass coastwide quota were original
 
 ```{r load_data, eval = T, echo = T}
 
+# Spatial data
+States <- c("maine", "new hampshire", "massachusetts", "connecticut", "rhode island", "new york", "new jersey", "delaware", "maryland", "virginia", "north carolina") 
+
+# US State Map (land)
+land_sf <- st_as_sf(map("state", plot = FALSE, fill = TRUE)) %>% 
+  filter(ID %in% States) %>% 
+  mutate(abrev = c("CT","DE","ME","MD","MA","NH","NJ","NY","NC","RI","VA"),
+         state = str_to_sentence(ID)
+         )
 
 ### Previouslly created grids 
 
@@ -1199,10 +1213,12 @@ grids <- my_path("D", "Spatial/grid_eez_fp_sf", name = "grid_eez_fp_df.csv", rea
   bind_rows(
     my_path("D", "Spatial/grid_eez_sw_sf", name = "grid_eez_sw_df.csv", read = T)
   ) %>% 
+  select(-spp) %>% 
   mutate(
     spatial = ifelse(is.na(spatial),"sw",spatial)
-  )# %>% 
-  # spread(spatial,index)
+  ) %>% 
+  distinct(.keep_all = T)
+  
 
 # Species data
 
@@ -1261,16 +1277,6 @@ unique(historic_spp$spp)
 unique(historic_spp$region)
 unique(historic_spp$region)
 
-# Spatial data
-States <- c("maine", "new hampshire", "massachusetts", "connecticut", "rhode island", "new york", "new jersey", "delaware", "maryland", "virginia", "north carolina") 
-
-# US State Map (land)
-land_sf <- st_as_sf(map("state", plot = FALSE, fill = TRUE)) %>% 
-  filter(ID %in% States) %>% 
-  mutate(abrev = c("CT","DE","ME","MD","MA","NH","NJ","NY","NC","RI","VA"),
-         state = str_to_sentence(ID)
-         )
-
 # Periods
 periods <-tibble(
   order = c(rep("a",12),
@@ -1301,7 +1307,8 @@ state_lat <- historic_spp %>%
   ) %>% 
   arrange(desc(order)) %>% 
   mutate(lat = order,
-    order = letters[1:11])
+    # order = letters[1:11],
+    order = c("b","a",letters[3:11]),)
 
 
 
@@ -1426,9 +1433,6 @@ ggsave("interpolation_fig.jpg",
        path = my_path("R","Figures"),
        width = 8,
        height = 6)
-
-
-
 ```
 
 
@@ -1540,6 +1544,7 @@ total_fited <- historic_spp %>%
 state_fit <- historic_spp %>% 
   group_by(state,year,region,spp,spatial) %>% 
   summarise(state_value = sum(value,na.rm= T), .groups = "drop") %>% 
+  # View()
   left_join(total_fited,
             by = c("year","region","spp","spatial")) %>%
   mutate(percentage = state_value/total_value*100,
@@ -1547,17 +1552,18 @@ state_fit <- historic_spp %>%
                          ifelse(year > 2001,"Today",NA)
                          )
          ) %>% 
-  # left_join(periods,
-  #           by = "year") %>% 
   group_by(state,label,region,spp,spatial) %>% 
   summarise(mean_per = round(mean(percentage)),.groups = "drop") %>% 
   #Only show results for spring
   filter(str_detect(region,"Spring"),
          !is.na(label)) %>% 
   spread(spatial,mean_per) %>% 
+  # Set NA's to 0 because no data found on FP
+  mutate(fp = replace_na(fp,0)) %>% 
+  # View()
   mutate(
-    difference = (fp-sw)/((fp+sw)/2)*100,
-    # difference = fp-sw,
+    # difference = ifelse(fp == 0,100, (fp-sw)/((fp+sw)/2)*100),
+    difference = abs(fp-sw),
          difference = ifelse(difference > 100,100,
                              ifelse(difference < -100,-100,difference)
          )
@@ -1577,8 +1583,8 @@ map_plot <- land_sf %>%
   ggplot() +
   geom_sf(aes(fill = mean_per)) +
   viridis::scale_fill_viridis("Average proportion per State", alpha = 0.8, 
-                              breaks = seq(0,15,5),
-                              limits=(c(0,15))
+                              breaks = seq(0,35,5),
+                              limits=(c(0,35))
                               )+
   facet_grid(spatial~ spp+label) +
   labs(x = "", 
@@ -1598,9 +1604,10 @@ diff_plot <- land_sf %>%
   filter(spatial == "Difference") %>% 
   ggplot() +
   geom_sf(aes(fill = mean_per)) +
-  viridis::scale_fill_viridis("Percentage difference", alpha = 0.8,option = "C",
-                              breaks = seq(-20,70,10),
-                              limits=(c(-20,70))
+  viridis::scale_fill_viridis("Difference (%)", alpha = 0.8,option = "C",
+                              breaks = seq(0,20,5),
+                              limits=(c(0,22)),
+                              # labels = c("<-10",seq(-75,75,25),">100")
                               ) +
   facet_grid(spatial~ spp+label) +
   labs(x = "", 
@@ -1633,7 +1640,7 @@ p <- ggdraw() +
 
 save_plot(
   path = my_path("R","Figures"),
-  "proportion_chg_spp_spatialN.jpg",
+  "proportion_chg.jpg",
   p,
   base_height = 14,
   base_width = 14
@@ -1778,7 +1785,7 @@ save_plot(
 ![Proportion change per species map for paper](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/temp_proportion_chng.jpg)
 
 
-### Paper figure: Aggregated Proportional change
+### Aggregated Proportional change
 
 ```{r area_map_aggregated_formans, eval = T, echo = T, fig.width = 10, fig.height=6}
 
@@ -2085,7 +2092,7 @@ ggplotly(p,
 
 ```
 
-### Paper figure: Aggregated Proportional change
+### Aggregated Proportional change
 
 ```{r plot_area_ave_agg, eval = F, echo = F, results='hide'}
 
@@ -2155,7 +2162,7 @@ agg_area <- ggplot(state_fit) +
          path = my_path("R","Figures"),
          width = 8,
          height = 6
-  )
+         )
 
 
 ```
@@ -2229,8 +2236,8 @@ ssp_area <- ggplot(state_fit) +
   ggsave(filename = "area_plot_avg_spp_sptl.jpg",
          plot = ssp_area,
          path = my_path("R","Figures"),
-         width = 12,
-         height = 10
+         width = 14,
+         height = 8
   )
 
 
