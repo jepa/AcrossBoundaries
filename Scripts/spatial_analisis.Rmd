@@ -1419,19 +1419,19 @@ inter_map <- ggplot() +
   #                                  size = 4,
   #                                  box.padding = 0.10,
   #                                  hjust = 1) +
-  scale_fill_viridis("Mean Interpolation", alpha = 0.8,
+  scale_fill_viridis("Mean\nInterpolation",
                      limits = c(0,40)) +
-  scale_color_viridis("Mean Interpolation", alpha = 0.8, 
+  scale_color_viridis("Mean\nInterpolation",
                       limits = c(0,40)) +
-  facet_grid(label ~ spp) +
-  my_ggtheme_m(map_type = "na", leg_pos = "bottom",ax_tx_s = 10,ax_tl_s = 12,leg_tx_s = 12) +
-  theme(legend.key.width = unit(3,"line"))
+  facet_grid(spp~label) +
+  my_ggtheme_m(map_type = "na", leg_pos = "right",ax_tx_s = 7,ax_tl_s = 10,leg_tx_s = 10) #+
+  # theme(legend.key.width = unit(3,"line"))
 
 
 ggsave("interpolation_fig.jpg",
        inter_map,
        path = my_path("R","Figures"),
-       width = 8,
+       width = 6,
        height = 6)
 ```
 
