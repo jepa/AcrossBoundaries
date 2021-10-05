@@ -1255,7 +1255,10 @@ historic_spp <- bind_rows(lapply(taxon_sw, fread)) %>%
   left_join(grids,
             by = c("index","lon","lat")
             ) %>%
-  filter(!is.na(spatial))
+  filter(!is.na(spatial)) %>% 
+  mutate(
+    season = ifelse(str_detect(region,"Spring"),"Spring","Fall")
+  )
 
 # historic_spp %>% 
 #   filter(is.na(spatial)) %>% 
@@ -1275,7 +1278,7 @@ historic_spp <- bind_rows(lapply(taxon_sw, fread)) %>%
 
 unique(historic_spp$spp)
 unique(historic_spp$region)
-unique(historic_spp$region)
+unique(historic_spp$season)
 
 # Periods
 periods <-tibble(
@@ -1337,9 +1340,8 @@ interpol_result <- historic_spp %>%
                    ifelse(year > 2001,"Today",NA)
     )
   ) %>% 
-  filter(!is.na(label),
-         region == "Northeast US Spring") %>% 
-  group_by(label,index,spp,lat,lon) %>% 
+  filter(!is.na(label)) %>% 
+  group_by(label,index,spp,season,lat,lon) %>% 
   summarise(mean_cpue = mean(value,na.rm=T)) %>% 
   filter(!is.na(mean_cpue))
 
@@ -1354,11 +1356,10 @@ total_inter <- historic_spp %>%
                    ifelse(year > 2001,"Today",NA)
     )
   ) %>% 
-  filter(!is.na(label),
-         region == "Northeast US Spring") %>% 
-  group_by(spp,index) %>% 
+  filter(!is.na(label)) %>% 
+  group_by(spp,index,season) %>% 
   summarise(mean_cpue = mean(value,na.rm=T)) %>% 
-  group_by(spp) %>% 
+  group_by(spp,season) %>% 
   summarise(total_cpue = sum(mean_cpue, na.rm = T))
 
 
@@ -1369,70 +1370,94 @@ centroid_db <- historic_spp %>%
                    ifelse(year > 2001,"Today",NA)
     )
   ) %>% 
-  filter(!is.na(label),
-         region == "Northeast US Spring") %>% 
-  group_by(label,index,spp,lat,lon) %>% 
+  filter(!is.na(label)) %>% 
+  group_by(label,index,spp,season,lat,lon) %>% 
   summarise(mean_cpue = mean(value,na.rm=T)) %>% 
   filter(!is.na(mean_cpue)) %>% 
   left_join(total_inter) %>% 
   mutate(
     per_cpue = round((mean_cpue/total_cpue)*100,2)
   ) %>% 
-  group_by(spp,label) %>% 
+  group_by(spp,label,season) %>% 
   top_n(10,per_cpue) %>% 
-  group_by(spp,label) %>% 
+  group_by(spp,label,season) %>% 
   summarise(
     lat = mean(lat),
     lon = mean(lon)
   )
 
 
+pal <- wes_palette("Zissou1",100,type = "continuous")
+
 inter_map <- ggplot() +
-   geom_tile(data = subset(interpol_result, mean_cpue == 0),
+  geom_tile(data = subset(interpol_result, mean_cpue == 0),
             aes(
               x = lon,
               y = lat
             ),
             fill = "grey90",
-              color = "grey90"
+            color = "grey90"
   ) + 
   geom_tile(data = subset(interpol_result, mean_cpue > 0),
             aes(
               x = lon,
               y = lat,
+              # fill = log10(mean_cpue),
+              # color = log10(mean_cpue)
               fill = mean_cpue,
               color = mean_cpue
             )
   ) + 
   geom_point(data = centroid_db,
-            aes(
-              x = lon,
-              y = lat
-            ),
-            shape = 3,
-            color = "white"
+             aes(
+               x = lon,
+               y = lat
+             ),
+             shape = 3,
+             color = "white"
   ) + 
   geom_sf(data = land_sf,aes()) +
   labs(x = "Longitude",
-         y = "Latitude") +
+       y = "Latitude") +
   # ggsflabel::geom_sf_label_repel(data = land_sf, aes(label= abrev), 
   #                                  size = 4,
   #                                  box.padding = 0.10,
   #                                  hjust = 1) +
-  scale_fill_viridis("Mean\nInterpolation",
-                     limits = c(0,40)) +
-  scale_color_viridis("Mean\nInterpolation",
-                      limits = c(0,40)) +
-  facet_grid(spp~label) +
-  my_ggtheme_m(map_type = "na", leg_pos = "right",ax_tx_s = 7,ax_tl_s = 10,leg_tx_s = 10) #+
-  # theme(legend.key.width = unit(3,"line"))
+  # Viridis option
+scale_fill_viridis("CPUE",
+                   limits = c(0,40),
+                   # limits = c(-5,1), # for log10
+                   direction = -1,
+                    end = 0.9
+                   ) +
+scale_color_viridis("CPUE",
+                    limits = c(0,40),
+                    # limits = c(-5,1), # for log10
+                    direction = -1,
+                    end = 0.9
+                    ) +
+# wes anderson option
+# scale_fill_gradientn("CPUE",
+#                      colours = pal,
+#                      limits = c(0,40) # For cpue
+#                      # limits = c(-5,1) # for log10
+#                      
+# ) +
+#   scale_color_gradientn("CPUE",
+#                         colours = pal,
+#                         limits = c(0,40) # for cpue
+#                         # limits = c(-5,1) # for log10
+#   ) +
+  facet_grid(spp~season+label) +
+  my_ggtheme_m(map_type = "na", leg_pos = "right",ax_tx_s = 7,ax_tl_s = 10,leg_tx_s = 12) #+
+# theme(legend.key.width = unit(3,"line"))
 
 
-ggsave("interpolation_fig.jpg",
+ggsave("interpolation_vi.jpg",
        inter_map,
        path = my_path("R","Figures"),
-       width = 6,
-       height = 6)
+       width = 9,
+       height = 7)
 ```
 
 
