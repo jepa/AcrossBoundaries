@@ -1345,6 +1345,13 @@ interpol_result <- historic_spp %>%
   summarise(mean_cpue = mean(value,na.rm=T)) %>% 
   filter(!is.na(mean_cpue))
 
+
+# Paper numbers
+
+# interpol_result %>% 
+#   filter(mean_cpue >0) %>% 
+#   View()
+
 # --------------------- #
 # Biomass Centroid shift
 # --------------------- #
@@ -1386,7 +1393,17 @@ centroid_db <- historic_spp %>%
     lon = mean(lon)
   )
 
+# Paper numbers
+centroid_db %>% 
+  select(-lon) %>% 
+  spread(label,lat) %>% 
+  mutate(diff = Today-Reference) %>% 
+  View()
 
+
+
+
+# For alternative color pallet
 pal <- wes_palette("Zissou1",100,type = "continuous")
 
 inter_map <- ggplot() +
@@ -1458,9 +1475,8 @@ ggsave("interpolation_vi.jpg",
        path = my_path("R","Figures"),
        width = 9,
        height = 7)
+
 ```
-
-
 
 
 ## Average proportion

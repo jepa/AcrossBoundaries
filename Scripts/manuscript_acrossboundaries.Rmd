@@ -171,16 +171,20 @@ img <- readPNG("/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/F1_buf
 grid.raster(img)
 ```
 
-<!-- ![Figure 1. Spatial regions within the United States' North East Exclusive Economic Zone. A) Spatial buffers from each state's waters. B) Spatial buffers from the main fishing ports. States are aligned by average latitude from north to south. ME, Maine; NH, New Hampshire; MA, Massachusetts; RI, Rhode Island; CT, Connecticut; NY, New York; NY, New Jersey; DE, Delaware; MD, Maryland; VA Virginia; North Carolina. ](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/F1_buffer_figure.png) -->
+![Figure 1. Spatial regions within the United States' North East Exclusive Economic Zone. A) Spatial buffers from each state's waters. B) Spatial buffers from the main fishing ports. States are aligned by average latitude from north to south. ME, Maine; NH, New Hampshire; MA, Massachusetts; RI, Rhode Island; CT, Connecticut; NY, New York; NY, New Jersey; DE, Delaware; MD, Maryland; VA Virginia; North Carolina. ](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/F1_buffer_figure.png)
 
-<!-- **[Add another paragraph here on how different the Spring vs. Fall distributions are]** -->
-The spatial distribution of the CPUE interpolation for each species varied by season (Figure \@ref{fig:figInterpolation}.
+Seasonality plays an important role in determine the spatial distribution of CPUE (Figure \@ref{fig:figInterpolation}. Specific latitudinal variations in the overall distribution is seen for all species. This is evident for scup, whose historical northern distribution limit varied from Massachusetts (latitude ~42.4) in spring to the northern coast of Maine (latitude ~44) in the fall. Such seasonality has shifted northward over the last couple of decades for both scup and black sea bass. For example, black sea bass has substantially expanded its range over the spring from and initial Northern limit at New Jersey (latitude ~$40.6^o$) to the border of Maine and New Hampshire (latitude ~$43^o$). In addition to presenting the larger latitudinal shift in CPUE centroid (i.e., the region with the highest CPUE) relative to the historical centroid, a $2.1^0$ shift in fall distribution). In the case of summer flounder, however, such latitudinal seasonality is less evident. Instead, interpolation results suggests a longitudinal (or depth) shift in the species range from a largely coastal concentration in the fall to a eastward shift in the spring. Such pattern seems to become even more pronounced in current spring distributions, realtive to historical levels.
 
-```{r figInterpolation, eval = F, echo = F}
 
+```{r figInterpolation, eval = F, echo = T, fig.width = 3, fig.height = 2, echo=FALSE, fig.cap="Interpolation results for all species and seasons. Scale showing Catch per Unit of Effort (CPUE) at a log 10 scale. White cross represents the species' centroid defined as the region with the largest CPUE. Grey regions represent no CPUE"}
+
+# Call the image
+img <- readPNG("/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/F2_Interpolation.jpg")
+# Print the image
+grid.raster(img)
 ```
 
-
+![Figure 2. Interpolation results for all species and seasons. Scale showing Catch per Unit of Effort (CPUE) at a log 10 scale. White cross represents the species' centroid defined as the region with the largest CPUE. Grey regions represent no CPUE](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/F2_Interpolation.jpg)
 
 
 
