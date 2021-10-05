@@ -171,9 +171,9 @@ img <- readPNG("/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/F1_buf
 grid.raster(img)
 ```
 
-![Figure 1. Spatial regions within the United States' North East Exclusive Economic Zone. A) Spatial buffers from each state's waters. B) Spatial buffers from the main fishing ports. States are aligned by average latitude from north to south. ME, Maine; NH, New Hampshire; MA, Massachusetts; RI, Rhode Island; CT, Connecticut; NY, New York; NY, New Jersey; DE, Delaware; MD, Maryland; VA Virginia; North Carolina. ](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/F1_buffer_figure.png)
+![Figure 1. Spatial regions within the United States' North East Exclusive Economic Zone. A) Spatial buffers from each state's waters. B) Spatial buffers from the main fishing ports. States are aligned by average latitude from north to south. ME, Maine; NH, New Hampshire; MA, Massachusetts; RI, Rhode Island; CT, Connecticut; NY, New York; NY, New Jersey; DE, Delaware; MD, Maryland; VA Virginia; North Carolina. ](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/F1_buffer_figure.jpg)
 
-Seasonality plays an important role in determine the spatial distribution of CPUE (Figure \@ref{fig:figInterpolation}. Specific latitudinal variations in the overall distribution is seen for all species. This is evident for scup, whose historical northern distribution limit varied from Massachusetts (latitude ~42.4) in spring to the northern coast of Maine (latitude ~44) in the fall. Such seasonality has shifted northward over the last couple of decades for both scup and black sea bass. For example, black sea bass has substantially expanded its range over the spring from and initial Northern limit at New Jersey (latitude ~$40.6^o$) to the border of Maine and New Hampshire (latitude ~$43^o$). In addition to presenting the larger latitudinal shift in CPUE centroid (i.e., the region with the highest CPUE) relative to the historical centroid, a $2.1^0$ shift in fall distribution). In the case of summer flounder, however, such latitudinal seasonality is less evident. Instead, interpolation results suggests a longitudinal (or depth) shift in the species range from a largely coastal concentration in the fall to a eastward shift in the spring. Such pattern seems to become even more pronounced in current spring distributions, realtive to historical levels.
+Seasonality plays an important role in determine the distributional range of black sea bass, scup, and summer flounder (Figure \@ref{fig:figInterpolation}). Latitudinal variations in distributions are notable for scup, whose historical northern limit goes from Massachusetts (latitude ~42.4) in spring to the northern coast of Maine (latitude ~44) in the fall. Moreover both scup and black sea bass have expanded their distribution northward. For example, black sea bass Northern limit in spring expanded from New Jersey (latitude ~$40.6^o$) in the late 1980s to the border of Maine and New Hampshire (latitude ~$43^o$) in recent years. In addition, black sea bass centroid (i.e., the region with the highest CPUE) shifted $2.1$ degrees north since 1980, more than any of the three species. In the case of summer flounder, however, such latitudinal seasonality is less evident. Instead, the interpolation results suggests a longitudinal (or depth) expansion in the species range from a largely coastal concentration in the fall to an eastward shift in the spring. Such pattern seems to become even more pronounced in current spring conditions, relative to historical levels (Figure \@ref{fig:figInterpolation}).
 
 
 ```{r figInterpolation, eval = F, echo = T, fig.width = 3, fig.height = 2, echo=FALSE, fig.cap="Interpolation results for all species and seasons. Scale showing Catch per Unit of Effort (CPUE) at a log 10 scale. White cross represents the species' centroid defined as the region with the largest CPUE. Grey regions represent no CPUE"}
@@ -186,27 +186,49 @@ grid.raster(img)
 
 ![Figure 2. Interpolation results for all species and seasons. Scale showing Catch per Unit of Effort (CPUE) at a log 10 scale. White cross represents the species' centroid defined as the region with the largest CPUE. Grey regions represent no CPUE](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/F2_Interpolation.jpg)
 
+We overlay the developed regulatory units with the interpolated CPUE of black sea bass, summer flounder and scup to estimate each state's proportion of the total CPUE (Figures \@ref{fig:figSpatialDiff}). Under the state waters approach, each state has a regulatory unit and thus captures a part of the CPUE of each species. However, under the fishing ports approach some states end up without regulatory units resulting in no CPUE. This is the case of Maine, New Hampshire and Connecticut. On the contrary, New Jersey and Virginia end up with the largest benefits of the fishing ports approach. There are very few cases where the spatial approach does not affect the CPUE proportion of each state (Delaware, Massachusetts and North Carolina for black sea bass, North Carolina for summer flounder and Maryland for scup).
 
-
-
-Our results suggest that the current distribution of all three species has changed relative to 1980-2001 from North Carolina to Maine. Biomass has increased in average 30% $\pm$ 11% in Connecticut, Maine, Massachusetts, New hampshire, Rhode island relative to the historical proportion regardless of the season and the spatial approach. On the other hand, Delaware, Maryland, New jersey, New york, North carolina, and Virginia have seen an average biomass loss of 39% $\pm$ 29% relative to the historical proportion for all approaches and seasons (Supplement Table 1). Specific cases of no change exist for Connecticut and New Jersey in the fishing ports approach for Spring and Fall, respectiveley, and New York in all but the Spring-fishig ports approach. 
-
-Differences in the intensity of change varies among spatial and seasonal estimations (Figure \@ref{fig:figaggpropcnhg}).
-
-
-All three species show a reduction in biomass proportion for southern states (namely Virginia and North Carolina) with black sea bass and scup having the larger declines (Figure \@ref{fig:figSppHist}). Biomass increases are less clear. For black sea bass, biomass has increased from Maine all the way down to Rhode Island in the Fishing ports approach, and New York for the state waters approach. In the state waters approach the species has just recently "arrived" to Maine and New Hampshire waters (Figure \@ref{fig:figSppHist}- state waters). For scup, only Maine and New Hampshire seem to have gain biomass following the Fishing ports approach while the state waters approach resulted in gains for all States northern than New York. Similar to black sea bass, Virginia and North Carolina are the main biomass losers in both approaches. Finally, there does not appear to be clear evidence of shifts in biomass for summer flounder. Decreases are seen for Virginia and North Carolina for both approaches and increases for Maine and New Hampshire for the fishing ports approach, yet, these are almost imperceptible (Figure \@ref{fig:figSppHist}).
-
-
-```{r figSppHist, eval = F, echo = T, fig.width = 3, fig.height = 2, echo=FALSE, fig.cap = "Historical proportion of each species' biomass per state and spatial approach. States organized latitudinally. Grey-white box showing the quota-based historical period"}
+```{r figSpatialDiff, eval = F, echo = T, fig.width = 3, fig.height = 2, echo=FALSE, fig.cap = "Proportion of the Catch per Unit of Effort (CPUE) for each species by state undert two time periods. Top and middle rows represent the fishing port and state waters approach, respectiveley. Bottom row is the difference between each approach. All values in percentage"}
 
 # Call the image
-img <- readPNG("/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/F4_area_plot_avg_spp_sptl.png")
+img <- readPNG("/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/F3_proportion_chg.jpg")
 # Print the image
 grid.raster(img)
 ```
 
 
-![Figure 4. Proportion of the distribution of Paralichthys dentatus, Stenotomus chrysops and Centropristis striata over time. Each color represent a state ordered latitudinal. Grey box represents the base-period used for the fisheries quota allocation ](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/F4_area_plot_avg_spp_sptl.png)
+![Figure 3. Proportion of the Catch per Unit of Effort (CPUE) for each species by state undert two time periods. Top and middle rows represent the fishing port and state waters approach, respectiveley. Bottom row is the difference between each approach. All values in percentage. Differences in absolute values](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/F3_proportion_chg.jpg)
+
+Seasonal differences are also evident, although smaller than regulatory unit differences, when estimate each state's CPUE proportion for all species (Figures \@ref{fig:figSeasonlDiff}). Here, half of the cases represent 1% or no seasonality difference like Connecticut's CPUE proportion of summer flounder. The largest difference are in the latitudinal extremes with Maine currently getting 4% more CPUE in the fall than in spring as opposite to Virginia who gets 4% more in the spring than in the fall. 
+
+
+```{r figSeasonlDiff, eval = F, echo = T, fig.width = 3, fig.height = 2, echo=FALSE, fig.cap = "Proportion of the Catch per Unit of Effort (CPUE) for each species by state undert two time periods. Top and middle rows represent the fishing port and state waters approach, respectiveley. Bottom row is the difference between each approach. All values in percentage"}
+
+# Call the image
+img <- readPNG("/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/proportion_chg_seas.jpg")
+# Print the image
+grid.raster(img)
+```
+
+
+![Figure 4. Historical Catch Per Unit of Efort (CPUE) proportion of each species by season. Proportion presented in 10 years running mean percentage. States presented latitudinally from north to south. Differences in absolute values. ](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/proportion_chg_seas.jpg)
+
+The proportion of the CPUE has increased for northern states 
+
+```{r figAreaPlot, eval = F, echo = T, fig.width = 3, fig.height = 2, echo=FALSE, fig.cap = "Proportion of the Catch per Unit of Effort (CPUE) for each species by state undert two time periods. Top and middle rows represent the fishing port and state waters approach, respectiveley. Bottom row is the difference between each approach. All values in percentage"}
+
+# Call the image
+img <- readPNG("/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/F4_area_plot_avg_spp_sptl.jpg")
+# Print the image
+grid.raster(img)
+```
+
+
+![Figure 5. Historical Catch Per Unit of Efort (CPUE) proportion of each species by spatial approach. Proportion presented in 10 years running mean percentage. States presented latitudinally from north to south ](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/F4_area_plot_avg_spp_sptl.jpg)
+
+
+
+
 
 # Discussion 
 
