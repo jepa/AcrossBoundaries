@@ -142,223 +142,367 @@ shinyUI(
                               
                    ), # close information tab
                    # ----------------------- #
-                   # Tool UI ####
+                   # Option A ####
                    # ----------------------- #
-                   navbarMenu("Tool",
-                              tabPanel("Historic allocation",
-                                       fluidRow(
-                                           column(
-                                               12,
-                                               align = "justified",
-                                               h1("Control panel"),
-                                           ),
-                                           # Sidebar with a slider input for number of bins
-                                           sidebarLayout(
-                                               sidebarPanel(
-                                                   # Select which Gender(s) to plot
-                                                   checkboxGroupInput(inputId = "SurveySelection",
-                                                                      label = "Select Survey Season(s)",
-                                                                      choices = unique(spp_survey$region),
-                                                                      selected = unique(spp_survey$region)[1]
-                                                   ),
-                                                   # Select Species
-                                                   selectInput(inputId = "SppSelection",
-                                                               label = "Select Species",
-                                                               choices = unique(spp_survey$spp),
-                                                               selected = "Centropristis striata",
-                                                               width = "220px"
-                                                   ),
-                                                   # Select sf Area
-                                                   selectInput(inputId = "SpatSelection",
-                                                               label = "Select Management Unit",
-                                                               choices = c("State waters","Fishing ports","Both"),
-                                                               selected = "State waters",
-                                                               width = "220px"
-                                                   ),
-                                                   # Set Time Range
-                                                   sliderInput("PortTreshold",
-                                                               "Port threshold",
-                                                               min = 5,
-                                                               max = 95,
-                                                               value = 75),
-                                                   # Choose the years you want to plot
-                                                   sliderInput(inputId = "YearSelection",
-                                                               label = "Select Year Range",
-                                                               min = 1972,
-                                                               max = 2019,
-                                                               step = 1,
-                                                               sep = "",
-                                                               animate = FALSE,
-                                                               value = c(1972,2019),
-                                                               width = "220px"),
-                                                   # Select which plot you want to create
-                                                   # checkboxGroupInput(inputId = "PlotStyle",
-                                                   #                    label = "Select Result",
-                                                   #                    choices = c(
-                                                   #                        "Latitudinal Shift (P)" = 1,
-                                                   #                        "Survey Points (P)" = 2, 
-                                                   #                        "Distribution (M)" = 3,
-                                                   #                        "Proportion change (M)" = 5,
-                                                   #                        "Proportion change (Mp)" = 6,
-                                                   #                        "Allocation Area (P)" = 4,
-                                                   #                        # Comparrison plots
-                                                   #                        "Relative Change" = 7
-                                                   #                    ),
-                                                   #                    selected = 1
-                                                   # ),
-                                                   #Set RMean
-                                                   # sliderInput(inputId = "Rmean",
-                                                   #             label = "Running average for allocation area",
-                                                   #             min = 1,
-                                                   #             max = 20,
-                                                   #             value = 1)
-                                               ), # Close side panel
-                                               # Show a plot of the generated distribution
-                                               mainPanel(
-                                                   
-                                               ) # main panel
-                                           ), # Side bar
-                                           br(),
-                                           br(),
-                                           # ----------- #
-                                           # Instructions
-                                           # ----------- #
-                                           column(
-                                               5,
-                                               align = "justified",
-                                               h3("Instructions"),
-                                               p("This is our interactive tool. In here you will be able to visualize how marine species have been
+                   # ----------------------- #
+                   ## Historic allocation ####
+                   # ----------------------- #
+                   # navbarMenu("Tool",
+                   #            tabPanel("Historic allocation",
+                   #                     fluidRow(
+                   #                         column(
+                   #                             12,
+                   #                             align = "justified",
+                   #                             h1("Control panel"),
+                   #                         ),
+                   #                         # Sidebar with a slider input for number of bins
+                   #                         sidebarLayout(
+                   #                             sidebarPanel(
+                   #                                 # Select which Gender(s) to plot
+                   #                                 checkboxGroupInput(inputId = "SurveySelection",
+                   #                                                    label = "Select Survey Season(s)",
+                   #                                                    choices = unique(spp_survey$region),
+                   #                                                    selected = unique(spp_survey$region)[1]
+                   #                                 ),
+                   #                                 # Select Species
+                   #                                 selectInput(inputId = "SppSelection",
+                   #                                             label = "Select Species",
+                   #                                             choices = unique(spp_survey$spp),
+                   #                                             selected = "Centropristis striata",
+                   #                                             width = "220px"
+                   #                                 ),
+                   #                                 # Select sf Area
+                   #                                 selectInput(inputId = "SpatSelection",
+                   #                                             label = "Select Management Unit",
+                   #                                             choices = c("State waters","Fishing ports","Both"),
+                   #                                             selected = "State waters",
+                   #                                             width = "220px"
+                   #                                 ),
+                   #                                 # Set Time Range
+                   #                                 sliderInput("PortTreshold",
+                   #                                             "Port threshold",
+                   #                                             min = 5,
+                   #                                             max = 95,
+                   #                                             value = 75),
+                   #                                 # Choose the years you want to plot
+                   #                                 sliderInput(inputId = "YearSelection",
+                   #                                             label = "Select Year Range",
+                   #                                             min = 1972,
+                   #                                             max = 2019,
+                   #                                             step = 1,
+                   #                                             sep = "",
+                   #                                             animate = FALSE,
+                   #                                             value = c(1972,2019),
+                   #                                             width = "220px"),
+                   #                                 # Select which plot you want to create
+                   #                                 # checkboxGroupInput(inputId = "PlotStyle",
+                   #                                 #                    label = "Select Result",
+                   #                                 #                    choices = c(
+                   #                                 #                        "Latitudinal Shift (P)" = 1,
+                   #                                 #                        "Survey Points (P)" = 2, 
+                   #                                 #                        "Distribution (M)" = 3,
+                   #                                 #                        "Proportion change (M)" = 5,
+                   #                                 #                        "Proportion change (Mp)" = 6,
+                   #                                 #                        "Allocation Area (P)" = 4,
+                   #                                 #                        # Comparrison plots
+                   #                                 #                        "Relative Change" = 7
+                   #                                 #                    ),
+                   #                                 #                    selected = 1
+                   #                                 # ),
+                   #                                 #Set RMean
+                   #                                 # sliderInput(inputId = "Rmean",
+                   #                                 #             label = "Running average for allocation area",
+                   #                                 #             min = 1,
+                   #                                 #             max = 20,
+                   #                                 #             value = 1)
+                   #                             ), # Close side panel
+                   #                             # Show a plot of the generated distribution
+                   #                             mainPanel(
+                   #                                 
+                   #                             ) # main panel
+                   #                         ), # Side bar
+                   #                         br(),
+                   #                         br(),
+                   # ----------------------- #
+                   ## Instructions ####
+                   # ----------------------- #
+                   #                         column(
+                   #                             5,
+                   #                             align = "justified",
+                   #                             h3("Instructions"),
+                   #                             p("This is our interactive tool. In here you will be able to visualize how marine species have been
+                   #                    shifting, or not, along the United States East coast since 1971 to date. Please go to the Control panel
+                   #                    section, where you can choose the species, the survey, the time period, the allocation equation and the
+                   #                    type of outputs")
+                   #                         ),
+                   #                         column(
+                   #                             5,
+                   #                             offset = 1,
+                   #                             h3("Outputs"),
+                   #                             p("There are currently 3 output options to choose from; Survey Point, this will return the raw survey points
+                   #                    from the NCSF dataset; Distribution Map, this will return a distribution map of the stock based on a 
+                   #                    Triangular Irregular Surface method; and Allocation Area that will produce the proportion of the stock's
+                   #                    distribution that each state had from the years selected. In all cases the tool will show the first and last 
+                   #                    5 years of data")
+                   #                         )
+                   #                     )
+                   #                     
+                   #            ),
+                   # ----------------------- #
+                   ## Data Interpolation ####
+                   # ----------------------- #
+                   #            tabPanel("Data Interpolation",
+                   #                     fluidRow(
+                   #                         column(
+                   #                             12,
+                   #                             align = "justified",
+                   #                             h1("Control panel"),
+                   #                         ),
+                   #                         # Sidebar with a slider input for number of bins
+                   #                         sidebarLayout(
+                   #                             sidebarPanel(
+                   #                                 # Select which Gender(s) to plot
+                   #                                 checkboxGroupInput(inputId = "SurveySelection",
+                   #                                                    label = "Select Survey(s)",
+                   #                                                    choices = unique(spp_survey$region),
+                   #                                                    selected = unique(spp_survey$region)[1]
+                   #                                 ),
+                   #                                 # Select Species
+                   #                                 selectInput(inputId = "SppSelection",
+                   #                                             label = "Select Species",
+                   #                                             choices = unique(spp_survey$spp),
+                   #                                             selected = "Centropristis striata",
+                   #                                             width = "220px"
+                   #                                 ),
+                   #                                 # Select sf Area
+                   #                                 # selectInput(inputId = "SpatSelection",
+                   #                                 #             label = "Select Spatial Element",
+                   #                                 #             choices = c("State waters","Fishing ports","Both"),
+                   #                                 #             selected = "State waters",
+                   #                                 #             width = "220px"
+                   #                                 # ),
+                   #                                 # # Set Time Range
+                   #                                 # sliderInput("bins",
+                   #                                 #             "Scale of Hist./Dist. allocation (%)",
+                   #                                 #             min = 0,
+                   #                                 #             max = 100,
+                   #                                 #             value = 20),
+                   #                                 # Choose the years you want to plot
+                   #                                 sliderInput(inputId = "YearSelection",
+                   #                                             label = "Select Year Range",
+                   #                                             min = 1972,
+                   #                                             max = 2019,
+                   #                                             step = 1,
+                   #                                             sep = "",
+                   #                                             animate = FALSE,
+                   #                                             value = c(1972,2019),
+                   #                                             width = "220px"),
+                   #                                 # Select which plot you want to create
+                   #                                 checkboxGroupInput(inputId = "PlotStyle",
+                   #                                                    label = "Select Result",
+                   #                                                    choices = c(
+                   #                                                        "Latitudinal Shift (P)" = 1,
+                   #                                                        "Survey Points (P)" = 2, 
+                   #                                                        "Distribution (M)" = 3#,
+                   #                                                        # "Proportion change (M)" = 5,
+                   #                                                        # "Proportion change (Mp)" = 6,
+                   #                                                        # "Allocation Area (P)" = 4,
+                   #                                                        # Comparrison plots
+                   #                                                        # "Relative Change" = 7
+                   #                                                    ),
+                   #                                                    selected = 3
+                   #                                 ),
+                   #                                 #Set RMean
+                   #                                 # sliderInput(inputId = "Rmean",
+                   #                                             # label = "Running average for allocation area",
+                   #                                             # min = 1,
+                   #                                             # max = 20,
+                   #                                             # value = 1)
+                   #                             ), # Close side panel
+                   #                             # Show a plot of the generated distribution
+                   #                             mainPanel(
+                   #                                 # Condition between plot and plotly
+                   #                                 # conditionalPanel(
+                   #                                 #     condition = "input.PlotStyle != 4",
+                   #                                     plotOutput("distPlot")
+                   #                                 # ),
+                   #                             #     conditionalPanel(
+                   #                             #         condition = "input.PlotStyle %in% c(4,6)",
+                   #                             #         plotlyOutput("areaPlot")
+                   #                             #     )
+                   #                             )
+                   #                         ), # Side bar
+                   #                         br(),
+                   #                         br(),
+                   #                         conditionalPanel(
+                   #                             condition = "input.PlotStyle == 4",
+                   #                             p(h3(strong("Proportion distribution across states"))),
+                   #                             formattableOutput("Allocation_tbl")
+                   #                         ),
+                   #                         # ----------- #
+                   #                         # Instructions
+                   #                         # ----------- #
+                   #                         column(
+                   #                             5,
+                   #                             align = "justified",
+                   #                             h3("Instructions"),
+                   #                             p("This is our interactive tool. In here you will be able to visualize how marine species have been
+                   #                    shifting, or not, along the United States East coast since 1971 to date. Please go to the Control panel
+                   #                    section, where you can choose the species, the survey, the time period, the allocation equation and the
+                   #                    type of outputs")
+                   #                         ),
+                   #                         column(
+                   #                             5,
+                   #                             offset = 1,
+                   #                             h3("Outputs"),
+                   #                             p("There are currently 3 output options to choose from; Survey Point, this will return the raw survey points
+                   #                    from the NCSF dataset; Distribution Map, this will return a distribution map of the stock based on a 
+                   #                    Triangular Irregular Surface method; and Allocation Area that will produce the proportion of the stock's
+                   #                    distribution that each state had from the years selected. In all cases the tool will show the first and last 
+                   #                    5 years of data")
+                   #                         )
+                   #                     )
+                   #                     
+                   #            )
+                   # ),
+                   # ----------------------- #
+                   # Option B ####
+                   # ----------------------- #
+                   tabPanel("Option B",
+                            fluidRow(
+                                column(
+                                    12,
+                                    align = "justified",
+                                    h1("Select the biological Information")
+                                ),
+                                # ----------------------- #
+                                ## Bio Info ####
+                                # ----------------------- #
+                                sidebarLayout(
+                                    sidebarPanel(
+                                        # Select Species
+                                        selectInput(inputId = "SppSelection",
+                                                    label = "Select Species",
+                                                    # choices = unique(spp_survey$spp),
+                                                    choices = c("Centropristis striata","Paralichthys dentatus","Stenotomus chrysops"),
+                                                    selected = "Centropristis striata",
+                                                    width = "220px"
+                                        ),
+                                        # Select which Gender(s) to plot
+                                        checkboxGroupInput(inputId = "SurveySelection",
+                                                           label = "Select Survey Season(s)",
+                                                           choices = unique(spp_survey$region),
+                                                           selected = unique(spp_survey$region)[1]
+                                        ),
+                                        #         # Choose the years you want to plot
+                                        sliderInput(inputId = "YearSelection",
+                                                    label = "Select Year Range",
+                                                    min = 1972,
+                                                    max = 2019,
+                                                    step = 1,
+                                                    sep = "",
+                                                    animate = FALSE,
+                                                    value = c(2010,2019),
+                                                    width = "220px"), # Select which plot you want to create
+                                        checkboxGroupInput(inputId = "PlotStyle",
+                                                           label = "Select Result",
+                                                           choices = c(
+                                                               "Survey Points" = 1,
+                                                               "Latitudinal Shift" = 2,
+                                                               "Distribution" = 3
+                                                           ),
+                                                           selected = 1
+                                        )
+                                    ),
+                                    mainPanel(
+                                        plotOutput("distPlot")
+                                    ) # main panel
+                                ),
+                                br(),
+                                column(
+                                    12,
+                                    align = "justified",
+                                    h1("Determine the reugulatory unit approach")
+                                ),
+                                # ----------------------- #
+                                ## Regulatory Unit ####
+                                # ----------------------- #
+                                # Sidebar with a slider input for number of bins
+                                sidebarLayout(
+                                    sidebarPanel(
+                                        # Select sf Area
+                                        selectInput(inputId = "SpatSelection",
+                                                    label = "Select Management Unit",
+                                                    choices = c("State waters" = 1,
+                                                                "Fishing ports" = 2,
+                                                                "Both apporaches" = 3),
+                                                    # selected = "State waters",
+                                                    width = "220px"
+                                        ),
+                                        p("If you chosed the port approach, determine a treshold"),
+                                        # Set Time Range
+                                        sliderInput("PortTreshold",
+                                                    "Port threshold",
+                                                    min = 5,
+                                                    max = 95,
+                                                    value = 75)
+                                    ), # Close side panel
+                                    # Show a plot of the generated distribution
+                                    mainPanel(plotOutput("RegUnit")) # main panel
+                                ), # Side bar
+                                # ----------- #
+                                # Allocations results
+                                # ----------- #
+                                br(),
+                                column(
+                                    12,
+                                    align = "justified",
+                                    h1("Allocation Results")
+                                ),
+                                # Sidebar with a slider input for number of bins
+                                sidebarLayout(
+                                    sidebarPanel(
+                                        # Select which plot you want to create
+                                        checkboxGroupInput(inputId = "ResultType",
+                                                           label = "Select Result",
+                                                           choices = c(
+                                                               "Proportion change" = 1,
+                                                               "Proportion change" = 2,
+                                                               "Allocation Area" = 3
+                                                           ),
+                                                           selected = 1
+                                        )
+                                    ),
+                                    # Show a plot of the generated distribution
+                                    mainPanel(plotOutput("QuotaResult")) # main panel
+                                ),
+                                
+                                # ----------- #
+                                # Instructions
+                                # ----------- #
+                                column(
+                                    5,
+                                    align = "justified",
+                                    h3("Instructions"),
+                                    p("This is our interactive tool. In here you will be able to visualize how marine species have been
                                       shifting, or not, along the United States East coast since 1971 to date. Please go to the Control panel
                                       section, where you can choose the species, the survey, the time period, the allocation equation and the
                                       type of outputs")
-                                           ),
-                                           column(
-                                               5,
-                                               offset = 1,
-                                               h3("Outputs"),
-                                               p("There are currently 3 output options to choose from; Survey Point, this will return the raw survey points
+                                ),
+                                column(
+                                    5,
+                                    offset = 1,
+                                    h3("Outputs"),
+                                    p("There are currently 3 output options to choose from; Survey Point, this will return the raw survey points
                                       from the NCSF dataset; Distribution Map, this will return a distribution map of the stock based on a 
                                       Triangular Irregular Surface method; and Allocation Area that will produce the proportion of the stock's
                                       distribution that each state had from the years selected. In all cases the tool will show the first and last 
                                       5 years of data")
-                                           )
-                                       )
-                                       
-                              ),
-                              tabPanel("Data Interpolation",
-                                       fluidRow(
-                                           column(
-                                               12,
-                                               align = "justified",
-                                               h1("Control panel"),
-                                           ),
-                                           # Sidebar with a slider input for number of bins
-                                           sidebarLayout(
-                                               sidebarPanel(
-                                                   # Select which Gender(s) to plot
-                                                   checkboxGroupInput(inputId = "SurveySelection",
-                                                                      label = "Select Survey(s)",
-                                                                      choices = unique(spp_survey$region),
-                                                                      selected = unique(spp_survey$region)[1]
-                                                   ),
-                                                   # Select Species
-                                                   selectInput(inputId = "SppSelection",
-                                                               label = "Select Species",
-                                                               choices = unique(spp_survey$spp),
-                                                               selected = "Centropristis striata",
-                                                               width = "220px"
-                                                   ),
-                                                   # Select sf Area
-                                                   # selectInput(inputId = "SpatSelection",
-                                                   #             label = "Select Spatial Element",
-                                                   #             choices = c("State waters","Fishing ports","Both"),
-                                                   #             selected = "State waters",
-                                                   #             width = "220px"
-                                                   # ),
-                                                   # # Set Time Range
-                                                   # sliderInput("bins",
-                                                   #             "Scale of Hist./Dist. allocation (%)",
-                                                   #             min = 0,
-                                                   #             max = 100,
-                                                   #             value = 20),
-                                                   # Choose the years you want to plot
-                                                   sliderInput(inputId = "YearSelection",
-                                                               label = "Select Year Range",
-                                                               min = 1972,
-                                                               max = 2019,
-                                                               step = 1,
-                                                               sep = "",
-                                                               animate = FALSE,
-                                                               value = c(1972,2019),
-                                                               width = "220px"),
-                                                   # Select which plot you want to create
-                                                   checkboxGroupInput(inputId = "PlotStyle",
-                                                                      label = "Select Result",
-                                                                      choices = c(
-                                                                          "Latitudinal Shift (P)" = 1,
-                                                                          "Survey Points (P)" = 2, 
-                                                                          "Distribution (M)" = 3#,
-                                                                          # "Proportion change (M)" = 5,
-                                                                          # "Proportion change (Mp)" = 6,
-                                                                          # "Allocation Area (P)" = 4,
-                                                                          # Comparrison plots
-                                                                          # "Relative Change" = 7
-                                                                      ),
-                                                                      selected = 3
-                                                   ),
-                                                   #Set RMean
-                                                   # sliderInput(inputId = "Rmean",
-                                                               # label = "Running average for allocation area",
-                                                               # min = 1,
-                                                               # max = 20,
-                                                               # value = 1)
-                                               ), # Close side panel
-                                               # Show a plot of the generated distribution
-                                               mainPanel(
-                                                   # Condition between plot and plotly
-                                                   # conditionalPanel(
-                                                   #     condition = "input.PlotStyle != 4",
-                                                       plotOutput("distPlot")
-                                                   # ),
-                                               #     conditionalPanel(
-                                               #         condition = "input.PlotStyle %in% c(4,6)",
-                                               #         plotlyOutput("areaPlot")
-                                               #     )
-                                               )
-                                           ), # Side bar
-                                           br(),
-                                           br(),
-                                           conditionalPanel(
-                                               condition = "input.PlotStyle == 4",
-                                               p(h3(strong("Proportion distribution across states"))),
-                                               formattableOutput("Allocation_tbl")
-                                           ),
-                                           # ----------- #
-                                           # Instructions
-                                           # ----------- #
-                                           column(
-                                               5,
-                                               align = "justified",
-                                               h3("Instructions"),
-                                               p("This is our interactive tool. In here you will be able to visualize how marine species have been
-                                      shifting, or not, along the United States East coast since 1971 to date. Please go to the Control panel
-                                      section, where you can choose the species, the survey, the time period, the allocation equation and the
-                                      type of outputs")
-                                           ),
-                                           column(
-                                               5,
-                                               offset = 1,
-                                               h3("Outputs"),
-                                               p("There are currently 3 output options to choose from; Survey Point, this will return the raw survey points
-                                      from the NCSF dataset; Distribution Map, this will return a distribution map of the stock based on a 
-                                      Triangular Irregular Surface method; and Allocation Area that will produce the proportion of the stock's
-                                      distribution that each state had from the years selected. In all cases the tool will show the first and last 
-                                      5 years of data")
-                                           )
-                                       )
-                                       
-                              )
+                                )
+                            )
+                            
                    )
+                   
         )
     )
 )

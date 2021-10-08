@@ -22,6 +22,45 @@ state_pallet <- c(wes_palette(n = 5, name = "Darjeeling1"),
                   wes_palette(n = 3, name = "Royal1")
 )
 
+# Set the filters
+state_order <- my_path("D", "Spatial/grid_eez_sw", name = "grid_eez_sw_df.csv", read = T) %>%
+    group_by(state) %>%
+    summarise(
+        order = mean(lat)
+    ) %>%
+    mutate(abrev = c("CT","DE","ME","MD","MA","NH","NJ","NY","NC","RI","VA")
+    ) %>%
+    arrange(desc(order)) %>%
+    mutate(order= c("b","a",letters[3:11])) %>% # weirdly maine goes below
+    arrange(order)
+
+# ---------------------------- #
+# Grid data from the SW and FP approaches
+# ---------------------------- #
+# Load grid of state waters
+grid_eez_sw_sf <- st_read(my_path("D","Spatial/grid_eez_sw", name = "grid_eez_sw_sf.shp")) %>%
+    select(index,state,geometry) %>%
+    mutate(method = "state_waters",
+           state = str_to_sentence(state)) %>%
+    left_join(state_order)
+
+grid_eez_sw_sf$group <- factor(grid_eez_sw_sf$abrev,      # Reordering group factor levels
+                               levels = state_order$abrev)
+
+# Load grid of fishing ports
+grid_eez_fp_sf <-  st_read(my_path("D","Spatial/grid_eez_fp", name = "grid_eez_fp.shp")) %>%
+    select(index,abrev=lndng_s,geometry) %>%
+    mutate(method = "fishing_port"#,
+           # state = str_to_sentence(landing_port)
+    )%>%
+    left_join(state_order)
+
+grid_eez_fp_sf$group <- factor(grid_eez_fp_sf$abrev,      # Reordering group factor levels
+                               levels = state_order$abrev)
+
+grid_eez_fp_sf <- arrange(grid_eez_fp_sf,group)
+
+
 
 # ---------------------------- #
 # Tool start ####
@@ -37,11 +76,11 @@ shinyServer(function(input, output) {
         
         data <- my_path("D","Spp/Observation",name = name, read = T)
         
-        # data <- readRDS("/Volumes/Enterprise/Data/pinskylab-OceanAdapt-966adf0/data_clean/dat_exploded.rds") %>%
-        #     filter(
-        #         # spp %in% c ("Centropristis striata","Gadus morhua"),
-        #         region %in% c("Northeast US Fall" , "Northeast US Spring")
-        #     ) #No more seasons
+        data <- readRDS("/Volumes/Enterprise/Data/AcrossBoundaries/Data/pinskylab-OceanAdapt-966adf0/data_clean/dat_exploded.rds") %>%
+            filter(
+                spp %in% c("Centropristis striata","Paralichthys dentatus","Stenotomus chrysops"),
+                region %in% c("Northeast US Fall" , "Northeast US Spring")
+            ) #No more seasons
         
     })
     
@@ -64,25 +103,8 @@ shinyServer(function(input, output) {
         
     })
     
-    # ---------------------------- #
-    # Grid data from the SW and FP approaches
-    # ---------------------------- #
-    grids_data <- reactive({
-        
-        
-        
-        grids <- my_path("D", "Spatial/grid_eez_fp_sf", name = "grid_eez_fp_df.csv", read = T) %>% 
-            mutate(
-                spatial = "fp"
-            ) %>% 
-            bind_rows(
-                my_path("D", "Spatial/grid_eez_sw_sf", name = "grid_eez_sw_df.csv", read = T)
-            ) %>% 
-            mutate(
-                spatial = ifelse(is.na(spatial),"sw",spatial)
-            )
-        
-    })
+    
+    
     
     # ---------------------------- #
     # Quota allocation plots ####
@@ -113,7 +135,7 @@ shinyServer(function(input, output) {
         # ---------------------------- #
         ## Latitudinal plot ######
         # ---------------------------- #
-        if(input$PlotStyle == 1){
+        if(input$PlotStyle == 2){
             
             # Set the plot data
             avr_lat <- plot_data %>% 
@@ -150,7 +172,7 @@ shinyServer(function(input, output) {
             # ---------------------------- #
             # Density map ######
             # ---------------------------- #
-            if(input$PlotStyle == 2){
+            if(input$PlotStyle == 1){
                 
                 ggplot(us_map) +
                     geom_sf() +
@@ -183,25 +205,6 @@ shinyServer(function(input, output) {
                 # ---------------------------- #
                 if(input$PlotStyle == 3){
                     
-                    
-                    # Set the plot data
-                    # plot_data <- plot_data %>%
-                    #     group_by(lon,lat) %>%
-                    #     summarise(wtcpue = sum(wtcpue,na.rm = T)) %>%
-                    #     filter(wtcpue > 0)
-                    
-                    # Triangular Irregular Surface
-                    # fit_tin <- interp::interp( # using {interp}
-                    #     x = plot_data$lon,           # the function actually accepts coordinate vectors
-                    #     y = plot_data$lat,
-                    #     z = plot_data$wtcpue,
-                    #     xo = grd_template$lon,     # here we already define the target grid
-                    #     yo = grd_template$lat,
-                    #     output = "points"
-                    # ) %>%
-                    #     bind_cols() %>%
-                    #     filter(!is.na(z))
-                    
                     # The actual map
                     
                     ggplot(us_map) +
@@ -232,177 +235,181 @@ shinyServer(function(input, output) {
                         MyFunctions::my_ggtheme_m(leg_pos = "right") +
                         ggtitle("Distribution estimated by using Triangular Irregular Surface method")
                     
-                }else{
-                    
-                    # ---------------------------- #
-                    # Distribution proportion map ######
-                    # ---------------------------- #
-                    if(input$PlotStyle == 5){
-                        
-                        periods <-tibble(
-                            order = c(rep("a",12),
-                                      rep("b",12),
-                                      rep("c",12),
-                                      rep("d",11)
-                            ),
-                            label = c(rep("1973-1984",12),
-                                      rep("1985-1996",12),
-                                      rep("1997-2008",12),
-                                      rep("2009-2019",11)
-                            ),
-                            year = c(seq(1973,1984,1),
-                                     seq(1985,1996,1),
-                                     seq(1997,2008,1),
-                                     seq(2009,2019,1)
-                            )
-                        )
-                        
-                        total_fited <- tif_data() %>% 
-                            group_by(year,region,spp) %>% 
-                            summarise(total_value = sum(value,na.rm=T),.groups = "drop")
-                        
-                        
-                        state_fit <- tif_data() %>% 
-                            group_by(state,year,region,spp) %>% 
-                            summarise(state_value = sum(value,na.rm= T), .groups = "drop") %>% 
-                            left_join(total_fited,
-                                      by = c("year","region","spp")) %>%
-                            mutate(percentage = state_value/total_value*100) %>% 
-                            left_join(periods,
-                                      by = "year") %>% 
-                            group_by(state,order,label,region,spp) %>% 
-                            summarise(mean_per = round(mean(percentage)),.groups = "drop") %>% 
-                            #Only show results for spring
-                            filter(str_detect(region,"Spring")) %>% 
-                            mutate(spp = gsub(" ","\n",spp))
-                        
-                        # The plot
-                        us_map %>% 
-                            filter(ID %in% c("maine", "new hampshire", "massachusetts", "connecticut", 
-                                             "rhode island", "new york", "new jersey", "delaware", "maryland",
-                                             "virginia", "north carolina")) %>% 
-                            rename(state = ID) %>% 
-                            left_join(state_fit,
-                                      by = "state") %>% 
-                            ggplot() +
-                            geom_sf(aes(fill = mean_per)) +
-                            viridis::scale_fill_viridis("Average proportion\nper State", alpha = 0.8) +
-                            facet_wrap(~label, nrow = 2) +
-                            labs(x = "Longitude", 
-                                 y = "Latitude") +
-                            my_ggtheme_p(facet_tx_s = 18,
-                                         leg_pos = "bottom",
-                                         axx_tx_ang = 45,
-                                         ax_tx_s = 12,
-                                         ax_tl_s = 18,
-                                         hjust = 1) +
-                            theme(legend.key.width = unit(1,"line"))
-                        
-                    }else{
-                        
-                        # ---------------------------- #
-                        # Relative Change map from today ######
-                        # ---------------------------- #
-                        if(input$PlotStyle == 7){
-                            
-                            total_fited <- tif_plot_data %>% 
-                                left_join(grids_data(),
-                                          by = c("index","lon","lat")
-                                ) %>%
-                                filter(!is.na(spatial)) %>% 
-                                group_by(year,region,spp,spatial) %>% 
-                                summarise(total_value = sum(value,na.rm=T),.groups = "drop")
-                            
-                            state_fit <- tif_plot_data %>% 
-                                left_join(grids_data(),
-                                          by = c("index","lon","lat")
-                                ) %>%
-                                group_by(state,year,region,spp,spatial) %>% 
-                                summarise(state_value = sum(value,na.rm= T), .groups = "drop") %>% 
-                                left_join(total_fited,
-                                          by = c("year","region","spp","spatial")) %>%
-                                mutate(percentage = state_value/total_value*100,
-                                       label = ifelse(year >= 1980 & year <= 2001,"Reference",
-                                                      ifelse(year > 2001,"Today",NA)
-                                       )
-                                ) %>% 
-                                group_by(state,label,region,spp,spatial) %>% 
-                                summarise(mean_per = round(mean(percentage)),.groups = "drop") %>% 
-                                filter(!is.na(label)) %>% 
-                                spread(spatial,mean_per) %>% 
-                                mutate(difference = (fp-sw)/((fp+sw)/2)*100,
-                                       difference = ifelse(difference > 100,100,
-                                                           ifelse(difference < -100,-100,difference)
-                                       )
-                                ) %>% 
-                                gather("spatial","mean_per",fp:difference) %>% 
-                                mutate(spp = gsub(" ","\n",spp),
-                                       spatial = ifelse(spatial == "fp","Fishing ports",
-                                                        ifelse(spatial == "sw","State Waters","Difference")
-                                       )
-                                )
-                            
-                            map_plot <- land_sf %>%
-                                left_join(state_fit,
-                                          by = "state") %>%
-                                filter(spatial != "Difference") %>%
-                                ggplot() +
-                                geom_sf(aes(fill = mean_per)) +
-                                viridis::scale_fill_viridis("Average proportion per State", alpha = 0.8) +
-                                facet_grid(spatial~ spp+label) +
-                                labs(x = "",
-                                     y = "") +
-                                my_ggtheme_p(facet_tx_s = 20,
-                                             leg_pos = "bottom",
-                                             axx_tx_ang = 45,
-                                             ax_tx_s = 12,
-                                             ax_tl_s = 18,
-                                             hjust = 1) +
-                                theme(legend.key.width = unit(4,"line"))
-                            
-                            
-                            diff_plot <- land_sf %>%
-                                left_join(state_fit,
-                                          by = "state") %>%
-                                filter(spatial == "Difference") %>%
-                                ggplot() +
-                                geom_sf(aes(fill = mean_per)) +
-                                viridis::scale_fill_viridis("Percentage difference", alpha = 0.8) +
-                                facet_grid(spatial~ spp+label) +
-                                labs(x = "",
-                                     y = "") +
-                                my_ggtheme_p(facet_tx_s = 20,
-                                             leg_pos = "bottom",
-                                             axx_tx_ang = 45,
-                                             ax_tx_s = 12,
-                                             ax_tl_s = 18,
-                                             hjust = 1) +
-                                theme(legend.key.width = unit(4,"line"),
-                                      strip.background = element_blank(),
-                                      strip.text.x = element_blank()
-                                )
-                            
-                            
-                            # Cowplot option
-                            ggdraw() +
-                                # Revenue circular
-                                draw_plot(map_plot, x = 0, y = 0.2, width = 1, height = 0.8) +
-                                # Catch circular
-                                draw_plot(diff_plot, x = 0, y = 0, width = 1, height = 0.4) +
-                                draw_plot_label(label = c("Latitude", "Longitude"),
-                                                size = 18,
-                                                angle = c(90,0),
-                                                x = c(0,0.45),
-                                                y = c(0.45,0.15)
-                                )
-                            
-                            
-                        }
-                    }
                 }
             }
         }
     })
+    
+    
+    # ---------------------------- #
+    # Distribution proportion map ######
+    # ---------------------------- #
+    #                 if(input$PlotStyle == 5){
+    #                     
+    #                     periods <-tibble(
+    #                         order = c(rep("a",12),
+    #                                   rep("b",12),
+    #                                   rep("c",12),
+    #                                   rep("d",11)
+    #                         ),
+    #                         label = c(rep("1973-1984",12),
+    #                                   rep("1985-1996",12),
+    #                                   rep("1997-2008",12),
+    #                                   rep("2009-2019",11)
+    #                         ),
+    #                         year = c(seq(1973,1984,1),
+    #                                  seq(1985,1996,1),
+    #                                  seq(1997,2008,1),
+    #                                  seq(2009,2019,1)
+    #                         )
+    #                     )
+    #                     
+    #                     total_fited <- tif_data() %>% 
+    #                         group_by(year,region,spp) %>% 
+    #                         summarise(total_value = sum(value,na.rm=T),.groups = "drop")
+    #                     
+    #                     
+    #                     state_fit <- tif_data() %>% 
+    #                         group_by(state,year,region,spp) %>% 
+    #                         summarise(state_value = sum(value,na.rm= T), .groups = "drop") %>% 
+    #                         left_join(total_fited,
+    #                                   by = c("year","region","spp")) %>%
+    #                         mutate(percentage = state_value/total_value*100) %>% 
+    #                         left_join(periods,
+    #                                   by = "year") %>% 
+    #                         group_by(state,order,label,region,spp) %>% 
+    #                         summarise(mean_per = round(mean(percentage)),.groups = "drop") %>% 
+    #                         #Only show results for spring
+    #                         filter(str_detect(region,"Spring")) %>% 
+    #                         mutate(spp = gsub(" ","\n",spp))
+    #                     
+    #                     # The plot
+    #                     us_map %>% 
+    #                         filter(ID %in% c("maine", "new hampshire", "massachusetts", "connecticut", 
+    #                                          "rhode island", "new york", "new jersey", "delaware", "maryland",
+    #                                          "virginia", "north carolina")) %>% 
+    #                         rename(state = ID) %>% 
+    #                         left_join(state_fit,
+    #                                   by = "state") %>% 
+    #                         ggplot() +
+    #                         geom_sf(aes(fill = mean_per)) +
+    #                         viridis::scale_fill_viridis("Average proportion\nper State", alpha = 0.8) +
+    #                         facet_wrap(~label, nrow = 2) +
+    #                         labs(x = "Longitude", 
+    #                              y = "Latitude") +
+    #                         my_ggtheme_p(facet_tx_s = 18,
+    #                                      leg_pos = "bottom",
+    #                                      axx_tx_ang = 45,
+    #                                      ax_tx_s = 12,
+    #                                      ax_tl_s = 18,
+    #                                      hjust = 1) +
+    #                         theme(legend.key.width = unit(1,"line"))
+    #                     
+    #                 }else{
+    #                     
+    #                     # ---------------------------- #
+    #                     # Relative Change map from today ######
+    #                     # ---------------------------- #
+    #                     if(input$PlotStyle == 7){
+    #                         
+    #                         total_fited <- tif_plot_data %>% 
+    #                             left_join(grids_data(),
+    #                                       by = c("index","lon","lat")
+    #                             ) %>%
+    #                             filter(!is.na(spatial)) %>% 
+    #                             group_by(year,region,spp,spatial) %>% 
+    #                             summarise(total_value = sum(value,na.rm=T),.groups = "drop")
+    #                         
+    #                         state_fit <- tif_plot_data %>% 
+    #                             left_join(grids_data(),
+    #                                       by = c("index","lon","lat")
+    #                             ) %>%
+    #                             group_by(state,year,region,spp,spatial) %>% 
+    #                             summarise(state_value = sum(value,na.rm= T), .groups = "drop") %>% 
+    #                             left_join(total_fited,
+    #                                       by = c("year","region","spp","spatial")) %>%
+    #                             mutate(percentage = state_value/total_value*100,
+    #                                    label = ifelse(year >= 1980 & year <= 2001,"Reference",
+    #                                                   ifelse(year > 2001,"Today",NA)
+    #                                    )
+    #                             ) %>% 
+    #                             group_by(state,label,region,spp,spatial) %>% 
+    #                             summarise(mean_per = round(mean(percentage)),.groups = "drop") %>% 
+    #                             filter(!is.na(label)) %>% 
+    #                             spread(spatial,mean_per) %>% 
+    #                             mutate(difference = (fp-sw)/((fp+sw)/2)*100,
+    #                                    difference = ifelse(difference > 100,100,
+    #                                                        ifelse(difference < -100,-100,difference)
+    #                                    )
+    #                             ) %>% 
+    #                             gather("spatial","mean_per",fp:difference) %>% 
+    #                             mutate(spp = gsub(" ","\n",spp),
+    #                                    spatial = ifelse(spatial == "fp","Fishing ports",
+    #                                                     ifelse(spatial == "sw","State Waters","Difference")
+    #                                    )
+    #                             )
+    #                         
+    #                         map_plot <- land_sf %>%
+    #                             left_join(state_fit,
+    #                                       by = "state") %>%
+    #                             filter(spatial != "Difference") %>%
+    #                             ggplot() +
+    #                             geom_sf(aes(fill = mean_per)) +
+    #                             viridis::scale_fill_viridis("Average proportion per State", alpha = 0.8) +
+    #                             facet_grid(spatial~ spp+label) +
+    #                             labs(x = "",
+    #                                  y = "") +
+    #                             my_ggtheme_p(facet_tx_s = 20,
+    #                                          leg_pos = "bottom",
+    #                                          axx_tx_ang = 45,
+    #                                          ax_tx_s = 12,
+    #                                          ax_tl_s = 18,
+    #                                          hjust = 1) +
+    #                             theme(legend.key.width = unit(4,"line"))
+    #                         
+    #                         
+    #                         diff_plot <- land_sf %>%
+    #                             left_join(state_fit,
+    #                                       by = "state") %>%
+    #                             filter(spatial == "Difference") %>%
+    #                             ggplot() +
+    #                             geom_sf(aes(fill = mean_per)) +
+    #                             viridis::scale_fill_viridis("Percentage difference", alpha = 0.8) +
+    #                             facet_grid(spatial~ spp+label) +
+    #                             labs(x = "",
+    #                                  y = "") +
+    #                             my_ggtheme_p(facet_tx_s = 20,
+    #                                          leg_pos = "bottom",
+    #                                          axx_tx_ang = 45,
+    #                                          ax_tx_s = 12,
+    #                                          ax_tl_s = 18,
+    #                                          hjust = 1) +
+    #                             theme(legend.key.width = unit(4,"line"),
+    #                                   strip.background = element_blank(),
+    #                                   strip.text.x = element_blank()
+    #                             )
+    #                         
+    #                         
+    #                         # Cowplot option
+    #                         ggdraw() +
+    #                             # Revenue circular
+    #                             draw_plot(map_plot, x = 0, y = 0.2, width = 1, height = 0.8) +
+    #                             # Catch circular
+    #                             draw_plot(diff_plot, x = 0, y = 0, width = 1, height = 0.4) +
+    #                             draw_plot_label(label = c("Latitude", "Longitude"),
+    #                                             size = 18,
+    #                                             angle = c(90,0),
+    #                                             x = c(0,0.45),
+    #                                             y = c(0.45,0.15)
+    #                             )
+    #                         
+    #                         
+    #                     }
+    #                 }
+    #             }
+    #         }
+    #     }
+    # })
     
     
     ## ---------------------------- #
@@ -597,4 +604,169 @@ shinyServer(function(input, output) {
         }
     })
     #     
+    
+    # ---------------------------- #
+    # Regulatory Units ####
+    # ---------------------------- #
+    output$RegUnit <- renderPlot({
+        
+        # ---------------------------- #
+        ## State Waters ######
+        # ---------------------------- #
+        if(input$SpatSelection == 1){
+            
+            gridExtra::grid.arrange(
+                # Overall (overlapping) position
+                ggplot(grid_eez_sw_sf) +
+                    geom_sf(aes(color =group , fill = group), alpha = 0.3) +
+                    geom_sf(data = subset(us_map,ID %in% c("maine", "new hampshire", "massachusetts", "connecticut",
+                                                           "rhode island", "new york", "new jersey", "delaware", "maryland",
+                                                           "virginia", "north carolina"))
+                    ) +
+                    scale_color_manual(values = state_pallet) +
+                    scale_fill_manual(values = state_pallet) +
+                    my_ggtheme_p(leg_pos = "",
+                                 ax_tx_s = 13) +
+                    coord_sf(ylim = c(30,48)) +
+                    scale_y_continuous(breaks = c(30,35,40,45))+
+                    labs(x = "", y = "", title = "") +
+                    theme(plot.title = element_text(size = 20)),
+                # Showing each state separately
+                ggplot(grid_eez_sw_sf) +
+                    geom_sf(data = subset(us_map,ID %in% c("maine", "new hampshire", "massachusetts", "connecticut",
+                                                           "rhode island", "new york", "new jersey", "delaware", "maryland",
+                                                           "virginia", "north carolina"))
+                    ) +
+                    geom_sf(aes(color = group),size = 0.1, alpha = 0.3) +
+                    facet_wrap(~ group) +
+                    theme(legend.position = "top") +
+                    scale_color_manual(values = state_pallet,
+                                       labels = grid_eez_sw_sf %>% arrange(order) %>%  pull(state) %>% unique()) +
+                    ggtitle("") +
+                    my_ggtheme_p(leg_pos = "",
+                                 ax_tx_s = 11,
+                                 axx_tx_ang = 45,
+                                 hjust = 1
+                    ),
+                nrow = 1)
+            
+        }else{
+            # ---------------------------- #
+            # Fishing Ports ######
+            # ---------------------------- #
+            if(input$SpatSelection == 2){
+                
+                gridExtra::grid.arrange(
+                    # Overall (overlapping) position
+                    ggplot(grid_eez_fp_sf) +
+                        geom_sf(aes(color =group , fill = group), alpha = 0.3) +
+                        geom_sf(data = subset(us_map,ID %in% c("maine", "new hampshire", "massachusetts", "connecticut",
+                                                               "rhode island", "new york", "new jersey", "delaware", "maryland",
+                                                               "virginia", "north carolina"))
+                        ) +
+                        scale_color_manual(values = state_pallet) +
+                        scale_fill_manual(values = state_pallet) +
+                        my_ggtheme_p(leg_pos = "",
+                                     ax_tx_s = 13) +
+                        coord_sf(ylim = c(30,48)) +
+                        scale_y_continuous(breaks = c(30,35,40,45))+
+                        labs(x = "", y = "", title = "") +
+                        theme(plot.title = element_text(size = 20)),
+                    # Showing each state separately
+                    ggplot(grid_eez_fp_sf) +
+                        geom_sf(data = subset(us_map,ID %in% c("maine", "new hampshire", "massachusetts", "connecticut",
+                                                               "rhode island", "new york", "new jersey", "delaware", "maryland",
+                                                               "virginia", "north carolina"))
+                        ) +
+                        geom_sf(aes(color = group),size = 0.1, alpha = 0.3) +
+                        facet_wrap(~ group) +
+                        theme(legend.position = "top") +
+                        scale_color_manual(values = state_pallet,
+                                           labels = grid_eez_fp_sf %>% arrange(order) %>%  pull(state) %>% unique()) +
+                        ggtitle("") +
+                        my_ggtheme_p(leg_pos = "",
+                                     ax_tx_s = 11,
+                                     axx_tx_ang = 45,
+                                     hjust = 1
+                        ),
+                    nrow = 1)
+                
+                
+            }else{
+                # ---------------------------- #
+                # Both maps ######
+                # ---------------------------- #
+                if(input$SpatSelection == 3){
+                    
+                    sw_map <- gridExtra::grid.arrange(
+                        # Overall (overlapping) position
+                        ggplot(grid_eez_sw_sf) +
+                            geom_sf(aes(color =group , fill = group), alpha = 0.3) +
+                            geom_sf(data = subset(us_map,ID %in% c("maine", "new hampshire", "massachusetts", "connecticut",
+                                                                   "rhode island", "new york", "new jersey", "delaware", "maryland",
+                                                                   "virginia", "north carolina"))
+                            ) +
+                            scale_color_manual(values = state_pallet) +
+                            scale_fill_manual(values = state_pallet) +
+                            my_ggtheme_p(leg_pos = "",
+                                         ax_tx_s = 13) +
+                            coord_sf(ylim = c(30,48)) +
+                            scale_y_continuous(breaks = c(30,35,40,45))+
+                            labs(x = "", y = "", title = "State waters approach") +
+                            theme(plot.title = element_text(size = 20)),
+                        # Showing each state separately
+                        ggplot(grid_eez_sw_sf) +
+                            geom_sf(data = subset(us_map,ID %in% c("maine", "new hampshire", "massachusetts", "connecticut",
+                                                                   "rhode island", "new york", "new jersey", "delaware", "maryland",
+                                                                   "virginia", "north carolina"))
+                            ) +
+                            geom_sf(aes(color = group),size = 0.1, alpha = 0.3) +
+                            facet_wrap(~ group) +
+                            theme(legend.position = "top") +
+                            scale_color_manual(values = state_pallet,
+                                               labels = grid_eez_sw_sf %>% arrange(order) %>%  pull(state) %>% unique()) +
+                            ggtitle("") +
+                            my_ggtheme_m(map_type = "global", leg_pos = ""),
+                        nrow = 1)
+                    
+                    fp_map <- gridExtra::grid.arrange(
+                        # Overall (overlapping) position
+                        ggplot(grid_eez_fp_sf) +
+                            geom_sf(aes(color =group , fill = group), alpha = 0.3) +
+                            geom_sf(data = subset(us_map,ID %in% c("maine", "new hampshire", "massachusetts", "connecticut",
+                                                                   "rhode island", "new york", "new jersey", "delaware", "maryland",
+                                                                   "virginia", "north carolina"))
+                            ) +
+                            scale_color_manual(values = state_pallet) +
+                            scale_fill_manual(values = state_pallet) +
+                            my_ggtheme_p(leg_pos = "",
+                                         ax_tx_s = 13) +
+                            coord_sf(ylim = c(30,48)) +
+                            scale_y_continuous(breaks = c(30,35,40,45))+
+                            labs(x = "", y = "", title = "Fishing ports approach") +
+                            theme(plot.title = element_text(size = 20)),
+                        # Showing each state separately
+                        ggplot(grid_eez_fp_sf) +
+                            geom_sf(data = subset(us_map,ID %in% c("maine", "new hampshire", "massachusetts", "connecticut",
+                                                                   "rhode island", "new york", "new jersey", "delaware", "maryland",
+                                                                   "virginia", "north carolina"))
+                            ) +
+                            geom_sf(aes(color = group),size = 0.1, alpha = 0.3) +
+                            facet_wrap(~ group) +
+                            theme(legend.position = "top") +
+                            scale_color_manual(values = state_pallet,
+                                               labels = grid_eez_fp_sf %>% arrange(order) %>%  pull(state) %>% unique()) +
+                            ggtitle("") +
+                            my_ggtheme_m(map_type = "global", leg_pos = ""),
+                        nrow = 1)
+                    
+                    # Show plots
+                    gridExtra::grid.arrange(sw_map,fp_map,
+                                            bottom = "Longitude",
+                                            left = "Latitude")
+                }
+            }
+        }
+    })
 }) # app closure
+
