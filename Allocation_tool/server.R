@@ -54,14 +54,38 @@ shinyServer(function(input, output) {
         
         name <- paste0("tif_",str_replace(input$SppSelection," ","_"),".csv")
         
-        data <- my_path("R","Partial/Interpolation/sw",name = name, read = T)
+        data <- my_path("R","Partial/Interpolation/",name = name, read = T)
+        
+        # For testing
+        # data <- my_path("R","Partial/Interpolation/",name = "tif_Centropristis_striata.csv", read = T)
+        # tif_plot_data <- data %>%
+        # filter(
+        # region %in% "Northeast US Fall")
         
     })
     
-    
+    # ---------------------------- #
+    # Grid data from the SW and FP approaches
+    # ---------------------------- #
+    grids_data <- reactive({
+        
+        
+        
+        grids <- my_path("D", "Spatial/grid_eez_fp_sf", name = "grid_eez_fp_df.csv", read = T) %>% 
+            mutate(
+                spatial = "fp"
+            ) %>% 
+            bind_rows(
+                my_path("D", "Spatial/grid_eez_sw_sf", name = "grid_eez_sw_df.csv", read = T)
+            ) %>% 
+            mutate(
+                spatial = ifelse(is.na(spatial),"sw",spatial)
+            )
+        
+    })
     
     # ---------------------------- #
-    # Main plot ####
+    # Quota allocation plots ####
     # ---------------------------- #
     output$distPlot <- renderPlot({
         # Set the filters
@@ -80,7 +104,11 @@ shinyServer(function(input, output) {
         tif_plot_data <- tif_data() %>%
             filter(spp %in% species,
                    region %in% survey,
-                   year %in% years)
+                   year %in% years) %>% 
+            mutate(
+                cpue_log10 = log10(value)
+            ) %>% 
+            gather("type","cpue",value:cpue_log10)
         
         # ---------------------------- #
         ## Latitudinal plot ######
@@ -145,7 +173,7 @@ shinyServer(function(input, output) {
                     scale_color_distiller(palette = "Spectral",
                                           guide_legend(title = "WCPUE per Haul (log10)")) +
                     coord_sf(xlim = c(-76, -65),ylim = c(35, 45)) +
-                    MyFunctions::my_ggtheme_m() +
+                    MyFunctions::my_ggtheme_m(leg_pos = "right") +
                     facet_wrap(~region) +
                     ggtitle(paste(min(years),max(years)))
             }else{
@@ -182,8 +210,8 @@ shinyServer(function(input, output) {
                                    aes(
                                        x = lon,
                                        y = lat,
-                                       fill =value,
-                                       colour = value
+                                       fill = cpue,
+                                       colour = cpue
                                    )
                         ) +
                         geom_point(data = subset(plot_data, wtcpue > 0),
@@ -194,17 +222,18 @@ shinyServer(function(input, output) {
                                    shape = 3,
                                    alpha = 0.05
                         ) +
+                        facet_wrap(~type, ncol = 2) +
                         scale_color_distiller(palette = "Spectral",
                                               guide_legend(title = "WCPUE per Haul")) +
                         scale_fill_distiller(palette = "Spectral",
                                              guide_legend(title = "WCPUE per Haul")) +
                         coord_sf(xlim = c(-76, -65),ylim = c(35, 45)) +
                         
-                        MyFunctions::my_ggtheme_m() +
+                        MyFunctions::my_ggtheme_m(leg_pos = "right") +
                         ggtitle("Distribution estimated by using Triangular Irregular Surface method")
-                
+                    
                 }else{
-
+                    
                     # ---------------------------- #
                     # Distribution proportion map ######
                     # ---------------------------- #
@@ -227,7 +256,7 @@ shinyServer(function(input, output) {
                                      seq(2009,2019,1)
                             )
                         )
-                       
+                        
                         total_fited <- tif_data() %>% 
                             group_by(year,region,spp) %>% 
                             summarise(total_value = sum(value,na.rm=T),.groups = "drop")
@@ -268,7 +297,107 @@ shinyServer(function(input, output) {
                                          ax_tl_s = 18,
                                          hjust = 1) +
                             theme(legend.key.width = unit(1,"line"))
-                
+                        
+                    }else{
+                        
+                        # ---------------------------- #
+                        # Relative Change map from today ######
+                        # ---------------------------- #
+                        if(input$PlotStyle == 7){
+                            
+                            total_fited <- tif_plot_data %>% 
+                                left_join(grids_data(),
+                                          by = c("index","lon","lat")
+                                ) %>%
+                                filter(!is.na(spatial)) %>% 
+                                group_by(year,region,spp,spatial) %>% 
+                                summarise(total_value = sum(value,na.rm=T),.groups = "drop")
+                            
+                            state_fit <- tif_plot_data %>% 
+                                left_join(grids_data(),
+                                          by = c("index","lon","lat")
+                                ) %>%
+                                group_by(state,year,region,spp,spatial) %>% 
+                                summarise(state_value = sum(value,na.rm= T), .groups = "drop") %>% 
+                                left_join(total_fited,
+                                          by = c("year","region","spp","spatial")) %>%
+                                mutate(percentage = state_value/total_value*100,
+                                       label = ifelse(year >= 1980 & year <= 2001,"Reference",
+                                                      ifelse(year > 2001,"Today",NA)
+                                       )
+                                ) %>% 
+                                group_by(state,label,region,spp,spatial) %>% 
+                                summarise(mean_per = round(mean(percentage)),.groups = "drop") %>% 
+                                filter(!is.na(label)) %>% 
+                                spread(spatial,mean_per) %>% 
+                                mutate(difference = (fp-sw)/((fp+sw)/2)*100,
+                                       difference = ifelse(difference > 100,100,
+                                                           ifelse(difference < -100,-100,difference)
+                                       )
+                                ) %>% 
+                                gather("spatial","mean_per",fp:difference) %>% 
+                                mutate(spp = gsub(" ","\n",spp),
+                                       spatial = ifelse(spatial == "fp","Fishing ports",
+                                                        ifelse(spatial == "sw","State Waters","Difference")
+                                       )
+                                )
+                            
+                            map_plot <- land_sf %>%
+                                left_join(state_fit,
+                                          by = "state") %>%
+                                filter(spatial != "Difference") %>%
+                                ggplot() +
+                                geom_sf(aes(fill = mean_per)) +
+                                viridis::scale_fill_viridis("Average proportion per State", alpha = 0.8) +
+                                facet_grid(spatial~ spp+label) +
+                                labs(x = "",
+                                     y = "") +
+                                my_ggtheme_p(facet_tx_s = 20,
+                                             leg_pos = "bottom",
+                                             axx_tx_ang = 45,
+                                             ax_tx_s = 12,
+                                             ax_tl_s = 18,
+                                             hjust = 1) +
+                                theme(legend.key.width = unit(4,"line"))
+                            
+                            
+                            diff_plot <- land_sf %>%
+                                left_join(state_fit,
+                                          by = "state") %>%
+                                filter(spatial == "Difference") %>%
+                                ggplot() +
+                                geom_sf(aes(fill = mean_per)) +
+                                viridis::scale_fill_viridis("Percentage difference", alpha = 0.8) +
+                                facet_grid(spatial~ spp+label) +
+                                labs(x = "",
+                                     y = "") +
+                                my_ggtheme_p(facet_tx_s = 20,
+                                             leg_pos = "bottom",
+                                             axx_tx_ang = 45,
+                                             ax_tx_s = 12,
+                                             ax_tl_s = 18,
+                                             hjust = 1) +
+                                theme(legend.key.width = unit(4,"line"),
+                                      strip.background = element_blank(),
+                                      strip.text.x = element_blank()
+                                )
+                            
+                            
+                            # Cowplot option
+                            ggdraw() +
+                                # Revenue circular
+                                draw_plot(map_plot, x = 0, y = 0.2, width = 1, height = 0.8) +
+                                # Catch circular
+                                draw_plot(diff_plot, x = 0, y = 0, width = 1, height = 0.4) +
+                                draw_plot_label(label = c("Latitude", "Longitude"),
+                                                size = 18,
+                                                angle = c(90,0),
+                                                x = c(0,0.45),
+                                                y = c(0.45,0.15)
+                                )
+                            
+                            
+                        }
                     }
                 }
             }
@@ -276,10 +405,14 @@ shinyServer(function(input, output) {
     })
     
     
-    # ---------------------------- #
-    # Area plot ####
-    # ---------------------------- #
+    ## ---------------------------- #
+    # Dynamic plots (plotly) ####
+    ## ---------------------------- #
     output$areaPlot <- renderPlotly({
+        
+        # ---------------------------- #
+        ## Area plot ######
+        # ---------------------------- #
         
         if(input$PlotStyle == 4){
             # Set the filters
@@ -385,7 +518,7 @@ shinyServer(function(input, output) {
                     ggplot() +
                     geom_sf(aes(fill = mean_per,
                                 text = paste(state, mean_per,"% of proportion")
-                                )) +
+                    )) +
                     viridis::scale_fill_viridis("Average proportion\nper State", alpha = 0.8) +
                     facet_wrap(~label, nrow = 2) +
                     labs(x = "Longitude", 
@@ -423,7 +556,7 @@ shinyServer(function(input, output) {
             # Set the plot data
             total_fited <- tif_data() %>%
                 filter(#spp %in% species,
-                    region %in% survey,
+                    region %in% survey#,
                     #year %in% years
                 ) %>% 
                 group_by(year,region) %>%
@@ -432,7 +565,7 @@ shinyServer(function(input, output) {
             # group by state
             state_fit <- tif_data() %>%
                 filter(#spp %in% species,
-                    region %in% survey,
+                    region %in% survey
                     #year %in% years
                 ) %>% 
                 group_by(state,year,region) %>%
