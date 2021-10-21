@@ -1053,12 +1053,12 @@ path_world <- my_path("G", extra_path = "Spatial/SAU/SAU_Shapefile", name = "SAU
 
 ### Previouslly created grids 
 
-grids <- my_path("D", "Spatial/grid_eez_fp_sf", name = "grid_eez_fp_df.csv", read = T) %>%
+grids <- my_path("D", "Spatial/grid_eez_fp", name = "grid_eez_fp_df.csv", read = T) %>%
   mutate(
     spatial = "fp"
   ) %>% 
   bind_rows(
-    my_path("D", "Spatial/grid_eez_sw_sf", name = "grid_eez_sw_df.csv", read = T)
+    my_path("D", "Spatial/grid_eez_sw", name = "grid_eez_sw_df.csv", read = T)
   ) %>% 
   select(-spp) %>% 
   mutate(
@@ -1105,7 +1105,8 @@ historic_spp <- bind_rows(lapply(taxon_sw, fread)) %>%
   filter(!is.na(spatial)) %>% 
   mutate(
     season = ifelse(str_detect(region,"Spring"),"Spring","Fall")
-  )
+  ) %>% 
+  filter(spp == "Centropristis striata")
 
 # historic_spp %>% 
 #   filter(is.na(spatial)) %>% 
