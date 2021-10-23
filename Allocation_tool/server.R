@@ -5,7 +5,7 @@
 # Find out more about building applications with Shiny here:
 #
 #    http://shiny.rstudio.com/
-#
+# https://shiny.rstudio.com/gallery/nutrition-calculator.html
 
 # ---------------------------- #
 # Setup
@@ -13,7 +13,7 @@
 
 # Get functions and shapefiles
 library(MyFunctions)
-MyFunctions::my_lib(c("ggmap","sf","tidyverse","tools","readr","data.table","maps","shiny","DT","plotly","wesanderson","zoo","formattable","viridis"))
+MyFunctions::my_lib(c("ggmap","sf","tidyverse","tools","readr","data.table","maps","shiny","DT","plotly","wesanderson","zoo","formattable","viridis","shinydashboard"))
 
 us_map <- st_as_sf(map("state", plot = FALSE, fill = TRUE))
 
@@ -114,25 +114,25 @@ shinyServer(function(input, output) {
             ) %>%
             filter(!is.na(spatial)) %>% 
             mutate(
-            spatial = ifelse(spatial == "fp","Fishing ports",
-                             ifelse(spatial == "sw","State waters","Difference")
-            )
-            )
-        
-        # For testing
-        data <- my_path("R","Partial/Interpolation/",name = "tif_Centropristis_striata.csv", read = T)
-
-        tif_data <- data %>%
-            filter(region %in% "Northeast US Fall") %>%
-            left_join(grids,
-                      by = c("index","lat","lon")
-            ) %>%
-            filter(!is.na(spatial)) %>%
-            mutate(
                 spatial = ifelse(spatial == "fp","Fishing ports",
                                  ifelse(spatial == "sw","State waters","Difference")
                 )
             )
+        
+        # For testing
+        # data <- my_path("R","Partial/Interpolation/",name = "tif_Centropristis_striata.csv", read = T)
+        # 
+        # tif_data <- data %>%
+        #     filter(region %in% "Northeast US Fall") %>%
+        #     left_join(grids,
+        #               by = c("index","lat","lon")
+        #     ) %>%
+        #     filter(!is.na(spatial)) %>%
+        #     mutate(
+        #         spatial = ifelse(spatial == "fp","Fishing ports",
+        #                          ifelse(spatial == "sw","State waters","Difference")
+        #         )
+        #     )
         
     })
     
@@ -330,45 +330,39 @@ shinyServer(function(input, output) {
             ) %>% 
             gather("type","cpue",value,cpue_log10)
         
-                    
-                    ggplot(us_map) +
-                        geom_sf()+
-                        geom_tile( data = tif_plot_data,
-                                   aes(
-                                       x = lon,
-                                       y = lat,
-                                       fill = cpue,
-                                       colour = cpue
-                                   )
-                        ) +
-                        geom_point(data = subset(plot_data, wtcpue > 0),
-                                   aes(
-                                       x = lon,
-                                       y = lat
-                                   ),
-                                   shape = 3,
-                                   alpha = 0.05
-                        ) +
-                        facet_wrap(~type, ncol = 2) +
-                        scale_color_distiller(palette = "Spectral",
-                                              guide_legend(title = "WCPUE per Haul")) +
-                        scale_fill_distiller(palette = "Spectral",
-                                             guide_legend(title = "WCPUE per Haul")) +
-                        coord_sf(xlim = c(-76, -65),ylim = c(35, 45)) +
-                        
-                        MyFunctions::my_ggtheme_m(leg_pos = "right") +
-                        ggtitle("Distribution estimated by using Triangular Irregular Surface method")
-                    
-                # }
-            # }
+        
+        ggplot(us_map) +
+            geom_sf()+
+            geom_tile( data = tif_plot_data,
+                       aes(
+                           x = lon,
+                           y = lat,
+                           fill = cpue,
+                           colour = cpue
+                       )
+            ) +
+            geom_point(data = subset(plot_data, wtcpue > 0),
+                       aes(
+                           x = lon,
+                           y = lat
+                       ),
+                       shape = 3,
+                       alpha = 0.05
+            ) +
+            facet_wrap(~type, ncol = 2) +
+            scale_color_distiller(palette = "Spectral",
+                                  guide_legend(title = "WCPUE per Haul")) +
+            scale_fill_distiller(palette = "Spectral",
+                                 guide_legend(title = "WCPUE per Haul")) +
+            coord_sf(xlim = c(-76, -65),ylim = c(35, 45)) +
+            
+            MyFunctions::my_ggtheme_m(leg_pos = "bottom") +
+            ggtitle("Distribution estimated by using Triangular Irregular Surface method")
+        
+        # }
+        # }
         # }
     })
-    
-    
-    
-    
-    
-    
     
     # ---------------------------- #
     # Proportion map ######
@@ -377,20 +371,24 @@ shinyServer(function(input, output) {
         
         # Set the filters
         species <- input$SppSelection #"Centropristis striata"
-        survey <-input$SurveySelection #"Northeast US Fall"
-        years <- seq(input$YearSelection[1],input$YearSelection[2],1) #seq(1971,2019,1)
+        survey <-input$SurveySelection # "Northeast US Fall"
+        # years <- seq(input$YearSelection[1],input$YearSelection[2],1) # seq(1971,2019,1)
         reg_area <- input$SpatSelection # "State waters"
         
         total_fited <- tif_data() %>% 
             filter(spp %in% species,
                    region %in% survey,
-                   year %in% years,
+                   # year %in% years,
                    spatial %in% reg_area) %>% 
             group_by(year,region,spp,spatial) %>% 
             summarise(total_value = sum(value,na.rm=T),.groups = "drop")
         
         
         state_fit <- tif_data() %>% 
+            filter(spp %in% species,
+                   region %in% survey,
+                   # year %in% years,
+                   spatial %in% reg_area) %>% 
             group_by(state,year,region,spp,spatial) %>% 
             summarise(state_value = sum(value,na.rm= T), .groups = "drop") %>% 
             # View()
@@ -404,28 +402,14 @@ shinyServer(function(input, output) {
             group_by(state,label,region,spp,spatial) %>% 
             summarise(mean_per = round(mean(percentage)),.groups = "drop") %>% 
             #Only show results for spring
-            filter(!is.na(label))
+            filter(!is.na(label))# %>% 
+        # replace(is.na(.),0) #replace NAs by 0
         
-        # reg_unit <- state_fit %>% 
-        #     filter(season == input$SurveySelection) %>% 
-        #     spread(spatial,mean_per) %>% 
-        #     # Set NA's to 0 because no data found on FP
-        #     mutate(fp = replace_na(fp,0)) %>% 
-        #     # View()
-        #     mutate(
-        #         difference = abs(fp-sw),
-        #         difference = ifelse(difference > 100,100,
-        #                             ifelse(difference < -100,-100,difference)
-        #         )
-        #     ) %>% 
-        #     gather("spatial","mean_per",fp:difference) %>% 
-        #     mutate(spp = gsub(" ","\n",spp),
-        #            spatial = ifelse(spatial == "fp","Fishing ports",
-        #                             ifelse(spatial == "sw","State waters","Difference")
-        #            )
-        #     )
+        max <- max(state_fit$mean_per,na.rm=T)
+        min <- min(state_fit$mean_per,na.rm=T)
         
-        # The plot
+        # The Map
+        
         us_map %>% 
             filter(ID %in% c("maine", "new hampshire", "massachusetts", "connecticut",
                              "rhode island", "new york", "new jersey", "delaware", "maryland",
@@ -435,12 +419,12 @@ shinyServer(function(input, output) {
                       by = "state") %>% 
             ggplot() +
             geom_sf(aes(fill = mean_per)) +
-            scale_fill_viridis("Average proportion per State",
-                                        alpha = 0.8, 
-                                        # breaks = seq(0,35,5),
-                                        # limits=(c(0,35))
+            scale_fill_viridis("Distribution proportion (%)",
+                               alpha = 0.8, 
+                               breaks = seq(0,max,2),
+                               limits=(c(0,max))
             )+
-            facet_grid(~label) +
+            facet_wrap(~label) +
             labs(x = "", 
                  y = "") +
             my_ggtheme_p(facet_tx_s = 20,
@@ -449,120 +433,149 @@ shinyServer(function(input, output) {
                          ax_tx_s = 12,
                          ax_tl_s = 18,
                          hjust = 1) +
-            theme(legend.key.width = unit(4,"line")) 
-
-})
+            theme(legend.key.width = unit(3,"line")) 
+        
+    })
     
     
     
+    # ---------------------------- #
+    # Difference map ######
+    # ---------------------------- #
+    output$propDiffPlot <- renderPlot({
+        
+        # Set the filters
+        species <- input$SppSelection #"Centropristis striata"
+        survey <-input$SurveySelection # "Northeast US Fall"
+        # years <- seq(input$YearSelection[1],input$YearSelection[2],1) # seq(1971,2019,1)
+        reg_area <- input$SpatSelection # "State waters"
+        
+        total_fited <- tif_data() %>% 
+            filter(spp %in% species,
+                   region %in% survey,
+                   # year %in% years,
+                   spatial %in% reg_area) %>% 
+            group_by(year,region,spp,spatial) %>% 
+            summarise(total_value = sum(value,na.rm=T),.groups = "drop")
+        
+        
+        state_fit <- tif_data() %>% 
+            filter(spp %in% species,
+                   region %in% survey,
+                   # year %in% years,
+                   spatial %in% reg_area) %>% 
+            group_by(state,year,region,spp,spatial) %>% 
+            summarise(state_value = sum(value,na.rm= T), .groups = "drop") %>% 
+            # View()
+            left_join(total_fited,
+                      by = c("year","region","spp","spatial")) %>%
+            mutate(percentage = state_value/total_value*100,
+                   label = ifelse(year >= 1980 & year <= 2001,"Reference",
+                                  ifelse(year > 2001,"Today",NA)
+                   )
+            ) %>% 
+            group_by(state,label,region,spp,spatial) %>% 
+            summarise(mean_per = round(mean(percentage)),.groups = "drop") %>% 
+            #Only show results for spring
+            filter(!is.na(label)) %>% 
+            replace(is.na(.),0) %>% #replace NAs by 0
+            spread(label,mean_per) %>% 
+            mutate(
+                Difference = abs(Today-Reference)
+            )
+        
+        max_dif <- max(state_fit$Difference, na.rm =T)
+        
+        # The Map
+        
+        us_map %>% 
+            filter(ID %in% c("maine", "new hampshire", "massachusetts", "connecticut",
+                             "rhode island", "new york", "new jersey", "delaware", "maryland",
+                             "virginia", "north carolina")) %>%
+            mutate(state = str_to_sentence(ID)) %>%
+            left_join(state_fit,
+                      by = "state") %>% 
+            ggplot() +
+            geom_sf(aes(fill = Difference)) +
+            scale_fill_viridis("Difference (%)",
+                               alpha = 0.8, 
+                               breaks = seq(0,max_dif,2),
+                               limits=(c(0,max_dif))
+            )+
+            labs(x = "", 
+                 y = "") +
+            my_ggtheme_p(facet_tx_s = 20,
+                         leg_pos = "bottom",
+                         axx_tx_ang = 45,
+                         ax_tx_s = 12,
+                         ax_tl_s = 18,
+                         hjust = 1) +
+            theme(legend.key.width = unit(3,"line")) 
+        
+    })
+    
+    # ---------------------------- #
+    # Allocation Table ####
+    # https://www.littlemissdata.com/blog/prettytables
+    # ---------------------------- #
+    
+    # output$Allocation_tbl <- renderDataTable({
+    output$Allocation_tbl <- renderFormattable({
+        
+        # Set the filters
+        species <- input$SppSelection #"Centropristis striata"
+        survey <- input$SurveySelection # "Northeast US Fall"
+        reg_area <- input$SpatSelection # "State waters"
+        
+        total_fited <- tif_data() %>% 
+            filter(spp %in% species,
+                   region %in% survey,
+                   # year %in% years,
+                   spatial %in% reg_area) %>% 
+            group_by(year,region,spp,spatial) %>% 
+            summarise(total_value = sum(value,na.rm=T),.groups = "drop")
+        
+        
+        state_fit <- tif_data() %>% 
+            filter(spp %in% species,
+                   region %in% survey,
+                   # year %in% years,
+                   spatial %in% reg_area) %>% 
+            group_by(state,year,region,spp,spatial) %>% 
+            summarise(state_value = sum(value,na.rm= T), .groups = "drop") %>% 
+            # View()
+            left_join(total_fited,
+                      by = c("year","region","spp","spatial")) %>%
+            mutate(percentage = state_value/total_value*100#,
+                   # label = ifelse(year >= 1980 & year <= 2001,"Reference",
+                   # ifelse(year > 2001,"Today",NA)
+                   # )
+            ) %>% 
+            group_by(state,year,region,spp,spatial) %>% 
+            summarise(mean_per = round(mean(percentage)),.groups = "drop") %>% 
+            #Only show results for spring
+            filter(!is.na(mean_per)) %>% 
+            select(state,year,mean_per) %>%
+            spread(year,mean_per) %>%
+            mutate(
+                Change = ifelse(`1973` > `2019`,"Increase","Decrease")
+            ) %>% 
+            select(state,`1973`:`1977`,`2012`:`2019`)
+        
+        
+        #Print format table
+        formattable(state_fit, 
+                    align =c("l",rep("c",10),"r"),
+                    list(
+                        # area(`1973`:`2019`) ~ normalize_bar("pink", 0.2),
+                        Change = formatter("span", 
+                                           x ~ icontext(ifelse(x == "Increase", "arrow-up", "arrow-down"), ifelse(x == "Increase", "Increase", "Decrease")), 
+                                           style = x ~ style(color = ifelse(x == "Increase", "green", "red")))
+                    )
+        ) # close formattable
+    })
     
     
-    
-                    # }else{
-    # 
-    #                     # ---------------------------- #
-    #                     # Relative Change map from today ######
-    #                     # ---------------------------- #
-    #                     if(input$PlotStyle == 7){
-    # 
-    #                         total_fited <- tif_plot_data %>%
-    #                             left_join(grids_data(),
-    #                                       by = c("index","lon","lat")
-    #                             ) %>%
-    #                             filter(!is.na(spatial)) %>%
-    #                             group_by(year,region,spp,spatial) %>%
-    #                             summarise(total_value = sum(value,na.rm=T),.groups = "drop")
-    # 
-    #                         state_fit <- tif_plot_data %>%
-    #                             left_join(grids_data(),
-    #                                       by = c("index","lon","lat")
-    #                             ) %>%
-    #                             group_by(state,year,region,spp,spatial) %>%
-    #                             summarise(state_value = sum(value,na.rm= T), .groups = "drop") %>%
-    #                             left_join(total_fited,
-    #                                       by = c("year","region","spp","spatial")) %>%
-    #                             mutate(percentage = state_value/total_value*100,
-    #                                    label = ifelse(year >= 1980 & year <= 2001,"Reference",
-    #                                                   ifelse(year > 2001,"Today",NA)
-    #                                    )
-    #                             ) %>%
-    #                             group_by(state,label,region,spp,spatial) %>%
-    #                             summarise(mean_per = round(mean(percentage)),.groups = "drop") %>%
-    #                             filter(!is.na(label)) %>%
-    #                             spread(spatial,mean_per) %>%
-    #                             mutate(difference = (fp-sw)/((fp+sw)/2)*100,
-    #                                    difference = ifelse(difference > 100,100,
-    #                                                        ifelse(difference < -100,-100,difference)
-    #                                    )
-    #                             ) %>%
-    #                             gather("spatial","mean_per",fp:difference) %>%
-    #                             mutate(spp = gsub(" ","\n",spp),
-    #                                    spatial = ifelse(spatial == "fp","Fishing ports",
-    #                                                     ifelse(spatial == "sw","State Waters","Difference")
-    #                                    )
-    #                             )
-    # 
-    #                         map_plot <- land_sf %>%
-    #                             left_join(state_fit,
-    #                                       by = "state") %>%
-    #                             filter(spatial != "Difference") %>%
-    #                             ggplot() +
-    #                             geom_sf(aes(fill = mean_per)) +
-    #                             viridis::scale_fill_viridis("Average proportion per State", alpha = 0.8) +
-    #                             facet_grid(spatial~ spp+label) +
-    #                             labs(x = "",
-    #                                  y = "") +
-    #                             my_ggtheme_p(facet_tx_s = 20,
-    #                                          leg_pos = "bottom",
-    #                                          axx_tx_ang = 45,
-    #                                          ax_tx_s = 12,
-    #                                          ax_tl_s = 18,
-    #                                          hjust = 1) +
-    #                             theme(legend.key.width = unit(4,"line"))
-    # 
-    # 
-    #                         diff_plot <- land_sf %>%
-    #                             left_join(state_fit,
-    #                                       by = "state") %>%
-    #                             filter(spatial == "Difference") %>%
-    #                             ggplot() +
-    #                             geom_sf(aes(fill = mean_per)) +
-    #                             viridis::scale_fill_viridis("Percentage difference", alpha = 0.8) +
-    #                             facet_grid(spatial~ spp+label) +
-    #                             labs(x = "",
-    #                                  y = "") +
-    #                             my_ggtheme_p(facet_tx_s = 20,
-    #                                          leg_pos = "bottom",
-    #                                          axx_tx_ang = 45,
-    #                                          ax_tx_s = 12,
-    #                                          ax_tl_s = 18,
-    #                                          hjust = 1) +
-    #                             theme(legend.key.width = unit(4,"line"),
-    #                                   strip.background = element_blank(),
-    #                                   strip.text.x = element_blank()
-    #                             )
-    # 
-    # 
-    #                         # Cowplot option
-    #                         ggdraw() +
-    #                             # Revenue circular
-    #                             draw_plot(map_plot, x = 0, y = 0.2, width = 1, height = 0.8) +
-    #                             # Catch circular
-    #                             draw_plot(diff_plot, x = 0, y = 0, width = 1, height = 0.4) +
-    #                             draw_plot_label(label = c("Latitude", "Longitude"),
-    #                                             size = 18,
-    #                                             angle = c(90,0),
-    #                                             x = c(0,0.45),
-    #                                             y = c(0.45,0.15)
-    #                             )
-    # 
-    # 
-    #                     }
-    #                 }
-    #             }
-    #         }
-    #     }
-    # })
     
     
     # ## ---------------------------- #
@@ -702,139 +715,84 @@ shinyServer(function(input, output) {
     
     
     # ---------------------------- #
-    # Allocation Table ####
-    # ---------------------------- #
-    # output$Allocation_tbl <- renderDataTable({
-    # output$Allocation_tbl <- renderFormattable({
-    #     
-    #     if(input$PlotStyle == 4){
-    #         
-    #         species <- input$SppSelection
-    #         survey <- input$SurveySelection
-    #         years <- input$YearSelection
-    #         
-    #         # Set the plot data
-    #         total_fited <- tif_data() %>%
-    #             filter(#spp %in% species,
-    #                 region %in% survey#,
-    #                 #year %in% years
-    #             ) %>% 
-    #             group_by(year,region) %>%
-    #             summarise(total_value = sum(value,na.rm=T), .groups = "drop")
-    #         
-    #         # group by state
-    #         state_fit <- tif_data() %>%
-    #             filter(#spp %in% species,
-    #                 region %in% survey
-    #                 #year %in% years
-    #             ) %>% 
-    #             group_by(state,year,region) %>%
-    #             summarise(state_value = sum(value,na.rm= T), .groups = "drop") %>%
-    #             left_join(total_fited,
-    #                       by = c("year","region")) %>%
-    #             mutate(percentage = round(state_value/total_value*100)) %>%
-    #             group_by(state,region) %>%
-    #             filter(year %in% c(seq(1973,1977,1),seq(2014,2019,1))) %>%
-    #             ungroup() %>% 
-    #             select(state,year,percentage) %>% 
-    #             spread(year,percentage) %>% 
-    #             mutate(
-    #                 State = str_to_sentence(state),
-    #                 Change = ifelse(`2019` > `1973`,"Increase","Decrease")
-    #             ) %>% 
-    #             select(State,everything(),-state)
-    #         
-    #         #Print formattable
-    #         formattable(state_fit, 
-    #                     align =c("l",rep("c",10),"r"),
-    #                     list(
-    #                         area(col = c(`1973`: `2019`)) ~ normalize_bar("pink", 0.2),
-    #                         Change = formatter("span", 
-    #                                            x ~ icontext(ifelse(x == "Increase", "arrow-up", "arrow-down"), ifelse(x == "Increase", "Increase", "Decrease")), 
-    #                                            style = x ~ style(color = ifelse(x == "Increase", "green", "red")))
-    #                     )
-    #         ) # close formattable
-    #     }
-    # })
-    #     
     
+    
+    
+    
+    ### Old code
+    # ---------------------------- #
+    ## Latitudinal plot ######
+    # ---------------------------- #
+    # if(input$PlotStyle == 2){
+    #     
+    #     # Set the plot data
+    #     avr_lat <- plot_data %>% 
+    #         filter(wtcpue > 0) %>% 
+    #         group_by(year,spp) %>%
+    #         summarise(mean_lat = mean(lat,na.rm = T), .groups = "drop") %>% 
+    #         group_by(spp) %>%
+    #         mutate(Rmean = zoo::rollmean(x = mean_lat,
+    #                                      5,
+    #                                      align = "right",
+    #                                      fill = mean_lat)
+    #         )
+    #     
+    #     ggplot(avr_lat) +
+    #         geom_line(
+    #             aes(
+    #                 x = as.numeric(year),
+    #                 y = Rmean
+    #             )
+    #         ) +
+    #         geom_point(
+    #             aes(
+    #                 x = as.numeric(year),
+    #                 y = mean_lat
+    #             )
+    #         ) +
+    #         xlab("Year") +
+    #         ylab("Latitude") +
+    #         MyFunctions::my_ggtheme_p() +
+    #         ggtitle(paste("Average shift of",unique(plot_data$spp),"(5 years running mean)"))
+    #     
+    # }else{
+    
+    # ---------------------------- #
+    # Density map ######
+    # ---------------------------- #
+    # if(input$PlotStyle == 1){
+    
+    # ggplot(us_map) +
+    #     geom_sf() +
+    #     geom_point(data = subset(plot_data, wtcpue = 0),
+    #                aes(
+    #                    x = lon,
+    #                    y = lat
+    #                ),
+    #                color = "grey95",
+    #                size = 1
+    #     ) +
+    #     geom_point(data = subset(plot_data, wtcpue > 0),
+    #                aes(
+    #                    x = lon,
+    #                    y = lat,
+    #                    color = log10(wtcpue)
+    #                ),
+    #                size = 1
+    #     ) +
+    #     scale_color_distiller(palette = "Spectral",
+    #                           guide_legend(title = "WCPUE per Haul (log10)")) +
+    #     coord_sf(xlim = c(-76, -65),ylim = c(35, 45)) +
+    #     MyFunctions::my_ggtheme_m(leg_pos = "right") +
+    #     facet_wrap(~region) +
+    #     ggtitle(paste(min(years),max(years)))
+    # }else{
+    
+    # ---------------------------- #
+    # DIstribution map ######
+    # ---------------------------- #
+    # if(input$PlotStyle == 3){
+    
+    # The actual map
     
 }) # app closure
-
-
-
-### Old code
-# ---------------------------- #
-## Latitudinal plot ######
-# ---------------------------- #
-# if(input$PlotStyle == 2){
-#     
-#     # Set the plot data
-#     avr_lat <- plot_data %>% 
-#         filter(wtcpue > 0) %>% 
-#         group_by(year,spp) %>%
-#         summarise(mean_lat = mean(lat,na.rm = T), .groups = "drop") %>% 
-#         group_by(spp) %>%
-#         mutate(Rmean = zoo::rollmean(x = mean_lat,
-#                                      5,
-#                                      align = "right",
-#                                      fill = mean_lat)
-#         )
-#     
-#     ggplot(avr_lat) +
-#         geom_line(
-#             aes(
-#                 x = as.numeric(year),
-#                 y = Rmean
-#             )
-#         ) +
-#         geom_point(
-#             aes(
-#                 x = as.numeric(year),
-#                 y = mean_lat
-#             )
-#         ) +
-#         xlab("Year") +
-#         ylab("Latitude") +
-#         MyFunctions::my_ggtheme_p() +
-#         ggtitle(paste("Average shift of",unique(plot_data$spp),"(5 years running mean)"))
-#     
-# }else{
-
-# ---------------------------- #
-# Density map ######
-# ---------------------------- #
-# if(input$PlotStyle == 1){
-
-# ggplot(us_map) +
-#     geom_sf() +
-#     geom_point(data = subset(plot_data, wtcpue = 0),
-#                aes(
-#                    x = lon,
-#                    y = lat
-#                ),
-#                color = "grey95",
-#                size = 1
-#     ) +
-#     geom_point(data = subset(plot_data, wtcpue > 0),
-#                aes(
-#                    x = lon,
-#                    y = lat,
-#                    color = log10(wtcpue)
-#                ),
-#                size = 1
-#     ) +
-#     scale_color_distiller(palette = "Spectral",
-#                           guide_legend(title = "WCPUE per Haul (log10)")) +
-#     coord_sf(xlim = c(-76, -65),ylim = c(35, 45)) +
-#     MyFunctions::my_ggtheme_m(leg_pos = "right") +
-#     facet_wrap(~region) +
-#     ggtitle(paste(min(years),max(years)))
-# }else{
-
-# ---------------------------- #
-# DIstribution map ######
-# ---------------------------- #
-# if(input$PlotStyle == 3){
-
-# The actual map

@@ -8,7 +8,7 @@
 #
 
 # Load libraries and data
-MyFunctions::my_lib(c("ggmap","sf","tidyverse","tools","readr","data.table","maps","shiny","plotly","formattable"))
+MyFunctions::my_lib(c("ggmap","sf","tidyverse","tools","readr","data.table","maps","shiny","plotly","formattable","shinydashboard"))
 
 spp_survey <- read.csv("./data/spp_region.csv") %>% 
     filter(
@@ -48,7 +48,7 @@ dashboardPage(
             )
         ),
         sliderInput(inputId = "YearSelection",
-                    label = "Select Year Range",
+                    label = "Select year range of distribution",
                     min = 1972,
                     max = 2019,
                     step = 1,
@@ -80,40 +80,32 @@ dashboardPage(
             ## Regulatory units map -----------------
             box(title = "Regulatory Units",
                 solidHeader = T,
-                width = 4,
+                width = 6,
                 collapsible = T,
                 plotOutput("RegUnit")
-                ),
+            ),
             ## Distribution map -----------------
             box(title = "Distribution", solidHeader = T,
-                width = 8, collapsible = T,
+                width = 6, collapsible = T,
                 plotOutput("distPlot"))
-        ), #First fluid row
+        ), 
         fluidRow(
             ## Proportion map -----------------
             box(title = "Proportion", solidHeader = T,
-                width = 8, collapsible = T,
+                width = 6, collapsible = T,
                 plotOutput("propPlot")),
             ## Area plot -----------------
-            box(title = "Historical proportion", solidHeader = T,
-                width = 8, collapsible = T,
-                plotlyOutput("mineral_plot"))
+            box(title = "Proportion Difference", solidHeader = T,
+                width = 6, collapsible = T,
+                plotOutput("propDiffPlot"))
         ),# row
         fluidRow(
-            box(title = "Vitamins", solidHeader=T,
+            box(title = "Proportion", solidHeader = T,
                 width = 12, collapsible = T,
-                plotlyOutput("vitamin_plot"))
-            
-            #     box(title = "Proportions",
-            #         solidHeader = T,
-            #         width = 4, 
-            #         collapsible = T,
-            #         collapsed = F,
-            #         tags$p(textOutput("serving", inline = T)),
-            #         div(DT::DTOutput("nutrient_table"), style = "font-size: 70%;")),
+                formattableOutput("Allocation_tbl")
+                )
         ) # row
     ) # body
-    
 )
 
 
