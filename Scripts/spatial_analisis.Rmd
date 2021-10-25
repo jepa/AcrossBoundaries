@@ -1185,7 +1185,7 @@ head(historic_spp)
 #### Data needed ####
 
 # Get state order from North to south
-state_order <- my_path("D","Spatial/grid_eez_sw_sf", name = "grid_eez_sw_df.csv",read = T) %>%
+state_order <- my_path("D","Spatial/grid_eez_sw", name = "grid_eez_sw_df.csv",read = T) %>%
   group_by(state) %>% 
   summarise(
     order = mean(lat)
@@ -1199,7 +1199,7 @@ state_order <- my_path("D","Spatial/grid_eez_sw_sf", name = "grid_eez_sw_df.csv"
 
 
 # Load grid of state waters
-grid_eez_sw_sf <-  st_read(my_path("D","Spatial/grid_eez_sw_sf", name = "grid_eez_sw_sf.shp")) %>%
+grid_eez_sw_sf <-  st_read(my_path("D","Spatial/grid_eez_sw", name = "grid_eez_sw_sf.shp")) %>%
   select(index,state,geometry) %>% 
   mutate(method = "state_waters",
          state = str_to_sentence(state)) %>% 
@@ -1210,7 +1210,7 @@ grid_eez_sw_sf$group <- factor(grid_eez_sw_sf$abrev,      # Reordering group fac
 
 
 # Load grid of fishing ports
-grid_eez_fp_sf <-  st_read(my_path("D","Spatial/grid_eez_fp_sf", name = "grid_eez_fp.shp")) %>%
+grid_eez_fp_sf <-  st_read(my_path("D","Spatial/grid_eez_fp", name = "grid_eez_fp.shp")) %>%
   select(index,abrev=lndng_s,geometry) %>% 
   mutate(method = "fishing_port"#,
          # state = str_to_sentence(landing_port)
@@ -1575,6 +1575,10 @@ reg_unit <- state_fit %>%
   )
 
 
+
+
+
+
 # The plot
 map_plot <- land_sf %>% 
   left_join(reg_unit,
@@ -1646,6 +1650,15 @@ save_plot(
   base_width = 14
 )
 
+reg_unit %>% 
+  # filter(spatial == "fp") %>%
+  select(-fp) %>% 
+  spread(label,sw) %>% 
+  mutate(
+    difference = Today-Reference
+    ) %>% 
+  gther(Reference:difference)
+
 ```
 
 #### Seasonal units map
@@ -1654,8 +1667,8 @@ save_plot(
 
 # Get seasonal data
 season_fit <- state_fit %>% 
-  filter(spatial != "fp") %>% 
-  spread(season,mean_per) %>% 
+  filter(spatial != "fp") %>%
+  spread(season,mean_per) %>%
   mutate(
     Difference = abs(Fall-Spring),
     Difference = ifelse(Difference > 100,100,
