@@ -41,7 +41,7 @@ dashboardPage(
         ),
         selectizeInput(
             'SpatSelection',
-            '2. Select Management Unit', choices = c("State waters","Fishing ports","Both apporaches"),
+            '2. Select Regulatory Unit', choices = c("State waters","Fishing ports","Both apporaches"),
             options = list(
                 placeholder = 'Select an approach',
                 onInitialize = I('function() { this.setValue(""); }')
@@ -84,11 +84,11 @@ dashboardPage(
                 collapsible = T,
                 plotOutput("RegUnit")
             ),
-            ## Distribution map -----------------
-            box(title = "Distribution", solidHeader = T,
-                width = 6, collapsible = T,
-                plotOutput("distPlot"))
-        ), 
+        ## Distribution map -----------------
+        box(title = "Distribution", solidHeader = T,
+            width = 6, collapsible = T,
+            plotOutput("distPlot"))
+        ),
         fluidRow(
             ## Proportion map -----------------
             box(title = "Proportion", solidHeader = T,
@@ -103,7 +103,7 @@ dashboardPage(
             box(title = "Proportion", solidHeader = T,
                 width = 12, collapsible = T,
                 formattableOutput("Allocation_tbl")
-                )
+            )
         ) # row
     ) # body
 )
@@ -210,5 +210,22 @@ dashboardPage(
 #                    )
 #                    
 #         )
+#     )
+# )
+
+
+# Condition between plot and plotly
+# conditionalPanel(
+#     condition = "SpatSelection == Both apporaches",
+#     box(title = "Distribution", solidHeader = T,
+#         width = 6, collapsible = T,
+#         plotOutput("DiffpropPlot")
+#     )
+# ),
+# conditionalPanel(
+#     condition = "SpatSelection != Both apporaches",
+#     box(title = "Distribution", solidHeader = T,
+#         width = 6, collapsible = T,
+#         plotOutput("distPlot")
 #     )
 # )

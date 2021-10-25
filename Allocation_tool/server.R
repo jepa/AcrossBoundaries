@@ -123,6 +123,12 @@ shinyServer(function(input, output) {
         
         name <- paste0("tif_",str_replace(input$SppSelection," ","_"),".csv")
         
+        # Set the filters
+        species <- input$SppSelection #"Centropristis striata"
+        survey <-input$SurveySelection # "Northeast US Fall"
+        reg_area <- input$SpatSelection # "State waters"
+        
+
         data <- my_path("R","Partial/Interpolation/",name = name, read = T) %>% 
             left_join(grids,
                       by = c("index","lon","lat")
@@ -132,21 +138,29 @@ shinyServer(function(input, output) {
                 spatial = ifelse(spatial == "fp","Fishing ports",
                                  ifelse(spatial == "sw","State waters","Difference")
                 )
-            )
+            ) %>% 
+            filter(spp %in% species,
+                   region %in% survey,
+                   spatial %in% reg_area)
         
         # For testing
-        data <- my_path("R","Partial/Interpolation/",name = "tif_Centropristis_striata.csv", read = T)
+        # data <- my_path("R","Partial/Interpolation/",name = "tif_Centropristis_striata.csv", read = T)
         
-        tif_data <- data %>%
-            left_join(grids,
-                      by = c("index","lat","lon")
-            ) %>%
-            filter(!is.na(spatial)) %>%
-            mutate(
-                spatial = ifelse(spatial == "fp","Fishing ports",
-                                 ifelse(spatial == "sw","State waters","Difference")
-                )
-            )
+        
+        # tif_data <- data %>%
+        #     left_join(grids,
+        #               by = c("index","lat","lon")
+        #     ) %>%
+        #     filter(!is.na(spatial)) %>%
+        #     mutate(
+        #         spatial = ifelse(spatial == "fp","Fishing ports",
+        #                          ifelse(spatial == "sw","State waters","Difference")
+        #         )
+        #     ) %>%
+        #     filter(#spp %in% species,
+        #            region %in% survey,
+        #            # spatial %in% reg_area
+        #            )
         
     })
     
@@ -319,33 +333,25 @@ shinyServer(function(input, output) {
     # TIF distribution map ####
     # ---------------------------- #
     output$distPlot <- renderPlot({
+        
         # Set the filters
-        species <- input$SppSelection #"Centropristis striata"
-        survey <-input$SurveySelection #"Northeast US Fall"
         years <- seq(input$YearSelection[1],input$YearSelection[2],1) #seq(1971,2019,1)
-        reg_area <- input$SpatSelection 
         
         # Set the plot data
         plot_data <- raw_data() %>%
             filter(spp %in% species,
-                   region %in% survey,
                    year %in% years)
         
         
         # Set the plot data
         tif_plot_data <- tif_data() %>%
-            filter(spp %in% species,
-                   region %in% survey,
-                   year %in% years,
-                   spatial %in% reg_area
-            ) %>% 
             mutate(
                 cpue_log10 = log10(value)
             ) %>% 
             gather("type","cpue",value,cpue_log10)
         
         
-        ggplot(us_map) +
+        plot <- ggplot(us_map) +
             geom_sf()+
             geom_tile( data = tif_plot_data,
                        aes(
@@ -363,7 +369,6 @@ shinyServer(function(input, output) {
                        shape = 3,
                        alpha = 0.05
             ) +
-            facet_wrap(~type, ncol = 2) +
             scale_color_distiller(palette = "Spectral",
                                   guide_legend(title = "WCPUE per Haul")) +
             scale_fill_distiller(palette = "Spectral",
@@ -373,9 +378,14 @@ shinyServer(function(input, output) {
             MyFunctions::my_ggtheme_m(leg_pos = "bottom") +
             ggtitle("Distribution estimated by using Triangular Irregular Surface method")
         
-        # }
-        # }
-        # }
+        
+        if(input$SpatSelection != "Both apporaches"){
+            plot + facet_wrap(~type, ncol = 2)
+        }else{
+            if(input$SpatSelection == "Both apporaches"){
+                plot + facet_wrap(~type+region, ncol = 2)
+            }
+        }
     })
     
     # ---------------------------- #
@@ -383,26 +393,12 @@ shinyServer(function(input, output) {
     # ---------------------------- #
     output$propPlot <- renderPlot({
         
-        # Set the filters
-        species <- input$SppSelection #"Centropristis striata"
-        survey <-input$SurveySelection # "Northeast US Fall"
-        # years <- seq(input$YearSelection[1],input$YearSelection[2],1) # seq(1971,2019,1)
-        reg_area <- input$SpatSelection # "State waters"
-        
         total_fited <- tif_data() %>% 
-            filter(spp %in% species,
-                   region %in% survey,
-                   # year %in% years,
-                   spatial %in% reg_area) %>% 
             group_by(year,region,spp,spatial) %>% 
             summarise(total_value = sum(value,na.rm=T),.groups = "drop")
         
         
         state_fit <- tif_data() %>% 
-            filter(spp %in% species,
-                   region %in% survey,
-                   # year %in% years,
-                   spatial %in% reg_area) %>% 
             group_by(state,year,region,spp,spatial) %>% 
             summarise(state_value = sum(value,na.rm= T), .groups = "drop") %>% 
             # View()
@@ -416,29 +412,29 @@ shinyServer(function(input, output) {
             group_by(state,label,region,spp,spatial) %>% 
             summarise(mean_per = round(mean(percentage)),.groups = "drop") %>% 
             #Only show results for spring
-            filter(!is.na(label))# %>% 
-        # replace(is.na(.),0) #replace NAs by 0
+            filter(!is.na(label))
         
         max <- max(state_fit$mean_per,na.rm=T)
         min <- min(state_fit$mean_per,na.rm=T)
         
         # The Map
         
-        us_map %>% 
+        p <- us_map %>% 
             filter(ID %in% c("maine", "new hampshire", "massachusetts", "connecticut",
                              "rhode island", "new york", "new jersey", "delaware", "maryland",
                              "virginia", "north carolina")) %>%
             mutate(state = str_to_sentence(ID)) %>%
-            left_join(state_fit,
+            full_join(state_fit,
                       by = "state") %>% 
+            filter(!is.na(label)) %>% 
             ggplot() +
             geom_sf(aes(fill = mean_per)) +
             scale_fill_viridis("Distribution proportion (%)",
                                alpha = 0.8, 
                                breaks = seq(0,max,2),
                                limits=(c(0,max))
-            )+
-            facet_wrap(~label) +
+            ) +
+            # facet_wrap(~label) +
             labs(x = "", 
                  y = "") +
             my_ggtheme_p(facet_tx_s = 20,
@@ -448,9 +444,18 @@ shinyServer(function(input, output) {
                          ax_tl_s = 18,
                          hjust = 1) +
             theme(legend.key.width = unit(3,"line")) 
+            
+            
+            if(input$SurveySelection != "Both apporaches"){
+                
+                p+facet_wrap(~label)
+                
+            }else{
+             
+                   p+facet_wrap(~label+region)
+            }
         
     })
-    
     
     
     # ---------------------------- #
@@ -458,29 +463,14 @@ shinyServer(function(input, output) {
     # ---------------------------- #
     output$propDiffPlot <- renderPlot({
         
-        # Set the filters
-        species <- input$SppSelection #"Centropristis striata"
-        survey <-input$SurveySelection # "Northeast US Fall"
-        # years <- seq(input$YearSelection[1],input$YearSelection[2],1) # seq(1971,2019,1)
-        reg_area <- input$SpatSelection # "State waters"
-        
         total_fited <- tif_data() %>% 
-            filter(spp %in% species,
-                   region %in% survey,
-                   # year %in% years,
-                   spatial %in% reg_area) %>% 
             group_by(year,region,spp,spatial) %>% 
             summarise(total_value = sum(value,na.rm=T),.groups = "drop")
         
         
         state_fit <- tif_data() %>% 
-            filter(spp %in% species,
-                   region %in% survey,
-                   # year %in% years,
-                   spatial %in% reg_area) %>% 
             group_by(state,year,region,spp,spatial) %>% 
             summarise(state_value = sum(value,na.rm= T), .groups = "drop") %>% 
-            # View()
             left_join(total_fited,
                       by = c("year","region","spp","spatial")) %>%
             mutate(percentage = state_value/total_value*100,
@@ -494,14 +484,9 @@ shinyServer(function(input, output) {
             filter(!is.na(label)) %>% 
             replace(is.na(.),0) %>% #replace NAs by 0
             spread(label,mean_per) %>% 
-            mutate(
-                Difference = abs(Today-Reference)
-            )
-        
-        max_dif <- max(state_fit$Difference, na.rm =T)
+            mutate(Difference = Today-Reference)
         
         # The Map
-        
         us_map %>% 
             filter(ID %in% c("maine", "new hampshire", "massachusetts", "connecticut",
                              "rhode island", "new york", "new jersey", "delaware", "maryland",
@@ -509,13 +494,10 @@ shinyServer(function(input, output) {
             mutate(state = str_to_sentence(ID)) %>%
             left_join(state_fit,
                       by = "state") %>% 
+            filter(!is.na(region)) %>% 
             ggplot() +
             geom_sf(aes(fill = Difference)) +
-            scale_fill_viridis("Difference (%)",
-                               alpha = 0.8, 
-                               breaks = seq(0,max_dif,2),
-                               limits=(c(0,max_dif))
-            )+
+            scale_fill_gradient2("Difference (%)") +
             labs(x = "", 
                  y = "") +
             my_ggtheme_p(facet_tx_s = 20,
@@ -524,7 +506,8 @@ shinyServer(function(input, output) {
                          ax_tx_s = 12,
                          ax_tl_s = 18,
                          hjust = 1) +
-            theme(legend.key.width = unit(3,"line")) 
+            theme(legend.key.width = unit(3,"line")) +
+            facet_wrap(~region)
         
     })
     
@@ -535,25 +518,12 @@ shinyServer(function(input, output) {
     
     output$Allocation_tbl <- renderFormattable({
         
-        # Set the filters
-        species <- input$SppSelection #"Centropristis striata"
-        survey <- input$SurveySelection # "Northeast US Fall"
-        reg_area <- input$SpatSelection # "State waters"
-        
         total_fited <- tif_data() %>%
-            filter(spp %in% species,
-                   region %in% survey,
-                   # year %in% years,
-                   spatial %in% reg_area) %>%
             group_by(year,region,spp,spatial) %>%
             summarise(total_value = sum(value,na.rm=T),.groups = "drop")
         
         
         state_table_fit <- tif_data() %>%
-            filter(spp %in% species,
-                   region %in% survey,
-                   # year %in% years,
-                   spatial %in% reg_area) %>%
             group_by(state,year,region,spp,spatial) %>%
             summarise(state_value = sum(value,na.rm= T), .groups = "drop") %>%
             left_join(total_fited,
@@ -573,11 +543,7 @@ shinyServer(function(input, output) {
             left_join(state_order) %>% 
             arrange(order) %>% 
             mutate(State = paste0(state," (",abrev,")")) %>% 
-            select(1:6,42:46,Change)
-        
-        
-        
-        customGreen0 = "#DeF7E9"
+            select(State,2:6,43:47,Change)
         
         customGreen = "#71CA97"
         
