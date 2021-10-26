@@ -46,18 +46,9 @@ Fisheries scientists and common-resource economist have long pledge for establis
 
 <!-- **[Short paragraph on the seasonality of fish distributions in temperate waters - when do we measure fish distributions?]** -->
 
-Seasonality of fish distributions in temperate waters is key for proper management of marine ressources [@Bell2014]. Along the U.S. Northeast EEZ, muny species like black sea bass (*Centropristis striata*) and scup (*Stenotomus chrysops*) present substantial latitudinal migration in response to water temperature fluctuation [@Bell2015; @Henderson2017]. Changes in distribution also follow a depth patter like the case of summer flounder (*Paralichthys dentatus*) who undergoes annual migrations from shallow coastal habitats in the fall to deeper habitats over winter (Terceiro, 2001; Sackett et al., 2007).  The consideration of such natural migration is key in the proper management of marine resources [@Bell2014]. 
+Seasonality of fish distributions in temperate waters is key for proper management of marine resources [@Bell2014]. Along the U.S. Northeast EEZ, many species like black sea bass (*Centropristis striata*) and scup (*Stenotomus chrysops*) present substantial latitudinal migration in response to water temperature fluctuation [@Bell2015; @Henderson2017]. Changes in distribution also follow a depth patter like the case of summer flounder (*Paralichthys dentatus*) who undergoes annual migrations from shallow coastal habitats in the fall to deeper habitats over winter (Terceiro, 2001; Sackett et al., 2007). The consideration of such natural migration is key in the proper management of marine resources [@Bell2014]. 
 
-
-
-
-
-
-
-
-Here, we examine both of these challenges by quantifying the historical distributions of three important fished species relative to 11 states of the Northeast Atlantic U.S that jointly manage these stocks. Specifically, we set two main objectives. First, we examine the difference between two different approaches to define spatial management jurisdictions within the U.S. Federal waters. Second, we examine differences in the species' historical distribution between Spring and Fall to examine seasonal variation in these stock's distributions.
-
- "How does the choice of survey timing and boundary extrapolation method influence our perception of fish distribution changes relative to management boundaries?"
+Here, we examine both of these challenges by quantifying the historical distributions of three important fished species relative to 11 states of the Northeast Atlantic U.S that jointly manage these stocks. Specifically, we ask *how does the choice of survey timing and boundary extrapolation method influence our perception of fish distribution changes relative to management boundaries?* To answer this question we first, examine the difference between two different approaches to define spatial management jurisdictions within the U.S. Federal waters. Second, we examine differences in the species' historical distribution between Spring and Fall to examine seasonal variation in these stock's distributions.
 
 
 # Methods
@@ -155,17 +146,20 @@ Moreover, we tested the sensitivity of our results to the arbitrary $75{^th}$ pe
 
 We overlay the specie's interpolation with the regulatory units and estimated the distribution and CPUE proportion that each state had under both approaches. The interpolated CPUE was divided equally in cases where two or more states had the same grid. For example, if New York and New Jersey both shared one grid, then the proportion of that grid would be allocated 50% to each state, alternatively, if Connecticut was also sharing the grid, then the proportion would be 33.3% to each state. Note that this step does not affect the interpolation method but the way the CPUE is allocated by state. 
 
-Next, we estimated the CPUE percentage change today relative to the historic period. For that matter we define the historic period as 1980 to 2000 representing the state allocations of the commercial fisheries originally implemented in 2003 [@RefDocument], and “today” as the average of 2009 to 2019 representing the more recent data available. The parentage changes between the historic and present CPUE ($\Delta{B}$) was estimate for each of the two regulatory units approaches as;
+Next, we estimated the CPUE percentage change today relative to the period used to determine the current quota for each stock. Today is defined as the average of 2009 to 2019 representing the more recent data available. 
+
+For summer flounder, the quota allocation period covers 1980 to 1986 determined in the original management plan [@Ammendment4; 9.1.2.3.1. Commercial quota page 12], for scup the period covers 1988 to 1992 according to Amendment 8 of the original management plan ([@Ammendment8]; **Section 9.1.2.3.7. Commercial quota, page 48 and Table 40**) and for black sea bass Amendment 13 sets the state-wide quota based on historic landings from 1980 to 2001 (@REF; **Amendment 13- Alternative 5f; section 2.1.5.6 (Pages 3, 14, and 304-Table 5**). The parentage changes between the historic and present CPUE ($\Delta{B}$) was estimate per stock for each of the two regulatory units approaches as;
+
+**NOTE: There is a "complicated" estimation for summer flounder in Connecticut we are currently ignoring. Commercial landings of summer flounder would be adjusted to account for undocumented commercial landings of summer flounder in the State of Connecticut for the years 1980 to 1986. The 1987-91 proportion of Connecticut's landings relative to the combined landings of Massachusetts, Rhode Island, New York and New Jersey would be derived and applied to the combined landings of these four States for the years 1980-86 to derive an adjusted Connecticut value for each year 1980-86 (Table 2). These adjusted values would be used to derive the state-specific shares of the coastwide summer flounder quota. The adjusted allocation formula would be implemented in 1993.**
+
+
 
 $$ \Delta \alpha=\frac{(\alpha_t-\alpha_h)}{|\alpha_h|}*100$$
-
-
 
 Where $\alpha_t$ is the CPUE today (average of 2009 to 2019) and $\alpha_h$ is the CPUE at the historical period (average of 1980 to 2000). In addition, we estimated the differences in ($\Delta{\alpha}$) between survey seasons ($\Delta{\alpha}_{seas}$) and between regulatory units ($\Delta{\alpha}_{reg}$) approach by subtracting from each other:
 
 $$ \Delta \alpha_{seas} = |\Delta \alpha_{fp}-\Delta \alpha_{sw}| $$
 $$ \Delta \alpha_{reg} = |\Delta \alpha_{f}-\Delta \alpha_{s}| $$
-
 
 Where $\Delta{\alpha}_{fp}$, $\Delta{\alpha}_{sw}$, $\Delta{\alpha}_{f}$, and $\Delta{\alpha}_{s}$ represent the CPUE percentage change today relative to historical value for fishing ports, state waters, Fall and Summer approaches, respectively. 
 
@@ -202,6 +196,7 @@ grid.raster(img)
 
 ![Figure 2. Interpolation results for all species and seasons. Scale showing Catch per Unit of Effort (CPUE) at a log 10 scale. White cross represents the species' centroid defined as the region with the largest CPUE. Grey regions represent no CPUE](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/F2_Interpolation.jpg)
 
+
 We overlay the developed regulatory units with the interpolated CPUE of black sea bass, summer flounder and scup to estimate each state's proportion of the total CPUE (Figures \@ref{fig:figSpatialDiff}). Under the state waters approach, each state has a regulatory unit and thus captures a part of the CPUE of each species. However, under the fishing ports approach some states end up without regulatory units resulting in no CPUE. This is the case of Maine, New Hampshire and Connecticut. On the contrary, New Jersey and Virginia end up with the largest benefits of the fishing ports approach. There are very few cases where the spatial approach does not affect the CPUE proportion of each state (Delaware, Massachusetts and North Carolina for black sea bass, North Carolina for summer flounder and Maryland for scup).
 
 ```{r figSpatialDiff, eval = F, echo = T, fig.width = 3, fig.height = 2, echo=FALSE, fig.cap = "Proportion of the Catch per Unit of Effort (CPUE) for each species by state undert two time periods. Top and middle rows represent the fishing port and state waters approach, respectiveley. Bottom row is the difference between each approach. All values in percentage"}
@@ -213,7 +208,7 @@ grid.raster(img)
 ```
 
 
-![Figure 3. Proportion of the Catch per Unit of Effort (CPUE) for each species by state undert two time periods. Top and middle rows represent the fishing port and state waters approach, respectiveley. Bottom row is the difference between each approach. All values in percentage. Differences in absolute values](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/F3_proportion_chg.jpg)
+![Figure 3. Proportion of the Catch per Unit of Effort (CPUE) for each species by state undert two time periods. Top and middle rows represent the fishing port and state waters approach, respectiveley. Bottom row is the difference between each approach. All values in percentage. Differences in absolute values](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/F3_proportion_chg_reg.jpg)
 
 Seasonal differences in state’s CPUE proportion are also evident, although smaller than regulatory units differences (Figures \@ref{fig:figSeasonlDiff}). Here, half of the cases represent 1% or no seasonality difference like Connecticut's CPUE proportion of summer flounder. The largest difference are in the latitudinal extremes with Maine currently getting 4% more CPUE in the fall than in spring as opposite to Virginia who gets 4% more in the spring than in the fall. 
 
@@ -227,9 +222,9 @@ grid.raster(img)
 ```
 
 
-![Figure 4. Historical Catch Per Unit of Efort (CPUE) proportion of each species by season. Proportion presented in 10 years running mean percentage. States presented latitudinally from north to south. Differences in absolute values. ](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/proportion_chg_seas.jpg)
+![Figure 4. Historical Catch Per Unit of Efort (CPUE) proportion of each species by season. Proportion presented in 10 years running mean percentage. States presented latitudinally from north to south. Differences in absolute values. ](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/F4_proportion_chg_seas.jpg)
 
-Over the last 40 years, the proportion of the CPUE has increased for northern states and decreased for southern states for all species (Figure 6). North Carolina and Virginia have been the most affected for all three species, regardless of the regulatory unit approach. Under the state waters approach, states from Rhode Island to Maine have increased their proportion of black sea bass and scup while the fishing ports approach favors Massachusetts, Rhode Island, and New York. States located “at middle” latitude do not seem to be affected by shifting distributions.  While the regulatory unit approach will completely remove some states (e.g., Maine) of the allocation beneficing others (e.g., New Jersey), it does not seem to affect historical trends. That is, gainers and losers in terms of historical trend will be the same, regardless of the approach. 
+Over the last 40 years, the proportion of the CPUE has increased for northern states and decreased for southern states for all species (Figures \@ref{fig:figAreaPlot}). North Carolina and Virginia have been the most affected for all three species, regardless of the regulatory unit approach. Under the state waters approach, states from Rhode Island to Maine have increased their proportion of black sea bass and scup while the fishing ports approach favors Massachusetts, Rhode Island, and New York. States located “at middle” latitude do not seem to be affected by shifting distributions. While the regulatory unit approach will completely remove some states (e.g., Maine) of the allocation beneficing others (e.g., New Jersey), it does not seem to affect historical trends. That is, gainers and losers in terms of historical trend will be the same, regardless of the approach. 
 
 
 ```{r figAreaPlot, eval = F, echo = T, fig.width = 3, fig.height = 2, echo=FALSE, fig.cap = "Proportion of the Catch per Unit of Effort (CPUE) for each species by state undert two time periods. Top and middle rows represent the fishing port and state waters approach, respectiveley. Bottom row is the difference between each approach. All values in percentage"}
@@ -242,9 +237,6 @@ grid.raster(img)
 
 
 ![Figure 5. Historical Catch Per Unit of Efort (CPUE) proportion of each species by spatial approach. Proportion presented in 10 years running mean percentage. States presented latitudinally from north to south ](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/F4_area_plot_avg_spp_sptl.jpg)
-
-
-
 
 
 # Discussion 
