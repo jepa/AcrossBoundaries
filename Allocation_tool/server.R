@@ -329,9 +329,9 @@ shinyServer(function(input, output) {
         }
     })
     
-    # ---------------------------- #
-    # TIF distribution map ####
-    # ---------------------------- #
+# ---------------------------- #
+### TIF distribution map ####
+# ---------------------------- #
     output$distPlot <- renderPlot({
         
         # Set the filters
@@ -389,7 +389,7 @@ shinyServer(function(input, output) {
     })
     
     # ---------------------------- #
-    # Proportion map ######
+    ### Proportion map ######
     # ---------------------------- #
     output$propPlot <- renderPlot({
         
@@ -459,7 +459,7 @@ shinyServer(function(input, output) {
     
     
     # ---------------------------- #
-    # Difference map ######
+    ### Difference map ######
     # ---------------------------- #
     output$propDiffPlot <- renderPlot({
         
@@ -512,7 +512,7 @@ shinyServer(function(input, output) {
     })
     
     # ---------------------------- #
-    # Allocation Table ####
+    ### Allocation Table ####
     # https://www.littlemissdata.com/blog/prettytables
     # ---------------------------- #
     
@@ -562,4 +562,7 @@ shinyServer(function(input, output) {
         )
     })  # close formattable
     
+    # ---------------------------- #
+    # Tool end ####
+    # ---------------------------- #
 }) # app closure
