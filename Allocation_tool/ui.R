@@ -26,14 +26,12 @@ dashboardPage(
     sidebarMenu(
       menuItem("Home", tabName = "home", icon = icon("home")),
       br(),
-      br(),
       menuItem("Information", tabName = "info", icon = icon("info")),
-      br(),
       br(),
       menuItem("Tool", tabName = "dashboard", icon = icon("dashboard")),
       br(),
-      br(),
       menuItem("Instructions", tabName = "instructions", icon = icon("gear")),
+      br(),
       menuItem(
         "Download report",
         tabName = "download",
@@ -60,6 +58,9 @@ dashboardPage(
           )
         )
       ),
+      br(),
+      br(),
+      br(),
       br(),
       br(),
       br(),
@@ -248,10 +249,12 @@ dashboardPage(
                   status = "primary", # blue color
                   # p("Inst. Select here the species you want to explore"),
                   selectizeInput(
-                    'SppSelection',"", choices = c("Centropristis striata","Paralichthys dentatus","Stenotomus chrysops"),
+                    'SppSelection',"",
+                    choices = c("Centropristis striata","Paralichthys dentatus","Stenotomus chrysops"),
                     options = list(
                       placeholder = 'Type or click to search for species',
                       onInitialize = I('function() { this.setValue(""); }')
+                      
                     )
                   )
                 ),
@@ -268,7 +271,8 @@ dashboardPage(
                     options = list(
                       placeholder = 'Type or click to select a season',
                       onInitialize = I('function() { this.setValue(""); }')
-                    )
+                    ),
+                    selected = unique(spp_survey$region)[1]
                   )
                 ),
                 box(
@@ -283,7 +287,8 @@ dashboardPage(
                     options = list(
                       placeholder = 'Type or click to select an approach',
                       onInitialize = I('function() { this.setValue(""); }')
-                    )
+                    ),
+                    selected = "State waters"
                   )
                 ),
                 box(
@@ -323,8 +328,6 @@ dashboardPage(
               hr(style = "border-top: 3px dashed lightgrey;"),
               h1("Results"),
               h4("Here you will see the results from your query.", em("Note some graphs can take some time to apear depending on your internet connection")),
-              fluidRow(
-              ),
               #______________________________________________________________________#
               ### Results ####
               #______________________________________________________________________#
