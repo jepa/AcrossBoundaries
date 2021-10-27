@@ -31,79 +31,87 @@ dashboardPage(
   # Body ####
   dashboardBody(
     tabItems(
-      ## Information Body ####
+      ## Home Body ####
       tabItem(tabName = "home",
               column(12,
                      align = "center",
-                     h1("Welcome to the quota allocation tool!"),
+                     h1("Welcome to the Across Boundaries quota allocation tool!"),
               ),
               column(
-                width = 8,
-                offset = 2,
+                width = 10,
+                offset = 1,
                 align = "justified",
-                h4("This is a dynamic tool. It was build with the objective of exploring different
+                h4("This tool was build with the objective of exploring different
                   management apporaches to address changes in stocks distribution across management boundaries
-                    in response to a chanign climate. The tool focuses on three stocks of the Northeast United 
-                    States and is part of the project, Managing across boundaries: preventing interjurisdictional
-                     conflicts arising from shifting fish stocks")
+                    in response to a changing climate. The tool focuses on three stocks of the Northeast United 
+                    States and is part of the project", em("Managing across boundaries: preventing interjurisdictional
+                     conflicts arising from shifting fish stocks"))
               ),
               column(
-                width = 8,
-                offset = 2,
-                alijn = "justified",
-                h4("Navigate below to know more about the project. Or go to Tool in the left pannel to access 
-                     the dynamic tool")
+                width = 10,
+                offset = 1,
+                align = "justified",
+                h4("Below you can find information on the stocks available to explore in the tool.
+                  Navigate to",em("Tool"),"in the left pannel to access 
+                   the dynamic tool", em("Information"), "to know more about the project and", em("Instructions"),
+                   "to get familiarized with the tool.")
               ), # Close fluid row
+              column(
+                width = 12,
+                align = "justified",
+                h2("Info on availabel stocks"),
+                h4("Click in each picture to go to NOAAs site for the management of the stock")
+              ),
               fluidRow(
                 box(
                   width = 4,
                   solidHeader = TRUE,
                   collapsible = FALSE,
                   title = "Black sea bass",
-                  status = "primary", # blue color
+                  background = "black",
                   a(img(src= 'https://media.fisheries.noaa.gov/styles/original/s3/dam-migration/640x427-black-sea-bass.png?itok=7Ax8suz_',
                         height = 200,
                         width = 300),
                     title = "Go to NOAA",
                     href="https://www.fisheries.noaa.gov/species/black-sea-bass"),
-                  h5("Centropristis striata")
+                  h5(em("Centropristis striata"))
                 ),
                 box(
                   width = 4,
                   solidHeader = TRUE,
                   collapsible = FALSE,
                   title = "Scup",
-                  status = "primary", # blue color
+                  background = "black",
                   a(img(src= 'https://media.fisheries.noaa.gov/styles/original/s3/dam-migration/scup.png?itok=noMUoDe0',
                         height = 200,
                         width = 300),
                     href="https://www.fisheries.noaa.gov/species/scup"),
-                  h5("Stenotomus chrysops")
+                  h5(em("Stenotomus chrysops"))
                 ),
                 box(
                   width = 4,
                   solidHeader = TRUE,
                   collapsible = FALSE,
                   title = "Summer flounder",
-                  status = "primary", # blue color
+                  background = "black",
                   a(img(src= 'https://media.fisheries.noaa.gov/styles/original/s3/2021-03/640x427-summer-flounder.png?itok=B6G4jkW7',
                         height = 200,
                         width = 300),
                     href="https://www.fisheries.noaa.gov/species/summer-flounder"),
-                  h5("Paralichthys dentatus")
-                )
+                  h5(em("Paralichthys dentatus"))
+                ),
               ), #Close species fluid row
-              # Lenfest
-              column(
-                width = 8,
-                offset = 2,
-                alijn = "justified",
+              fluidRow(
                 p("This is a project funded by The Lenfest Ocean Program. Know more about the Lenfest program", a(img(src= 'logo_lenfest.jpeg',
                                                                                                                       height = 30,
                                                                                                                       width = 50),
-                                                                                                                  href="https://www.lenfestocean.org/en/about-us")
+                                                                                                                  href="https://www.lenfestocean.org/en/about-us"),
+                  "This tool is open access and all code can be found in",a(img(src= 'https://github.githubassets.com/images/modules/logos_page/GitHub-Logo.png',
+                                                                                height = 15,
+                                                                                width = 50),
+                                                                            href="https://github.com/jepa/AcrossBoundaries")
                 )
-              ) # closes colum
+              ) # Close footer fluid row
       ), # Close Home body
       ## Information Body ####
       tabItem(tabName = "info",
@@ -119,12 +127,8 @@ dashboardPage(
                   offset = 2,
                   align = "center",
                   collapsible = TRUE,
-                  h4(" This is a dynamic tool that allows to explore different
-                  management apporaches to address changes in stocks distribution across management boundaries
-                    in response to a chanign climate."),
-                  br(),
-                  h5("Navigate below to know more about the project. Or go to Tool in the left pannel to access 
-                     the dynamic tool")
+                  h4("In this section you will find information about the project including some background information, the project's obectives,
+                     as well as the partners involved in developing the tool and the research")
                 )
               ),
               fluidRow(
@@ -132,20 +136,50 @@ dashboardPage(
                   title = "Project background",
                   width = 12,
                   collapsible = TRUE,
-                  collapsed = TRUE,
-                  includeMarkdown("./scripts/about.Rmd") # Call the About info
+                  collapsed = FALSE,
+                  h4("Climate change is driving shifts in fish stock distributions that will affect resource availability across different jurisdictions around the world. Elinor Ostrom’s fundamental principles of common pool resource governance include a requirement for clear boundaries over resource units. However, when stock ranges shift, governance systems and boundaries are no longer aligned. This misalignment has already created conflicts around access and the re-distribution of benefits flowing from the stocks. This is a global challenge that is likely to increase as the effects of climate change intensify in the coming years. Specific problems that arise from the movement of stocks across jurisdictions include: overfishing; conflicts over access; unfairness to stakeholders who have borne the costs of resource stewardship but cannot capture the benefits due to stock movement; and high costs and conflicts associated with re-negotiating allocation, which is typically the most contentious aspect of fishery management.")
                 )
               ),
-              br(),
-              p("This is a project funded by The Lenfest Ocean Program. Know more about the Lenfest program", a(img(src= 'logo_lenfest.jpeg',
-                                                                                                                    height = 30,
-                                                                                                                    width = 50),
-                                                                                                                href="https://www.lenfestocean.org/en/about-us")
+              fluidRow(
+                box(
+                  title = "Project Objectives",
+                  width = 12,
+                  collapsible = TRUE,
+                  collapsed = TRUE,
+                  h4("The objective of this tool is to evaluate policy options for managing fish stocks that are shifting across management boundaries, and to assess the socio-economic benefits and tradeoffs of these options for two important fisheries in the U.S. Mid-Atlantic,"),
+                  
+                  
+                  h4("1. Would  adaptive allocation  have reduced fuel use and carbon emissions, had it been applied when black sea bass and summer flounder stocks started to shift?"),
+                  
+                  h4("2. Would adaptive allocation have a positive economic impact on these fisheries, had it been applied when black sea bass and summer flounder stocks started to shift?"),
+                  
+                  h4("3.	How can conflicts around allocation be reduced in the context of shifting stocks?"),
+                  
+                  h4("4.	Where else in the U.S.  could this type of solution be applied to alleviate the challenges that arise when stocks shift?")
+                )
+              ),
+              fluidRow(
+                box(
+                  title = "Partners",
+                  width = 12,
+                  collapsible = TRUE,
+                  collapsed = TRUE,
+                  h4(a("- Arielle Levine, San Diego State University", href="https://geography.sdsu.edu/people/bios/levine")),
+                  h4(a("- Chris Dumas, University of North Carolina Wilmington", href = "https://csbapp.uncw.edu/data/fs/vita.aspx?id=8307)")),
+                  h4(a("- Juliano Palacios-Abrantes, University of Wisconsin-Madison", href = "https://limnology.wisc.edu/staff/palacios-abrantes-juliano/)")),
+                  h4(a("- Katie Longo, Marine Stewardship Council", href = "https://www.researchgate.net/profile/Catherine-Longo")),
+                  h4(a("- Lisa Wainger, University of Maryland Center for Environmental Science", href = "https://www.umces.edu/lisa-wainger)")),
+                  h4(a("- Olaf Jensen, University of Wisconsin, Madison", href = "https://limnology.wisc.edu/staff/jensen-olaf/)")),
+                  h4(a("- Rod Fujita, Environmental Defense Fund", href ="https://www.edf.org/people/rod-m-fujita")),
+                  h4(a("- Scott Crosson, National Oceanic and Atmospheric Administration", href = "https://www.fisheries.noaa.gov/contact/scott-crosson-phd)"))
+                ) # close last box
               )
       ), # Close info body
       ## Dashboard Body ####
       tabItem(tabName = "dashboard",
               h1("Control panel"),
+              h4("Please select from the following options in the blue boxes.", em("Note that all options need to be selected in order for results to apear")),
+              ### Control panel ####
               fluidRow(
                 # Select species box
                 box(
@@ -154,6 +188,7 @@ dashboardPage(
                   collapsible = TRUE,
                   title = "Select species",
                   status = "primary", # blue color
+                  # p("Inst. Select here the species you want to explore"),
                   selectizeInput(
                     'SppSelection',"", choices = c("Centropristis striata","Paralichthys dentatus","Stenotomus chrysops"),
                     options = list(
@@ -228,6 +263,8 @@ dashboardPage(
                 ),
                 br(),
                 h1("Results"),
+                h4("Here you will see the results from your query.", em("Note some graphs can take some time to apear depending on your internet connection")),
+                ### Results ####
                 fluidRow(
                   ## Regulatory units map -----------------
                   box(width = 6,
