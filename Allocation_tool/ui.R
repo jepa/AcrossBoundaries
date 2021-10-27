@@ -8,7 +8,7 @@
 #
 
 
-MyFunctions::my_lib(c("ggmap","sf","tidyverse","tools","readr","data.table","maps","shiny","plotly","formattable","shinydashboard"))
+MyFunctions::my_lib(c("ggmap","sf","tidyverse","tools","readr","data.table","maps","shiny","plotly","formattable","shinydashboard","shinyjs"))
 
 spp_survey <- read.csv("./data/spp_region.csv") %>% 
   filter(
@@ -234,6 +234,7 @@ dashboardPage(
       ## Tool ####
       #______________________________________________________________________#
       tabItem(tabName = "dashboard",
+              useShinyjs(),
               h1("Control panel"),
               h4("Please select from the following options in the blue boxes.", em("Note that all options need to be selected in order for results to apear")),
               #______________________________________________________________________#
@@ -249,12 +250,11 @@ dashboardPage(
                   status = "primary", # blue color
                   # p("Inst. Select here the species you want to explore"),
                   selectizeInput(
-                    'SppSelection',"",
+                    "SppSelection","",
                     choices = c("Centropristis striata","Paralichthys dentatus","Stenotomus chrysops"),
                     options = list(
                       placeholder = 'Type or click to search for species',
                       onInitialize = I('function() { this.setValue(""); }')
-                      
                     )
                   )
                 ),
@@ -325,6 +325,19 @@ dashboardPage(
                   tags$p("Note: The treshold input will only apply for the Port Aproach. It determines the top ports to be included in the analysis."),
                 )
               ),
+              column(12,
+                     align = "center",
+              actionButton("do",
+                           "Run Query",
+                           icon = icon("gear"),
+                           class = "btn-warning"
+                           ),
+              actionButton("reset",
+                           "Clear all",
+                           icon = icon("clean"),
+                           class = "btn-warning"
+              ),
+              ),
               hr(style = "border-top: 3px dashed lightgrey;"),
               h1("Results"),
               h4("Here you will see the results from your query.", em("Note some graphs can take some time to apear depending on your internet connection")),
@@ -386,3 +399,4 @@ dashboardPage(
     )
   )# Close instructions
 )
+# )
