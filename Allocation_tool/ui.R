@@ -19,19 +19,71 @@ spp_survey <- read.csv("./data/spp_region.csv") %>%
 
 dashboardPage(
   dashboardHeader(title = "Across Boundaries Project"),
+  #______________________________________________________________________#
   # Sidebar  ####
+  #______________________________________________________________________#
   dashboardSidebar(
     sidebarMenu(
       menuItem("Home", tabName = "home", icon = icon("home")),
+      br(),
+      br(),
       menuItem("Information", tabName = "info", icon = icon("info")),
+      br(),
+      br(),
       menuItem("Tool", tabName = "dashboard", icon = icon("dashboard")),
-      menuItem("Instructions", tabName = "instructions", icon = icon("gear"))
-    )
+      br(),
+      br(),
+      menuItem("Instructions", tabName = "instructions", icon = icon("gear")),
+      menuItem(
+        "Download report",
+        tabName = "download",
+        icon = icon("download"),
+        textInput(
+          inputId = "filename",
+          placeholder = "Name download file",
+          label = ""
+        ),
+        div(
+          downloadButton(
+            outputId = "downloadData",
+            label = "Download report",
+            icon = icon("download"),
+            style = "color: black; margin-left: 15px; margin-bottom: 5px;"
+          )
+        ),
+        div(
+          downloadButton(
+            outputId = "downloadMicroData",
+            label = "Download processed data",
+            icon = icon("download"),
+            style = "color: black; margin-left: 15px; margin-bottom: 5px;"
+          )
+        )
+      ),
+      br(),
+      br(),
+      br(),
+      br(),
+      br(),
+      br(),
+      br()
+    ),
+    hr(style = "border-top: 3px dashed lightgrey;"),
+    p("For any inquery regarding this tool, please email us at 
+    jpalacios2[at]wisc.edu"),
+    a(img(src= 'https://github.githubassets.com/images/modules/logos_page/Octocat.png',
+          height = 50,
+          width = 50),
+      href="https://github.com/jepa/AcrossBoundaries")
   ),
+  #______________________________________________________________________#
   # Body ####
+  #______________________________________________________________________#
   dashboardBody(
     tabItems(
-      ## Home Body ####
+      #______________________________________________________________________#
+      ## Home ####
+      #______________________________________________________________________#
       tabItem(tabName = "home",
               column(12,
                      align = "center",
@@ -54,7 +106,7 @@ dashboardPage(
                 h4("Below you can find information on the stocks available to explore in the tool.
                   Navigate to",em("Tool"),"in the left pannel to access 
                    the dynamic tool", em("Information"), "to know more about the project and", em("Instructions"),
-                   "to get familiarized with the tool.")
+                  "to get familiarized with the tool.")
               ), # Close fluid row
               column(
                 width = 12,
@@ -113,7 +165,9 @@ dashboardPage(
                 )
               ) # Close footer fluid row
       ), # Close Home body
-      ## Information Body ####
+      #______________________________________________________________________#
+      ## Information ####
+      #______________________________________________________________________#
       tabItem(tabName = "info",
               column(12,
                      align = "center",
@@ -175,11 +229,15 @@ dashboardPage(
                 ) # close last box
               )
       ), # Close info body
-      ## Dashboard Body ####
+      #______________________________________________________________________#
+      ## Tool ####
+      #______________________________________________________________________#
       tabItem(tabName = "dashboard",
               h1("Control panel"),
               h4("Please select from the following options in the blue boxes.", em("Note that all options need to be selected in order for results to apear")),
+              #______________________________________________________________________#
               ### Control panel ####
+              #______________________________________________________________________#
               fluidRow(
                 # Select species box
                 box(
@@ -260,58 +318,68 @@ dashboardPage(
                               value = 75
                   ),
                   tags$p("Note: The treshold input will only apply for the Port Aproach. It determines the top ports to be included in the analysis."),
+                )
+              ),
+              hr(style = "border-top: 3px dashed lightgrey;"),
+              h1("Results"),
+              h4("Here you will see the results from your query.", em("Note some graphs can take some time to apear depending on your internet connection")),
+              fluidRow(
+              ),
+              #______________________________________________________________________#
+              ### Results ####
+              #______________________________________________________________________#
+              fluidRow(
+                #### Regulatory units map -----------------
+                box(width = 6,
+                    solidHeader = TRUE,
+                    collapsible = TRUE,
+                    title = "Regulatory Units",
+                    status = "success", # green color
+                    plotOutput("RegUnit")
                 ),
-                br(),
-                h1("Results"),
-                h4("Here you will see the results from your query.", em("Note some graphs can take some time to apear depending on your internet connection")),
-                ### Results ####
-                fluidRow(
-                  ## Regulatory units map -----------------
-                  box(width = 6,
-                      solidHeader = TRUE,
-                      collapsible = TRUE,
-                      title = "Regulatory Units",
-                      status = "success", # green color
-                      plotOutput("RegUnit")
-                  ),
-                  ## Distribution map -----------------
-                  box(width = 6, 
-                      solidHeader = TRUE,
-                      collapsible = TRUE,
-                      title = "Stock's distribution",
-                      status = "success", # green color
-                      plotOutput("distPlot"))
-                ),
-                fluidRow(
-                  ## Proportion map -----------------
-                  box(width = 6, 
-                      solidHeader = TRUE,
-                      collapsible = TRUE,
-                      title = "State's proportion",
-                      status = "success", # green color
-                      plotOutput("propPlot")),
-                  ## Area plot -----------------
-                  box(width = 6, 
-                      solidHeader = TRUE,
-                      collapsible = TRUE,
-                      title = "Difference between historic and current distribution",
-                      status = "success", # green color
-                      plotOutput("propDiffPlot"))
-                ),# row
-                fluidRow(
-                  box(width = 12, 
-                      solidHeader = TRUE,
-                      collapsible = TRUE,
-                      title = "Historical proportion of the stock",
-                      status = "success", # green color
-                      formattableOutput("Allocation_tbl")
-                  )
-                ) # row
-              )
-      ),
+                #### Distribution map -----------------
+                box(width = 6, 
+                    solidHeader = TRUE,
+                    collapsible = TRUE,
+                    title = "Stock's distribution",
+                    status = "success", # green color
+                    plotOutput("distPlot")
+                )
+              ), # close firs fluid row
+              fluidRow(
+                #### Proportion map -----------------
+                box(width = 6, 
+                    solidHeader = TRUE,
+                    collapsible = TRUE,
+                    title = "State's proportion",
+                    status = "success", # green color
+                    plotOutput("propPlot")),
+                #### Area plot -----------------
+                box(width = 6, 
+                    solidHeader = TRUE,
+                    collapsible = TRUE,
+                    title = "Difference between historic and current distribution",
+                    status = "success", # green color
+                    plotOutput("propDiffPlot")
+                )
+              ),# # close second fluid row
+              fluidRow(
+                box(width = 12, 
+                    solidHeader = TRUE,
+                    collapsible = TRUE,
+                    title = "Historical proportion of the stock",
+                    status = "success", # green color
+                    formattableOutput("Allocation_tbl")
+                )
+              ) # close third fluid row
+      ), # Close tool body
+      #______________________________________________________________________#
+      ## Instructions ####
+      #______________________________________________________________________#
       tabItem(tabName = "instructions",
               p("plop")
       )
-    )# Close instructions
-  )
+      
+    )
+  )# Close instructions
 )
