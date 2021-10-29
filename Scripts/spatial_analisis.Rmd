@@ -2,8 +2,8 @@
 title: "Spatial Analysis"
 author: "Juliano Palacios Abrantes"
 output:
-  html_document:
-  # html_notebook:
+  # html_document:
+  html_notebook:
     fig_width: 6
     fig_height: 4
     code_folding: hide
@@ -454,6 +454,12 @@ We set a buffer of *5* deg (510 km, ~ 221 nm) that overshoots the EEZ a bit, but
 
 ```{r fp_buffer, eval = T, echo = T}
 
+
+#Load top port data 
+ports_df <- my_path("D","Partial", "top_ports.csv", read = T) %>% 
+  filter(tresh == "75th") %>%
+  distinct(port_name, .keep_all = T) # No need for duplication
+
 port_sf <- st_as_sf(ports_df,
                     coords =c("lon","lat"),
                     crs = 4326)
@@ -469,7 +475,7 @@ port_bf <- st_buffer(port_sf, 5) %>% # port
 
 ggplot() +
   geom_sf(data = eez_sf, aes(),fill = NA) +
-  geom_sf(data = port_bf, aes(color = species_name), fill = NA) +
+  geom_sf(data = port_bf, aes(), fill = NA) +
   scale_color_manual(values = state_pallet)+
   theme_dark()
 
@@ -534,7 +540,8 @@ inter_grid_df <- as.data.frame(inter_grid_sf) %>%
   select(index) %>% 
   left_join(ne_grid)
 
-# write_csv(inter_grid_df, paste0(my_path("D", "Spatial"),"inter_grid_df.csv"))
+# Save grid for future analysis
+# write_csv(inter_grid_df, paste0(my_path("R", "Partial"),"inter_grid_df.csv"))
 
 
 ggplot(inter_grid_sf) +
@@ -605,13 +612,13 @@ grid_fp_sf <- st_as_sf(ne_grid,
              coords = c("lon", "lat"),
              crs = 4326) %>% 
   st_join(port_bf) %>% # join to port sf
-  filter(!is.na(landing_port)) %>%
-  distinct(index,landing_port, .keep_all = TRUE) #removes like 400K overlapping rows
+  filter(!is.na(port_name)) %>%
+  distinct(index,port_name, .keep_all = TRUE) #removes like 400K overlapping rows
 
 # Create data frame for future computations
 # Note, will be used in next chunk
 grid_fp_bf_dt <- as.data.frame(grid_fp_sf) %>%
-    select(index,landing_port,species_name)
+    select(index,port_name,species_name)
 
 # ---------------- #
 # [TEST] 
@@ -622,15 +629,15 @@ gridExtra::grid.arrange(
   # Overall (overlapping) position
   ggplot(grid_fp_sf) +
     geom_sf(data = port_sf, aes(), fill = NA) +
-    geom_sf(aes(color = state), alpha = 0.3) +
+    geom_sf(aes(color = state_postal), alpha = 0.3) +
     geom_sf(data = eez_sf, aes(),fill =NA) + 
     scale_color_manual(values = state_pallet) +
     theme_dark() +
     theme(legend.position = ""),
   # Showing each state separately
   ggplot() +
-    geom_sf(data = grid_fp_sf, aes(color = state),size = 0.1, alpha = 0.5) +
-    facet_wrap(~state) +
+    geom_sf(data = grid_fp_sf, aes(color = state_postal),size = 0.1, alpha = 0.5) +
+    facet_wrap(~state_postal) +
     theme_dark() +
     theme(legend.position = "top") +
     scale_color_manual(values = state_pallet),
@@ -701,21 +708,20 @@ Sys.time()
 grid_eez_sf_fp <- st_intersection(grid_fp_sf,eez_sf)
 Sys.time()
 
-write_sf(grid_eez_sf_fp, paste0(my_path("D", "Spatial/grid_eez_fp_sf"),"grid_eez_fp.shp"))
+write_sf(grid_eez_sf_fp, my_path("R", "Partial",name="grid_eez_fp.shp"))
 
 # Get final df with index
 grid_eez_fp_df <- as.data.frame(grid_eez_sf_fp) %>%
-  select(index,landing_port,abrev=landing_state,spp=species_name) %>% 
+  select(index,port_name,abrev=state_postal,spp=species_name) %>% 
   left_join(ne_grid,
-            by = "index") %>% 
-  left_join(state_names)
+            by = "index")
 
-write_csv(grid_eez_fp_df, paste0(my_path("D", "Spatial/grid_eez_fp_sf"),"grid_eez_fp_df.csv"))
+write_csv(grid_eez_fp_df, my_path("R", "Partial/grid_fp",name = "grid_eez_fp_df.csv"))
 
 # Plot to make sure makes sense
 grid_eez_sf_fp %>%
   ggplot() +
-  geom_sf(aes(color = state), alpha = 0.3) +
+  geom_sf(aes(color = state_postal), alpha = 0.3) +
   scale_color_manual(values = state_pallet) +
   geom_sf(data = eez_sf,aes(), fill = NA) +
   theme_dark()
@@ -1538,7 +1544,7 @@ Here we show the average proportion of the interpolation by State and time perio
 
 ### Data preparation
 
-```{r paper_figure_area_map, eval = F, echo = T, results='hide'}
+```{r data_prep, eval = F, echo = T, results='hide'}
 
 
 total_fited <- historic_spp %>% 
@@ -1668,7 +1674,7 @@ reg_unit %>%
 
 #### Seasonal units map
 
-```{r reg_unit_map_diff, eval = F, echo = T, results='hide'}
+```{r sea_unit_map_diff, eval = F, echo = T, results='hide'}
 
 # Get seasonal data
 season_fit <- state_fit %>% 
@@ -1935,8 +1941,6 @@ agg_area <- ggplot(state_fit) +
 
 ```
 
-![Proportion change aggregated all species map for paper](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/area_plot_avg_agg_sptl.jpg)
-
 ### Paper figure: Per Species Proportional change
 
 ```{r paper_plot_area_ave_spp, eval = F, echo = F, results='hide'}
@@ -2032,7 +2036,7 @@ ssp_area <-
 
 
 ```
-![Proportion change aggregated all species map for paper](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/area_plot_avg_spp_sptl.jpg)
+<!-- ![Proportion change aggregated all species map for paper](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/area_plot_avg_spp_sptl.jpg) -->
 
 # Old code
 
@@ -2606,7 +2610,7 @@ ggplotly(p,
 ```
 
 
-```{r paper_figure_area_map, eval = F, echo = T, results='hide'}
+```{r eval = F, echo = T, results='hide'}
 
 total_fited <- historic_spp %>%
   group_by(year,region,spp,spatial) %>%
@@ -2876,7 +2880,6 @@ save_plot(
 ```
 
 
-![Proportion change per species map for paper](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/temp_proportion_chng.jpg)
 
 
 ### Aggregated Proportional change
@@ -3079,8 +3082,10 @@ ggsave(filename = "seas_diff.png",
 
 ```
 
-![Proportion change aggregated all species map for paper](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/proportion_chg_agg.jpg)
-```{r sarah_landings_data}
+
+
+
+```{r}
 
 
 ### SRAH LANDING DATA
