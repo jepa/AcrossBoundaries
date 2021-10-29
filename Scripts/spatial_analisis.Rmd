@@ -341,7 +341,10 @@ noaa_ports <- data.table(
 # Include coordinates
 noaa_ports_complete <- top_ports %>% 
   left_join(noaa_ports,
-             by = c("port_name", "state_postal"))
+             by = c("port_name", "state_postal")) %>% 
+  mutate(
+    state_postal = str_to_upper(state_postal)
+  )
   
 # Check for missing ports
 noaa_ports_complete %>% 
@@ -352,12 +355,11 @@ noaa_ports_complete %>%
   View()
 
 # Save data for future analysis
+# write_csv(noaa_ports_complete,
+#           my_path("D","NOAA", name = "top_ports.csv")
+#           )
 
-write_csv(noaa_ports_complete,
-          my_path("D","NOAA", name = "top_ports.csv")
-          )
-          
-
+noaa_ports_complete
 
 ```
 
@@ -366,8 +368,8 @@ write_csv(noaa_ports_complete,
 
 ```{r}
 
-top10_ports %>% 
-  left_join(noaa_ports) %>% 
+noaa_ports_complete %>% 
+  filter(tresh == "75th") %>% 
   ggplot() +
   geom_point(
     aes(
@@ -393,7 +395,7 @@ ggplot() +
   geom_sf(data = eez_sf, aes()) +
   geom_sf(data = land_sf, aes(fill = state), alpha = 0.3) +
   geom_sf(data = state_sf, aes(color = state), fill = NA) +
-  geom_point(data = ports_df, aes(x = lon, y = lat,
+  geom_point(data = subset(noaa_ports_complete, tresh == "75th"), aes(x = lon, y = lat,
                                   shape = species_name), size = 3, alpha = 0.7) +
   scale_color_manual(values = state_pallet) +
   scale_fill_manual(values = state_pallet) +
