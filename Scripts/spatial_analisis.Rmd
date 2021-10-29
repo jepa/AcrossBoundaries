@@ -1053,12 +1053,12 @@ path_world <- my_path("G", extra_path = "Spatial/SAU/SAU_Shapefile", name = "SAU
 
 ### Previouslly created grids 
 
-grids <- my_path("D", "Spatial/grid_eez_fp_sf", name = "grid_eez_fp_df.csv", read = T) %>%
+grids <- my_path("D", "Spatial/grid_eez_fp", name = "grid_eez_fp_df.csv", read = T) %>%
   mutate(
     spatial = "fp"
   ) %>% 
   bind_rows(
-    my_path("D", "Spatial/grid_eez_sw_sf", name = "grid_eez_sw_df.csv", read = T)
+    my_path("D", "Spatial/grid_eez_sw", name = "grid_eez_sw_df.csv", read = T)
   ) %>% 
   select(-spp) %>% 
   mutate(
@@ -1101,10 +1101,17 @@ taxon_sw <- my_path("R",extra_path = "Partial/Interpolation/", name = taxon_read
 historic_spp <- bind_rows(lapply(taxon_sw, fread)) %>% 
   left_join(grids,
             by = c("index","lon","lat")
-            ) %>%
+  ) %>%
   filter(!is.na(spatial)) %>% 
   mutate(
-    season = ifelse(str_detect(region,"Spring"),"Spring","Fall")
+    season = ifelse(str_detect(region,"Spring"),"Spring","Fall"),
+    label = ifelse(spp == "Paralichthys dentatus" & year >= 1980 & year <= 1986,"Reference",
+                   ifelse(spp == "Stenotomus chrysops" & year >= 1988 & year <= 1992,"Reference",
+                          ifelse( spp =="Centropristis striata" & year >= 1980 & year <= 2001,"Reference",
+                                 ifelse(year > 2001,"Today",NA)
+                          )
+                   )
+    )
   )
 
 # historic_spp %>% 
@@ -1184,7 +1191,7 @@ head(historic_spp)
 #### Data needed ####
 
 # Get state order from North to south
-state_order <- my_path("D","Spatial/grid_eez_sw_sf", name = "grid_eez_sw_df.csv",read = T) %>%
+state_order <- my_path("D","Spatial/grid_eez_sw", name = "grid_eez_sw_df.csv",read = T) %>%
   group_by(state) %>% 
   summarise(
     order = mean(lat)
@@ -1198,7 +1205,7 @@ state_order <- my_path("D","Spatial/grid_eez_sw_sf", name = "grid_eez_sw_df.csv"
 
 
 # Load grid of state waters
-grid_eez_sw_sf <-  st_read(my_path("D","Spatial/grid_eez_sw_sf", name = "grid_eez_sw_sf.shp")) %>%
+grid_eez_sw_sf <-  st_read(my_path("D","Spatial/grid_eez_sw", name = "grid_eez_sw_sf.shp")) %>%
   select(index,state,geometry) %>% 
   mutate(method = "state_waters",
          state = str_to_sentence(state)) %>% 
@@ -1209,7 +1216,7 @@ grid_eez_sw_sf$group <- factor(grid_eez_sw_sf$abrev,      # Reordering group fac
 
 
 # Load grid of fishing ports
-grid_eez_fp_sf <-  st_read(my_path("D","Spatial/grid_eez_fp_sf", name = "grid_eez_fp.shp")) %>%
+grid_eez_fp_sf <-  st_read(my_path("D","Spatial/grid_eez_fp", name = "grid_eez_fp.shp")) %>%
   select(index,abrev=lndng_s,geometry) %>% 
   mutate(method = "fishing_port"#,
          # state = str_to_sentence(landing_port)
@@ -1337,11 +1344,6 @@ ggsave(filename = "buffer_figure.jpg",
 
 # Interpolation data
 interpol_result <- historic_spp %>% 
-  mutate(
-    label = ifelse(year >= 1980 & year <= 2001,"Reference",
-                   ifelse(year > 2001,"Today",NA)
-    )
-  ) %>% 
   filter(!is.na(label)) %>% 
   group_by(label,index,spp,season,lat,lon) %>% 
   summarise(mean_cpue = mean(value,na.rm=T)) %>% 
@@ -1360,11 +1362,6 @@ interpol_result <- historic_spp %>%
 
 # Estimate total interpolation
 total_inter <- historic_spp %>% 
-  mutate(
-    label = ifelse(year >= 1980 & year <= 2001,"Reference",
-                   ifelse(year > 2001,"Today",NA)
-    )
-  ) %>% 
   filter(!is.na(label)) %>% 
   group_by(spp,index,season) %>% 
   summarise(mean_cpue = mean(value,na.rm=T)) %>% 
@@ -1374,11 +1371,6 @@ total_inter <- historic_spp %>%
 
 # Estimate centroid based on top 10 grids with higer abundance
 centroid_db <- historic_spp %>% 
-  mutate(
-    label = ifelse(year >= 1980 & year <= 2001,"Reference",
-                   ifelse(year > 2001,"Today",NA)
-    )
-  ) %>% 
   filter(!is.na(label)) %>% 
   group_by(label,index,spp,season,lat,lon) %>% 
   summarise(mean_cpue = mean(value,na.rm=T)) %>% 
@@ -1419,10 +1411,10 @@ inter_map <- ggplot() +
             aes(
               x = lon,
               y = lat,
-              # fill = log10(mean_cpue),
-              # color = log10(mean_cpue)
-              fill = mean_cpue,
-              color = mean_cpue
+              fill = log10(mean_cpue),
+              color = log10(mean_cpue)
+              # fill = mean_cpue,
+              # color = mean_cpue
             )
   ) + 
   geom_point(data = centroid_db,
@@ -1441,36 +1433,36 @@ inter_map <- ggplot() +
   #                                  box.padding = 0.10,
   #                                  hjust = 1) +
   # Viridis option
-scale_fill_viridis("CPUE",
-                   limits = c(0,40),
-                   # limits = c(-5,1), # for log10
-                   direction = -1,
-                    end = 0.9
-                   ) +
-scale_color_viridis("CPUE",
-                    limits = c(0,40),
-                    # limits = c(-5,1), # for log10
-                    direction = -1,
-                    end = 0.9
-                    ) +
+# scale_fill_viridis("CPUE",
+#                    limits = c(0,40),
+#                    # limits = c(-5,1), # for log10
+#                    direction = -1,
+#                     end = 0.9
+#                    ) +
+# scale_color_viridis("CPUE",
+#                     limits = c(0,40),
+#                     # limits = c(-5,1), # for log10
+#                     direction = -1,
+#                     end = 0.9
+#                     ) +
 # wes anderson option
-# scale_fill_gradientn("CPUE",
-#                      colours = pal,
-#                      limits = c(0,40) # For cpue
-#                      # limits = c(-5,1) # for log10
-#                      
-# ) +
-#   scale_color_gradientn("CPUE",
-#                         colours = pal,
-#                         limits = c(0,40) # for cpue
-#                         # limits = c(-5,1) # for log10
-#   ) +
+scale_fill_gradientn("CPUE",
+                     colours = pal,
+                     # limits = c(0,40) # For cpue
+                     limits = c(-5,1) # for log10
+
+) +
+  scale_color_gradientn("CPUE",
+                        colours = pal,
+                        # limits = c(0,40) # for cpue
+                        limits = c(-5,1) # for log10
+  ) +
   facet_grid(spp~season+label) +
   my_ggtheme_m(map_type = "na", leg_pos = "right",ax_tx_s = 7,ax_tl_s = 10,leg_tx_s = 12) #+
 # theme(legend.key.width = unit(3,"line"))
 
 
-ggsave("interpolation_vi.jpg",
+ggsave("interpolation_wa.jpg",
        inter_map,
        path = my_path("R","Figures"),
        width = 9,
@@ -1533,16 +1525,12 @@ total_fited <- historic_spp %>%
 
 
 state_fit <- historic_spp %>% 
-  group_by(state,year,season,spp,spatial) %>% 
+  group_by(state,year,label,season,spp,spatial) %>% 
   summarise(state_value = sum(value,na.rm= T), .groups = "drop") %>% 
   # View()
   left_join(total_fited,
             by = c("year","season","spp","spatial")) %>%
-  mutate(percentage = state_value/total_value*100,
-         label = ifelse(year >= 1980 & year <= 2001,"Reference",
-                         ifelse(year > 2001,"Today",NA)
-                         )
-         ) %>% 
+  mutate(percentage = state_value/total_value*100) %>% 
   group_by(state,label,season,spp,spatial) %>% 
   summarise(mean_per = round(mean(percentage)),.groups = "drop") %>% 
   #Only show results for spring
@@ -1645,6 +1633,15 @@ save_plot(
   base_width = 14
 )
 
+reg_unit %>% 
+  # filter(spatial == "fp") %>%
+  select(-fp) %>% 
+  spread(label,sw) %>% 
+  mutate(
+    difference = Today-Reference
+    ) %>% 
+  gther(Reference:difference)
+
 ```
 
 #### Seasonal units map
@@ -1653,8 +1650,8 @@ save_plot(
 
 # Get seasonal data
 season_fit <- state_fit %>% 
-  filter(spatial != "fp") %>% 
-  spread(season,mean_per) %>% 
+  filter(spatial != "fp") %>%
+  spread(season,mean_per) %>%
   mutate(
     Difference = abs(Fall-Spring),
     Difference = ifelse(Difference > 100,100,
@@ -1736,9 +1733,6 @@ save_plot(
 )
 
 ```
-
-
-
 
 ## Area plot
 
@@ -1932,7 +1926,7 @@ total_fited <- historic_spp %>%
 
 # group by state
 state_fit <- historic_spp %>% 
-  group_by(state,year,region,spp,spatial) %>% 
+  group_by(state,year,label,region,spp,spatial) %>% 
   summarise(state_value = sum(value,na.rm= T), .groups = "drop") %>% 
   left_join(total_fited,
             by = c("year","region","spp","spatial")) %>%
@@ -1954,8 +1948,18 @@ state_fit <- historic_spp %>%
          )
   )
 
+
+# Shaded period 
+historic_periods <- historic_spp %>% 
+  filter(label == "Reference") %>% 
+  group_by(spp,label,year) %>% 
+  summarise(n = n()-n()+100) %>% 
+  mutate(period = "Reference period")
+
+
 # Plot me
-ssp_area <- ggplot(state_fit) +
+ssp_area <-
+  ggplot(state_fit) +
   geom_area(
     aes(
       x = year,
@@ -1964,18 +1968,30 @@ ssp_area <- ggplot(state_fit) +
       # fill = state
     )
   ) +
-  annotate(geom= "rect",
-           xmin = 1980, xmax = 2001, 
-           ymin = 0, ymax = 100,
-            fill = "gray90",
-           colour = NA,
-           alpha = 0.5) +
+  geom_area(data = historic_periods,
+             aes(
+               x = year,
+               y = n,
+               color = period
+             ),
+             # fill = "gray90",
+             alpha = 0.3,
+            stat = "identity"
+             ) +
+  # annotate(geom= "rect",
+  #          xmin = 1980, xmax = 2001, 
+  #          ymin = 0, ymax = 100,
+  #           fill = "gray90",
+  #          colour = NA,
+  #          alpha = 0.5) +
   ylab("Propotion (10 yrs running average)") +
   # viridis::scale_fill_viridis(discrete = T, alpha = 0.8) +
   scale_fill_manual(
     "State\n(Latitudinal order)",
     values = state_pallet,
     labels = state_fit %>% arrange(order) %>%  pull(state) %>% unique()
+  ) +
+    scale_color_manual("",values = "grey90"
   ) +
   facet_grid(spp~spatial) +
   scale_x_continuous(breaks = seq(1979,2015,9),limits = c(1979,2015))+
