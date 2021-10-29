@@ -356,7 +356,7 @@ noaa_ports_complete %>%
 
 # Save data for future analysis
 # write_csv(noaa_ports_complete,
-#           my_path("D","NOAA", name = "top_ports.csv")
+#           my_path("D","Partial", name = "top_ports.csv")
 #           )
 
 noaa_ports_complete
