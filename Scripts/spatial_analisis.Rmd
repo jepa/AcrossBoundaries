@@ -121,7 +121,88 @@ ggplot(state_sf) +
 
 ###### 4.1 NOAA's data
 
-###### 4.1.1 Ports coordinates
+Dataset provider: Joe Myers Joseph.Myers@accsp.org NOAA
+
+Non-confidential dataset containing annual landings/value summaries by port for black sea bass, scup and summer flounder, from NC-ME for 1970-2020. 
+
+In order to make the report non-confidential, I am displaying as much of the port-level summary data as I can – and for cases where the port-level was confidential, I have first attempted to roll-up any confidential port-level summaries into state-level summaries within the same year.  If those state-level summaries continue to be confidential, I have further rolled-up those confidential ports across states into a coast-level summary.  Even at the coast level, there were several cases where not enough confidential ports could be combined to produce a non-confidential summary – and so for those rows it was necessary to redact the final landings/value data.  Fortunately, this only amounts to less than 0.5% of the total landings data (characterized in the “Pivot by Confidentiality” tab of the spreadsheet).
+
+
+*License???.*
+
+```{r}
+# NOAA DATA
+
+ports_path <- my_path("D","NOAA", name = "PalaciosJ - BSB, SFlounder, Scup by Port 1970-2020 - 2021.10.25.xlsx")
+
+
+# Load ports
+ports_data <- read_excel(ports_path,sheet = 2) %>% 
+  clean_names() %>%
+  mutate_if(is.character,
+            ~ str_to_lower(.)
+  ) %>% 
+  mutate(
+    species_name = ifelse(str_detect(common_name,"black"),"black sea bass",
+                 ifelse(str_detect(common_name,"summer"),"summer flounder",
+                        common_name)
+    ),
+    total_live_pounds = as.numeric(total_live_pounds),
+    total_value = as.numeric(total_value)
+  ) %>% 
+  filter(
+    !port_name %in% c("**roll-up to state-wide**","**roll-up to coast-wide**","unknown")
+  )
+```
+
+
+###### 4.1.1 Top ports
+
+```{r}
+# Get number of ports in the NOAA database
+overall_port_data <- ports_data %>%
+  filter(year >= 2010 & year <= 2019) %>% 
+  group_by(species_name,port_name,state_postal) %>% 
+  summarise(
+    year_ton = sum(total_live_pounds),
+    year_value = sum(total_value)
+  ) 
+
+
+top_ports <- bind_rows(
+  # 75th percentile used in project
+  overall_port_data %>% 
+    group_by(species_name) %>% 
+    top_frac(0.25,year_ton) %>%  # top 75
+    mutate(tresh = "75th"),
+  # -------------------- #
+  # For sensitivity values
+  # -------------------- #
+  # 95%
+  overall_port_data %>% 
+    group_by(species_name) %>% 
+    top_frac(0.5,year_ton) %>%  
+    mutate(tresh = "95th"),
+  # 85%
+  overall_port_data %>% 
+    group_by(species_name) %>% 
+    top_frac(0.15,year_ton) %>% 
+    mutate(tresh = "85th"),
+  # 65%
+  overall_port_data %>% 
+    group_by(species_name) %>% 
+    top_frac(0.35,year_ton) %>%  # top 75
+    mutate(tresh = "65th"),
+  # 50%
+  overall_port_data %>% 
+    group_by(species_name) %>% 
+    top_frac(0.5,year_ton) %>%  # top 75
+    mutate(tresh = "50th")
+)
+  
+```
+
+###### 4.1.2 Ports coordinates
 
 
 ```{r sarahs_word_data}
@@ -153,7 +234,22 @@ noaa_ports <- data.table(
     "Chincoteague, VA", # 37.94295896302465, -75.38415668579887
     "sea isle city,NJ ", # 39.14912656323854, -74.68797202847871
     "lewes, DE, ", # 38.78943640990542, -75.06343692610851
-    "virginia beach, VA" # 36.859343385722504, -75.94328398140065
+    "virginia beach, VA", # 36.859343385722504, -75.94328398140065
+    "hampton bays, ny", #40.84229040189204, -72.50987544040999
+    "mattituck, ny", # 41.05342836192293, -72.59899214258269
+    "little compton, ri", # 41.4765103461213, -71.19474641579107
+    "new london, CT", #41.341577207467914, -72.0829697106489
+    "amagansett, ny", # 40.96173008633569, -72.11879306740798
+    "barnegat light, nj", #39.75291152662383, -74.09927831868308
+    "chatham (census name for chatham center), MA", # 41.658695421122474, -69.95466452556448
+    "dennis, ma", #41.65121037263873, -70.13193663798509
+    "falmouth (census name for falmouth center), ma", #41.53956327146526, -70.60001340709665,
+    "freeport, ny", #40.62242387473109, -73.59162509402208
+    "nantucket (census name for nantucket center), MA", #41.26616088210985, -69.95617277257985
+    "newport, RI",
+    "point lookout, ny", #40.587646134955875, -73.5763748512927
+    "shinnecock indian reservation, ny", #40.865873983968754, -72.4420929172018
+    "westport, ma"
   )),
   lat = c(
     41.359907914553574,
@@ -179,7 +275,22 @@ noaa_ports <- data.table(
     37.94295896302465,
     39.14912656323854,
     38.78943640990542,
-    36.859343385722504
+    36.859343385722504,
+    40.84229040189204,
+    41.05342836192293,
+    41.4765103461213, 
+    41.341577207467914,
+    40.96173008633569, 
+    39.75291152662383, 
+    41.658695421122474,
+    41.65121037263873, 
+    41.53956327146526, 
+    40.62242387473109,
+    41.26616088210985, 
+    41.485514346683956,
+    40.587646134955875,
+    40.865873983968754,
+    41.49267875746873
   ),
   lon = c(
     -71.48323250872187,
@@ -205,73 +316,50 @@ noaa_ports <- data.table(
     -75.38415668579887,
     -74.68797202847871,
     -75.06343692610851,
-    -75.94328398140065
+    -75.94328398140065,
+    -72.50987544040999,
+    -72.59899214258269,
+    -71.19474641579107, 
+    -72.0829697106489,
+    -72.11879306740798,
+    -74.09927831868308,
+     -69.95466452556448,
+    -70.13193663798509,
+    -70.60001340709665,
+     -73.59162509402208,
+    -69.95617277257985,
+     -71.32263326975122,
+     -73.5763748512927,
+     -72.4420929172018,
+    -71.05551342392039
   )
 ) %>% 
-  separate(port, into = c("landing_port","landing_state"), sep = ',') %>% 
-  mutate(landing_state = str_squish(str_to_upper(landing_state)),
-         landing_port = str_to_lower(landing_port))
+  separate(port, into = c("port_name","state_postal"), sep = ',') %>% 
+  mutate(port_name = str_to_lower(port_name),
+         state_postal = str_squish(state_postal))
   
+# Include coordinates
+noaa_ports_complete <- top_ports %>% 
+  left_join(noaa_ports,
+             by = c("port_name", "state_postal"))
+  
+# Check for missing ports
+noaa_ports_complete %>% 
+  filter(tresh == "75th",
+    is.na(lat)) %>% 
+  group_by(port_name,state_postal) %>% 
+  summarise(n()) %>% 
+  View()
 
-noaa_ports
+# Save data for future analysis
+
+write_csv(noaa_ports_complete,
+          my_path("D","NOAA", name = "top_ports.csv")
+          )
+          
+
 
 ```
-
-
-###### 4.1.1 Top ports
-
-This dataset includes all landings from 2015-July 2021. It includes the species landed, the port, and the Hull ID and vessel name for black sea bass and summer flounder.
-
-*License, from Sarah Smith: This is confidential data, so please do not share this file with others. You may need to contact NOAA directly just to request permission. My contact has been Alison Ferguson (Alison.Ferguson@noaa.gov) in their data department.*
-
-
-NOTES:
-
-- There is no Maine, Delaware, nor New Hamshire in the data. Took them from NOAA as main ports of all fisheries
-
-```{r}
-
-### SRAH LANDING DATA
-read_excel_allsheets <- function(filename, tibble = TRUE) {
-    # I prefer straight data.frames
-    # but if you like tidyverse tibbles (the default with read_excel)
-    # then just pass tibble = TRUE
-    sheets <- readxl::excel_sheets(filename)[2:8]
-    x <- lapply(sheets, function(X) readxl::read_excel(filename, sheet = X))
-    if(!tibble) x <- lapply(x, as.data.frame)
-    names(x) <- sheets
-    x
-}
-# Get data path
-ports_path <- my_path("D","NOAA", name = "SSmith_2015-2021 Landings_JUN 2021.xlsx")
-
-# Load ports
-ports_data <- bind_rows(read_excel_allsheets(ports_path)) %>%
-  clean_names() %>%
-  mutate_if(is.character,
-              ~ str_to_lower(.)) %>%
-    filter(species_name %in% c("summer flounder","black sea bass","scup"))
-
-noaa_ports <- unique(ports_data$landing_port)
-
-
-# Get number of ports in the NOAA database
-top10_ports <- ports_data %>% 
-  mutate(landing_state = str_to_upper(landing_state)) %>% 
-  filter(landing_state %in% c("CT","DE","ME","MD","MA","NH","NJ","NY","NC","RI","VA")) %>% 
-  group_by(year,landing_port,landing_state,species_name) %>% 
-  summarise(
-    year_ton = sum(landed_weight),
-    year_value = sum(value),
-    noaa_ports = length(unique(landing_port))
-    ) %>% 
-  group_by(landing_port,landing_state,species_name) %>% 
-  summarise_if(is.numeric,sum) %>% 
-  group_by(species_name) %>% 
-  top_n(10,year_ton)
-  
-```
-
 
 ###### 4.1.1 Visualization
 
@@ -288,79 +376,11 @@ top10_ports %>%
       shape = species_name, 
       color = species_name
     ),
-    size = 5
+    size = 5,
+    alpha = 0.5
   )
 
 ```
-
-
-
-```{r}
-# Get number of ports in the NOAA database
-total_ports <- ports_data %>% 
-  mutate(landing_state = str_to_upper(landing_state)) %>% 
-  filter(landing_state %in% c("CT","DE","ME","MD","MA","NH","NJ","NY","NC","RI","VA")) %>% 
-  group_by(species_name) %>% 
-  summarise(
-    total_ton = sum(landed_weight, na.rm = T),
-    total_value = sum(value, na.rm = T)
-    )
-
-
-# Per landings
-
-per_ports <-
-  ports_data %>% 
-  mutate(landing_state = str_to_upper(landing_state)) %>% 
-  filter(landing_state %in% c("CT","DE","ME","MD","MA","NH","NJ","NY","NC","RI","VA")) %>% 
-  group_by(landing_port,species_name) %>% 
-  summarise(
-    port_ton = sum(landed_weight),
-    port_value = sum(value)
-    ) %>% 
-  left_join(total_ports,
-            by = "species_name") %>% 
-    mutate(
-      per_tons = round((port_ton/total_ton)*100,2),
-      per_value = round((port_value/total_value)*100,2)
-    ) %>% 
-    # select(landing_port,species_name,per_tons,everything()) %>% 
-    ungroup() %>% 
-    arrange(desc(per_tons)) %>% 
-    group_by(species_name) %>% 
-    mutate(cum_per = cumsum(per_tons)) %>% 
-    filter(cum_per <= 75) %>% 
-  select(landing_port,species_name,port_ton,per_tons,cum_per,everything()) %>% 
-  arrange(desc(species_name,cum_per))
-
-per_ports
-  
-```
-
-
-```{r}
-
-per_ports %>% 
-  left_join(noaa_ports) %>% 
-  # Double ceck coordinates are all there
-  # filter(is.na(lon))
-  ggplot() +
-  geom_point(
-    aes(
-      x = lon,
-      y = lat,
-      shape = species_name,
-      color = species_name
-    ),
-    size = 5
-  )
-
-
-ports_df <-  per_ports %>% 
-  left_join(noaa_ports)
-
-```
-
 
 
 <!-- This is how all the shapefiles look like together -->
@@ -3058,3 +3078,29 @@ ggsave(filename = "seas_diff.png",
 ```
 
 ![Proportion change aggregated all species map for paper](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/proportion_chg_agg.jpg)
+```{r sarah_landings_data}
+
+
+### SRAH LANDING DATA
+# read_excel_allsheets <- function(filename, tibble = TRUE) {
+#     # I prefer straight data.frames
+#     # but if you like tidyverse tibbles (the default with read_excel)
+#     # then just pass tibble = TRUE
+#     sheets <- readxl::excel_sheets(filename)[2:8]
+#     x <- lapply(sheets, function(X) readxl::read_excel(filename, sheet = X))
+#     if(!tibble) x <- lapply(x, as.data.frame)
+#     names(x) <- sheets
+#     x
+# }
+# Get data path
+# ports_path <- my_path("D","NOAA", name = "SSmith_2015-2021 Landings_JUN 2021.xlsx")
+
+# Load ports
+# ports_data <- bind_rows(read_excel_allsheets(ports_path)) %>%
+#   clean_names() %>%
+#   mutate_if(is.character,
+#               ~ str_to_lower(.)) %>%
+#     filter(species_name %in% c("summer flounder","black sea bass","scup"))
+
+```
+
