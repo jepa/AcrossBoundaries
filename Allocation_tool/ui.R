@@ -236,7 +236,7 @@ dashboardPage(
       tabItem(tabName = "dashboard",
               useShinyjs(),
               h1("Control panel"),
-              h4("Please select from the following options in the blue boxes.", em("Note that all options need to be selected in order for results to apear")),
+              h4(strong("Read me:"),"Please select from the following options in the blue boxes.", em("Note that all options need to be selected in order for results to apear")),
               #______________________________________________________________________#
               ### Control panel ####
               #______________________________________________________________________#
@@ -327,6 +327,7 @@ dashboardPage(
               ),
               column(12,
                      align = "center",
+                     h4(strong("Read me:"), "Before running the query, select the outputs you want to show by clicking in the + sign of each box. Note that this step might take a couple of seconds"),
               actionButton("do",
                            "Run Query",
                            icon = icon("gear"),
@@ -349,6 +350,7 @@ dashboardPage(
                 box(width = 6,
                     solidHeader = TRUE,
                     collapsible = TRUE,
+                    collapsed = TRUE,
                     title = "Regulatory Units",
                     status = "success", # green color
                     plotOutput("RegUnit")
@@ -357,6 +359,7 @@ dashboardPage(
                 box(width = 6, 
                     solidHeader = TRUE,
                     collapsible = TRUE,
+                    collapsed = TRUE,
                     title = "Stock's distribution",
                     status = "success", # green color
                     plotOutput("distPlot")
@@ -367,6 +370,7 @@ dashboardPage(
                 box(width = 6, 
                     solidHeader = TRUE,
                     collapsible = TRUE,
+                    collapsed = TRUE,
                     title = "State's proportion",
                     status = "success", # green color
                     plotOutput("propPlot")),
@@ -374,6 +378,7 @@ dashboardPage(
                 box(width = 6, 
                     solidHeader = TRUE,
                     collapsible = TRUE,
+                    collapsed = TRUE,
                     title = "Difference between historic and current distribution",
                     status = "success", # green color
                     plotOutput("propDiffPlot")
@@ -383,6 +388,7 @@ dashboardPage(
                 box(width = 12, 
                     solidHeader = TRUE,
                     collapsible = TRUE,
+                    collapsed = TRUE,
                     title = "Historical proportion of the stock",
                     status = "success", # green color
                     formattableOutput("Allocation_tbl")
