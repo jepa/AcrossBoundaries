@@ -345,6 +345,17 @@ dashboardPage(
               #______________________________________________________________________#
               ### Results ####
               #______________________________________________________________________#
+                fluidRow(
+                  box(width = 12, 
+                      solidHeader = TRUE,
+                      collapsible = TRUE,
+                      collapsed = FALSE,
+                      title = "Number of grids per regulatory area",
+                      status = "success", # green color
+                      
+                      formattableOutput("gridN")
+              )
+              ),
               fluidRow(
                 #### Regulatory units map -----------------
                 box(width = 6,

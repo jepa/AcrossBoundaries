@@ -171,6 +171,83 @@ shinyServer(function(input, output,session) {
         # ---------------------------- #
         # Regulatory Units ####
         # ---------------------------- #
+        output$gridN <- renderFormattable({
+            
+            
+            # ---------------------------- #
+            # State waters ######
+            # ---------------------------- #
+            
+            if(input$SpatSelection == "State waters"){
+                
+                n_grids <- grids %>%
+                    filter(spatial == "sw") %>% 
+                    group_by(state) %>% 
+                    summarise(n_grids = length(unique(index))) %>% 
+                    arrange(n_grids) %>% 
+                    spread(state,n_grids)
+                
+                
+            } 
+            # ---------------------------- #
+            # Fishing Ports ######
+            # ---------------------------- #
+            if(input$SpatSelection == "Fishing ports"){
+                
+                
+                n_grids <- grids %>%
+                    filter(spatial == "fp") %>% 
+                    group_by(state) %>% 
+                    summarise(Grids = length(unique(index)),
+                              Ports = length(unique(landing_port))
+                    ) %>% 
+                    arrange(Ports) %>% 
+                    gather("Category","type",Grids,Ports) %>% 
+                    spread(state,type)
+                
+            }
+            
+            if(input$SpatSelection == "Both apporaches"){
+                
+                
+                n_grids <-
+                    grids %>%
+                    group_by(state,spatial) %>% 
+                    summarise(Grids = length(unique(index)),
+                              Ports = length(unique(landing_port))
+                    ) %>% 
+                    gather("Category","type",Grids,Ports) %>% 
+                    spread(spatial,type) %>% 
+                    filter(Category != "Grids") %>% 
+                    arrange(Category,state) %>% 
+                    mutate(
+                        Difference = abs(replace_na(fp,0) - sw)
+                    ) %>% 
+                    left_join(state_order) %>% 
+                    arrange(order) %>% 
+                    select(State = state,
+                           ISO = abrev,
+                           "Fishing ports" = fp,
+                           "State waters" = sw,
+                           Difference)
+                    
+                
+            }
+            
+            formattable(n_grids,
+                        align =c("l",rep("c",9),"r"),
+                        list(
+                        Difference = color_bar(customGreen)
+                        )
+            )
+
+        })
+        
+        
+        
+        # ---------------------------- #
+        # Regulatory Units ####
+        # ---------------------------- #
         output$RegUnit <- renderPlot({
             
             # ---------------------------- #
@@ -584,6 +661,9 @@ shinyServer(function(input, output,session) {
         output$propDiffPlot <- renderPlot(NULL)
         output$Allocation_tbl <- renderFormattable(NULL)
         })
+    
+    
+    
     
     # ---------------------------- #
     # Tool end ####
