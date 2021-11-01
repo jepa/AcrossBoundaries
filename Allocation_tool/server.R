@@ -342,7 +342,7 @@ shinyServer(function(input, output,session) {
             
             # Set the plot data
             plot_data <- raw_data() %>%
-                filter(spp %in% species,
+                filter(spp %in% input$SppSelection,
                        year %in% years)
             
             
@@ -542,11 +542,13 @@ shinyServer(function(input, output,session) {
                 filter(!is.na(mean_per)) %>%
                 select(state,year,mean_per) %>%
                 spread(year,mean_per) %>%
-                mutate(Change = ifelse(`1973` < `2019`,"Increase","Decrease")) %>%
+                mutate(Change = ifelse(`1973` < `2019`,"Increase",
+                                       ifelse(`1973` > `2019`,"Decrease","No change"))
+                       )%>%
                 left_join(state_order) %>% 
                 arrange(order) %>% 
                 mutate(State = paste0(state," (",abrev,")")) %>% 
-                select(State,2:6,43:47,Change)
+                select(State,2:6,43:47,Change, -order)
             
             customGreen = "#71CA97"
             
@@ -558,9 +560,14 @@ shinyServer(function(input, output,session) {
                             `1973`= color_bar(customGreen),
                             `2019` = color_bar(customGreen),
                             Change = formatter("span",
-                                               x ~ icontext(ifelse(x == "Increase", "arrow-up", "arrow-down"), 
-                                                            ifelse(x == "Increase", "Increase", "Decrease")),
-                                               style = x ~ style(color = ifelse(x == "Increase", "green", "red")))
+                                               x ~ icontext(ifelse(x == "Increase", "arrow-up",
+                                                                   ifelse(x == "Decrease", "arrow-down", NA)
+                                                                   ), 
+                                                            ifelse(x == "Increase", "Increase",
+                                                                   ifelse(x == "Decrease", "Decrease","No change"))
+                                                            ),
+                                               style = x ~ style(color = ifelse(x == "Increase", "green",
+                                                                                ifelse(x == "Decrease", "red", "grey"))))
                         )
             )
         })  # close formattable
