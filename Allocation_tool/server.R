@@ -173,6 +173,7 @@ shinyServer(function(input, output,session) {
         # ---------------------------- #
         output$gridN <- renderFormattable({
             
+            customGreen = "#71CA97"
             
             # ---------------------------- #
             # State waters ######
@@ -228,19 +229,20 @@ shinyServer(function(input, output,session) {
                     ) %>% 
                     gather("Category","type",Grids,Ports) %>% 
                     spread(spatial,type) %>% 
-                    filter(Category != "Grids") %>% 
+                    filter(Category == "Grids") %>% 
                     arrange(Category,state) %>% 
                     mutate(
                         Difference = abs(replace_na(fp,0) - sw)
                     ) %>% 
                     left_join(state_order) %>% 
-                    arrange(order) %>% 
                     select(State = state,
-                           ISO = abrev,
                            "Fishing ports" = fp,
                            "State waters" = sw,
-                           Difference)
+                           Difference) %>% 
+                    arrange(desc(Difference))
                     
+
+                
                 x <- formattable(n_grids,
                             align =c("l",rep("c",9),"r"),
                             list(
