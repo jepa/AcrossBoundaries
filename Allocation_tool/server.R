@@ -183,10 +183,15 @@ shinyServer(function(input, output,session) {
                 n_grids <- grids %>%
                     filter(spatial == "sw") %>% 
                     group_by(state) %>% 
-                    summarise(n_grids = length(unique(index))) %>% 
-                    arrange(n_grids) %>% 
-                    spread(state,n_grids)
+                    summarise(Grids = length(unique(index))) %>% 
+                    arrange(Grids)
                 
+                
+                x <- formattable(n_grids,
+                            list(
+                                Grids = color_bar(customGreen)
+                            )
+                )
                 
             } 
             # ---------------------------- #
@@ -201,9 +206,14 @@ shinyServer(function(input, output,session) {
                     summarise(Grids = length(unique(index)),
                               Ports = length(unique(landing_port))
                     ) %>% 
-                    arrange(Ports) %>% 
-                    gather("Category","type",Grids,Ports) %>% 
-                    spread(state,type)
+                    arrange(Ports) 
+                
+                x <- formattable(n_grids,
+                            align =c("l",rep("c",9),"r"),
+                            list(
+                                Ports = color_bar(customGreen)
+                            )
+                )
                 
             }
             
@@ -231,15 +241,15 @@ shinyServer(function(input, output,session) {
                            "State waters" = sw,
                            Difference)
                     
-                
+                x <- formattable(n_grids,
+                            align =c("l",rep("c",9),"r"),
+                            list(
+                                Difference = color_bar(customGreen)
+                            )
+                )
+                   
             }
-            
-            formattable(n_grids,
-                        align =c("l",rep("c",9),"r"),
-                        list(
-                        Difference = color_bar(customGreen)
-                        )
-            )
+            x
 
         })
         

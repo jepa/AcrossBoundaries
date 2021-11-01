@@ -346,15 +346,15 @@ dashboardPage(
               ### Results ####
               #______________________________________________________________________#
                 fluidRow(
-                  box(width = 12, 
+                  #### Distribution map -----------------
+                  box(width = 6, 
                       solidHeader = TRUE,
                       collapsible = TRUE,
-                      collapsed = FALSE,
-                      title = "Number of grids per regulatory area",
+                      collapsed = TRUE,
+                      title = "Stock's distribution",
                       status = "success", # green color
-                      
-                      formattableOutput("gridN")
-              )
+                      plotOutput("distPlot")
+                  )
               ),
               fluidRow(
                 #### Regulatory units map -----------------
@@ -366,14 +366,13 @@ dashboardPage(
                     status = "success", # green color
                     plotOutput("RegUnit")
                 ),
-                #### Distribution map -----------------
                 box(width = 6, 
                     solidHeader = TRUE,
                     collapsible = TRUE,
-                    collapsed = TRUE,
-                    title = "Stock's distribution",
+                    collapsed = FALSE,
+                    title = "Number of grids per regulatory area",
                     status = "success", # green color
-                    plotOutput("distPlot")
+                    formattableOutput("gridN")
                 )
               ), # close firs fluid row
               fluidRow(
