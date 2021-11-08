@@ -660,7 +660,8 @@ Finally, we crop the grided buffers to within the EEZ to capture the actual wate
 eez_sf <- st_read(my_path("G", extra_path = "Spatial/SAU/SAU_Shapefile", name = "SAUEEZ_July2015.shp")) %>% 
   rename(eez_name = Name) %>% 
   st_transform(crs = 4326) %>% # 4326
-  filter(eez_name == "USA (East Coast)") 
+  filter(eez_name == "USA (East Coast)") %>% 
+  
 
 # Get the overlapping segments 
 # NOTE: Takes some gooooood time (~20 min)
@@ -736,9 +737,13 @@ We can visualize the difference of the cropped area for each state next. Again, 
 
 ```{r state_bf_diff_ntbl, eval = T, echo = T}
 
-grid_eez_sw_df %>% 
+
+
+
+
+my_path("R", "Partial",name = "grid_eez_sw_sf.csv", read = T) %>% 
   mutate(approach = "state_waters") %>% 
-  bind_rows(grid_eez_fp_df) %>%
+  bind_rows(my_path("R", "Partial/grid_fp",name = "grid_eez_fp_df.csv", read = T)) %>%
   mutate(approach = ifelse(is.na(approach),"fishing_port",approach)) %>% 
   group_by(state,approach) %>% 
   summarise(n_grid = n()) %>% 
@@ -1062,7 +1067,6 @@ State allocations of the commercial black sea bass coastwide quota were original
 
 *Scomber scombrus*, *Peprilus triacanthus* (butterfish), *Illex illecebrosus* (shortfin squid), *Paralichthys dentatus* (summer flounder), *Stenotomus chrysops* (Scoop), *Centropristis striata* (black sea bass), *Pomatomus saltatrix* (Bluefish), *Lopholatilus chamaeleonticeps* (Golden tilefish), *Caulolatilus microps* (blueline tilefish) and *Clupea harengus*
 
-
 ```{r load_data, eval = T, echo = T}
 
 # Spatial data
@@ -1075,25 +1079,44 @@ land_sf <- st_as_sf(map("state", plot = FALSE, fill = TRUE)) %>%
          state = str_to_sentence(ID)
          )
 
-# US EEZ map
-path_world <- my_path("G", extra_path = "Spatial/SAU/SAU_Shapefile", name = "SAUEEZ_July2015.shp")
+# US EEZ shapefile
+eez_sf <- st_read(my_path("G", extra_path = "Spatial/SAU/SAU_Shapefile", name = "SAUEEZ_July2015.shp")) %>% 
+  st_transform(crs = 4326) %>% # 4326
+  filter(Name == "USA (East Coast)") %>% 
+  st_simplify(preserveTopology = TRUE, dTolerance = 0.1) #0.1 for paper
 
 
-### Previouslly created grids 
+### Previously created grids 
 
-grids <- my_path("D", "Spatial/grid_eez_fp", name = "grid_eez_fp_df.csv", read = T) %>%
-  mutate(
-    spatial = "fp"
-  ) %>% 
+grids <- bind_rows(
+  my_path("D", "Partial/grid_sw", name = "grid_eez_sw_df.csv", read = T) %>% 
+    mutate(spp = "Paralichthys dentatus"),
+  my_path("D", "Partial/grid_sw", name = "grid_eez_sw_df.csv", read = T) %>% 
+    mutate(spp = "Stenotomus chrysops"),
+  my_path("D", "Partial/grid_sw", name = "grid_eez_sw_df.csv", read = T) %>% 
+    mutate(spp = "Centropristis striata")
+) %>% 
+  mutate(spatial = "sw") %>% 
   bind_rows(
-    my_path("D", "Spatial/grid_eez_sw", name = "grid_eez_sw_df.csv", read = T)
+    my_path("D", "Partial/grid_fp", name = "grid_eez_fp_df.csv", read = T)
   ) %>% 
-  select(-spp) %>% 
-  mutate(
-    spatial = ifelse(is.na(spatial),"sw",spatial)
+  mutate(spatial = ifelse(is.na(spatial),"fp",spatial),
+         spp = ifelse(spp == "summer flounder","Paralichthys dentatus", 
+                 ifelse(spp == "scup", "Stenotomus chrysops", 
+                        "Centropristis striata"
+                 )
+    )
   ) %>% 
   distinct(.keep_all = T)
+
+# unique(grids$spp)
   
+# Ports data
+ports_df <- my_path("R","Partial", "top_ports.csv", read = T) %>% 
+  filter(tresh == "75th") %>%
+  distinct(port_name, .keep_all = T) # No need for duplication
+
+
 
 # Species data
 
@@ -1128,14 +1151,14 @@ taxon_sw <- my_path("R",extra_path = "Partial/Interpolation/", name = taxon_read
 # Load all sp in one table
 historic_spp <- bind_rows(lapply(taxon_sw, fread)) %>% 
   left_join(grids,
-            by = c("index","lon","lat")
+            by = c("index","lon","lat","spp")
   ) %>%
   filter(!is.na(spatial)) %>% 
   mutate(
     season = ifelse(str_detect(region,"Spring"),"Spring","Fall"),
     label = ifelse(spp == "Paralichthys dentatus" & year >= 1980 & year <= 1986,"Reference",
                    ifelse(spp == "Stenotomus chrysops" & year >= 1988 & year <= 1992,"Reference",
-                          ifelse( spp =="Centropristis striata" & year >= 1980 & year <= 2001,"Reference",
+                          ifelse( spp == "Centropristis striata" & year >= 1980 & year <= 2001,"Reference",
                                  ifelse(year > 2001,"Today",NA)
                           )
                    )
@@ -1302,15 +1325,13 @@ p_sw <- gridExtra::grid.arrange(
 ##### ------------- ####
 
 
-grid_eez_fp_sf <-
-  grid_eez_sw_sf %>% 
+grid_eez_fp_sf <- grid_eez_sw_sf %>% 
   filter(!group %in% grid_eez_fp_sf$group) %>% 
   mutate(index = NA) %>% 
-  bind_rows(grid_eez_fp_sf)
+  bind_rows(grid_eez_fp_sf) %>% 
+  distinct(.keep_all = T) 
   
   
-
-
 p_fp <- gridExtra::grid.arrange(
   # Overall (overlapping) position
   ggplot(data = subset(grid_eez_fp_sf, index != "NA")) +
@@ -1337,7 +1358,7 @@ p_fp <- gridExtra::grid.arrange(
     geom_sf(data = subset(grid_eez_fp_sf, index != "NA"), aes(color = group),size = 0.1, alpha = 0.3) +
     geom_sf(data = land_sf, aes(), fill = "grey80") +
     facet_wrap(~ group) +
-    geom_point(data = rename(ports_df, group = landing_state), aes(x = lon, y = lat), color = "#E6A0C4") +
+    # geom_point(data = rename(ports_df, group = state_postal), aes(x = lon, y = lat), color = "#E6A0C4") +
     theme(legend.position = "top") +
     # scale_color_manual(values = state_pallet,
     scale_color_manual(values = c(state_pallet[3:4],state_pallet[6:13]),
