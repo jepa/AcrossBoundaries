@@ -369,7 +369,7 @@ dashboardPage(
                 box(width = 6, 
                     solidHeader = TRUE,
                     collapsible = TRUE,
-                    collapsed = FALSE,
+                    collapsed = TRUE,
                     title = "Number of grids per regulatory area",
                     status = "success", # green color
                     formattableOutput("gridN")

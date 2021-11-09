@@ -98,9 +98,10 @@ shinyServer(function(input, output,session) {
     # Action button. App will only run after all options are selected
     observeEvent(input$do, {
         
-        # ---------------------------- #
-        # Biological Survey Data ####
-        # ---------------------------- #
+# ---------------------------- #
+# Data ####
+# ---------------------------- #
+        
         raw_data <- reactive({
             
             name <- paste0("obs_",str_replace(input$SppSelection," ","_"),".csv")
@@ -120,7 +121,6 @@ shinyServer(function(input, output,session) {
         # Extrapolated data
         # Triangular Irregular Surface  
         # ---------------------------- #
-        
         
         tif_data <- reactive({
             
@@ -168,9 +168,9 @@ shinyServer(function(input, output,session) {
         })
         
         
-        # ---------------------------- #
-        # Regulatory Units ####
-        # ---------------------------- #
+# ---------------------------- #
+# Regulatory Units Table ####
+# ---------------------------- #
         output$gridN <- renderFormattable({
             
             customGreen = "#71CA97"
@@ -258,7 +258,7 @@ shinyServer(function(input, output,session) {
         
         
         # ---------------------------- #
-        # Regulatory Units ####
+        # Regulatory Units Maps ####
         # ---------------------------- #
         output$RegUnit <- renderPlot({
             
@@ -485,6 +485,7 @@ shinyServer(function(input, output,session) {
         # ---------------------------- #
         output$propPlot <- renderPlot({
             
+            
             total_fited <- tif_data() %>% 
                 group_by(year,region,spp,spatial) %>% 
                 summarise(total_value = sum(value,na.rm=T),.groups = "drop")
@@ -632,12 +633,13 @@ shinyServer(function(input, output,session) {
                 select(state,year,mean_per) %>%
                 spread(year,mean_per) %>%
                 mutate(Change = ifelse(`1973` < `2019`,"Increase",
-                                       ifelse(`1973` > `2019`,"Decrease","No change"))
-                       )%>%
+                                       ifelse(`1973` > `2019`,"Decrease","No change")),
+                       Difference =  `2019`-`1973`
+                       ) %>%
                 left_join(state_order) %>% 
                 arrange(order) %>% 
                 mutate(State = paste0(state," (",abrev,")")) %>% 
-                select(State,2:6,43:47,Change, -order)
+                select(State,2:6,43:47,Difference,Change, -order)
             
             customGreen = "#71CA97"
             
