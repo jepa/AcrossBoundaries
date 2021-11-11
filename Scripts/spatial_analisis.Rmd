@@ -1804,50 +1804,6 @@ save_plot(
 
 This graph shows the proportion of the interpolation value each State has over time.
 
-*Note:* This plot is interactive. For ease comparison between States you can;
-
-- *One* click on any State to *remove* it from the plot 
-- *Two* clicks on any State to *isolate it* from the plot (other states can then be added by just clicking on them).
-- The bottom panel allows you to reduce the time frame
-
-### Dynamic aggregated plot
-
-```{r dynamic_area_plot, eval = T, echo = T, fig.height = 10, fig.width = 10}
-
-total_fited <- historic_spp %>% 
-  group_by(year,region) %>% 
-  summarise(total_value = sum(value,na.rm=T),.groups = "drop")
-
-# group by state
-state_fit <- historic_spp %>% 
-  group_by(state,year,region) %>% 
-  summarise(state_value = sum(value,na.rm= T), .groups = "drop") %>% 
-  left_join(total_fited,
-            by = c("year","region")) %>%
-  mutate(percentage = state_value/total_value*100)
-
-# Plot me
-p <- ggplot(state_fit) +
-  geom_area(
-    aes(
-      x = year,
-      y = round(percentage),
-      fill = state
-    )
-  ) +
-  ylab("Percentage (%)") +
-  # viridis::scale_fill_viridis(discrete = T, alpha = 0.8) +
-  scale_fill_manual(values = state_pallet) +
-  MyFunctions::my_ggtheme_p() +
-  facet_wrap(~region, ncol = 1) +
-  theme_dark()
-
-ggplotly(p,
-         dynamicTicks = TRUE) %>% 
-  layout(hovermode = "x") %>%
-  rangeslider()
-
-```
 
 ## Area plot (running mean)
 
@@ -3149,3 +3105,47 @@ ggsave(filename = "seas_diff.png",
 
 ```
 
+*Note:* This plot is interactive. For ease comparison between States you can;
+
+- *One* click on any State to *remove* it from the plot 
+- *Two* clicks on any State to *isolate it* from the plot (other states can then be added by just clicking on them).
+- The bottom panel allows you to reduce the time frame
+
+### Dynamic aggregated plot
+
+```{r dynamic_area_plot, eval = T, echo = T, fig.height = 10, fig.width = 10}
+
+total_fited <- historic_spp %>% 
+  group_by(year,region) %>% 
+  summarise(total_value = sum(value,na.rm=T),.groups = "drop")
+
+# group by state
+state_fit <- historic_spp %>% 
+  group_by(state,year,region) %>% 
+  summarise(state_value = sum(value,na.rm= T), .groups = "drop") %>% 
+  left_join(total_fited,
+            by = c("year","region")) %>%
+  mutate(percentage = state_value/total_value*100)
+
+# Plot me
+p <- ggplot(state_fit) +
+  geom_area(
+    aes(
+      x = year,
+      y = round(percentage),
+      fill = state
+    )
+  ) +
+  ylab("Percentage (%)") +
+  # viridis::scale_fill_viridis(discrete = T, alpha = 0.8) +
+  scale_fill_manual(values = state_pallet) +
+  MyFunctions::my_ggtheme_p() +
+  facet_wrap(~region, ncol = 1) +
+  theme_dark()
+
+ggplotly(p,
+         dynamicTicks = TRUE) %>% 
+  layout(hovermode = "x") %>%
+  rangeslider()
+
+```
