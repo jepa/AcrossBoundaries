@@ -2,8 +2,8 @@
 title: "Spatial Analysis"
 author: "Juliano Palacios Abrantes"
 output:
-  # html_document:
-  html_notebook:
+  html_document:
+  # html_notebook:
     fig_width: 6
     fig_height: 4
     code_folding: hide
@@ -1067,6 +1067,34 @@ State allocations of the commercial black sea bass coastwide quota were original
 
 *Scomber scombrus*, *Peprilus triacanthus* (butterfish), *Illex illecebrosus* (shortfin squid), *Paralichthys dentatus* (summer flounder), *Stenotomus chrysops* (Scoop), *Centropristis striata* (black sea bass), *Pomatomus saltatrix* (Bluefish), *Lopholatilus chamaeleonticeps* (Golden tilefish), *Caulolatilus microps* (blueline tilefish) and *Clupea harengus*
 
+```{r}
+
+x <- as.data.frame(st_read(my_path("D", "Partial/grid_fp",name="grid_eez_fp.shp"))) %>% 
+  select(index,spp = spcs_nm,port_name = port_nm, abrev = stt_pst) %>% 
+  bind_cols(
+    as.data.frame(st_coordinates(st_read(my_path("D", "Partial/grid_fp",name="grid_eez_fp.shp"))))
+  ) %>% 
+  rename(lon = X, lat = Y) %>% 
+  left_join(as.data.frame(land_sf),
+            by = "abrev") %>% 
+  mutate(state= str_to_sentence(ID)) %>% 
+  select(1:6,state) %>% 
+  mutate(
+     spp = ifelse(spp == "summer flounder","Paralichthys dentatus", 
+                 ifelse(spp == "scup", "Stenotomus chrysops", 
+                        "Centropristis striata"
+                 )
+    )
+  )
+
+
+write_csv(x,my_path("D", "Partial/grid_fp",name="grid_eez_fp_df.csv"))
+
+
+```
+
+
+
 ```{r load_data, eval = T, echo = T}
 
 # Spatial data
@@ -1088,7 +1116,7 @@ eez_sf <- st_read(my_path("G", extra_path = "Spatial/SAU/SAU_Shapefile", name = 
 
 ### Previously created grids 
 
-grids <- bind_rows(
+grids_sw <- bind_rows(
   my_path("D", "Partial/grid_sw", name = "grid_eez_sw_df.csv", read = T) %>% 
     mutate(spp = "Paralichthys dentatus"),
   my_path("D", "Partial/grid_sw", name = "grid_eez_sw_df.csv", read = T) %>% 
@@ -1096,27 +1124,24 @@ grids <- bind_rows(
   my_path("D", "Partial/grid_sw", name = "grid_eez_sw_df.csv", read = T) %>% 
     mutate(spp = "Centropristis striata")
 ) %>% 
-  mutate(spatial = "sw") %>% 
-  bind_rows(
-    my_path("D", "Partial/grid_fp", name = "grid_eez_fp_df.csv", read = T)
-  ) %>% 
-  mutate(spatial = ifelse(is.na(spatial),"fp",spatial),
-         spp = ifelse(spp == "summer flounder","Paralichthys dentatus", 
-                 ifelse(spp == "scup", "Stenotomus chrysops", 
-                        "Centropristis striata"
-                 )
-    )
-  ) %>% 
-  distinct(.keep_all = T)
+  mutate(spatial = "sw",
+         port_name = NA,
+         abrev = NA
+         )
+
+grids_fp <- my_path("D", "Partial/grid_fp", name = "grid_eez_fp_df.csv", read = T
+) %>%
+  mutate(spatial = "fp")
+
+# Join both approaches
+grids <- bind_rows(grids_sw,grids_fp)
 
 # unique(grids$spp)
   
 # Ports data
-ports_df <- my_path("R","Partial", "top_ports.csv", read = T) %>% 
+ports_df <- my_path("D","Partial", "top_ports.csv", read = T) %>% 
   filter(tresh == "75th") %>%
   distinct(port_name, .keep_all = T) # No need for duplication
-
-
 
 # Species data
 
@@ -1595,7 +1620,7 @@ reg_unit <- state_fit %>%
   filter(season == "Spring") %>% 
   spread(spatial,mean_per) %>% 
   # Set NA's to 0 because no data found on FP
-  mutate(fp = replace_na(fp,0)) %>% 
+  mutate(fp = replace_na(fp,0)) %>%
   # View()
   mutate(
     difference = abs(fp-sw),
@@ -1619,8 +1644,8 @@ map_plot <- land_sf %>%
   ggplot() +
   geom_sf(aes(fill = mean_per)) +
   viridis::scale_fill_viridis("Average proportion per State", alpha = 0.8, 
-                              breaks = seq(0,35,5),
-                              limits=(c(0,35))
+                              breaks = seq(0,55,5),
+                              limits=(c(0,55))
                               )+
   facet_grid(spatial~ spp+label) +
   labs(x = "", 
@@ -1641,8 +1666,8 @@ diff_plot <- land_sf %>%
   ggplot() +
   geom_sf(aes(fill = mean_per)) +
   viridis::scale_fill_viridis("Difference (%)", alpha = 0.8,option = "C",
-                              breaks = seq(0,20,5),
-                              limits=(c(0,22)),
+                              breaks = seq(0,45,5),
+                              limits=(c(0,45)),
                               # labels = c("<-10",seq(-75,75,25),">100")
                               ) +
   facet_grid(spatial~ spp+label) +
@@ -1682,14 +1707,6 @@ save_plot(
   base_width = 14
 )
 
-reg_unit %>% 
-  # filter(spatial == "fp") %>%
-  select(-fp) %>% 
-  spread(label,sw) %>% 
-  mutate(
-    difference = Today-Reference
-    ) %>% 
-  gther(Reference:difference)
 
 ```
 
