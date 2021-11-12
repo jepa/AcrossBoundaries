@@ -23,7 +23,7 @@ state_pallet <- c(wes_palette(n = 5, name = "Darjeeling1"),
 )
 
 # Set the filters
-state_order <- my_path("D", "Spatial/grid_eez_sw", name = "grid_eez_sw_df.csv", read = T) %>%
+state_order <- my_path("D", "Partial/grid_sw", name = "grid_eez_sw_df.csv", read = T) %>%
     group_by(state) %>%
     summarise(
         order = mean(lat)
@@ -38,7 +38,7 @@ state_order <- my_path("D", "Spatial/grid_eez_sw", name = "grid_eez_sw_df.csv", 
 # Grid data ####
 # ---------------------------- #
 # Load grid of state waters
-grid_eez_sw_sf <- st_read(my_path("D","Spatial/grid_eez_sw", name = "grid_eez_sw_sf.shp")) %>%
+grid_eez_sw_sf <- st_read(my_path("D","Partial/grid_sw", name = "grid_eez_sw_sf.shp")) %>%
     select(index,state,geometry) %>%
     mutate(method = "state_waters",
            state = str_to_sentence(state)) %>%
@@ -48,8 +48,8 @@ grid_eez_sw_sf$group <- factor(grid_eez_sw_sf$abrev,      # Reordering group fac
                                levels = state_order$abrev)
 
 # Load grid of fishing ports
-grid_eez_fp_sf <-  st_read(my_path("D","Spatial/grid_eez_fp", name = "grid_eez_fp.shp")) %>%
-    select(index,abrev=lndng_s,geometry) %>%
+grid_eez_fp_sf <-  st_read(my_path("D","Partial/grid_fp", name = "grid_eez_fp.shp")) %>%
+    select(index,abrev=stt_pst,geometry) %>%
     mutate(method = "fishing_port"#,
            # state = str_to_sentence(landing_port)
     )%>%
@@ -60,18 +60,19 @@ grid_eez_fp_sf$group <- factor(grid_eez_fp_sf$abrev,      # Reordering group fac
 
 grid_eez_fp_sf <- arrange(grid_eez_fp_sf,group)
 
-grids <- my_path("D", "Spatial/grid_eez_fp", name = "grid_eez_fp_df.csv", read = T) %>%
+grids <- my_path("D", "Partial/grid_fp", name = "grid_eez_fp_df.csv", read = T) %>%
     mutate(
         spatial = "fp"
     ) %>% 
     bind_rows(
-        my_path("D", "Spatial/grid_eez_sw", name = "grid_eez_sw_df.csv", read = T)
+        my_path("D", "Partial/grid_sw", name = "grid_eez_sw_df.csv", read = T)
     ) %>% 
     select(-spp) %>% 
     mutate(
         spatial = ifelse(is.na(spatial),"sw",spatial)
     ) %>% 
-    distinct(.keep_all = T)
+    distinct(.keep_all = T) %>% 
+    rename(landing_port = port_name)
 
 
 # ---------------------------- #
