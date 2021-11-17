@@ -690,7 +690,7 @@ shinyServer(function(input, output,session) {
     
     output$downloadReport = downloadHandler(
         filename<- function(){
-            paste0(input$filename,Sys.Date(),switch(
+            paste0(input$filename,"_",Sys.Date(),switch(
                 input$format, PDF = '.pdf', Word = '.docx', HRML = '.html'
             ))
         },
