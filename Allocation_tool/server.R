@@ -13,7 +13,7 @@
 
 # Get functions and shapefiles
 library(MyFunctions)
-MyFunctions::my_lib(c("ggmap","sf","tidyverse","tools","readr","data.table","maps","shiny","DT","plotly","wesanderson","zoo","formattable","viridis","shinydashboard"))
+MyFunctions::my_lib(c("ggmap","sf","tidyverse","tools","readr","data.table","maps","shiny","DT","plotly","wesanderson","zoo","formattable","viridis","shinydashboard","rmarkdown"))
 
 us_map <- st_as_sf(map("state", plot = FALSE, fill = TRUE))
 
@@ -96,8 +96,25 @@ grids <- my_path("D", "Partial/grid_fp", name = "grid_eez_fp_df.csv", read = T) 
 # ---------------------------- #
 shinyServer(function(input, output,session) {
     
+    
+    # ---------------------------- #
+    ### Run and Clear all button ####
+    # ---------------------------- #
+    
     # Action button. App will only run after all options are selected
     observeEvent(input$do, {
+        
+        # Clear all plots 
+        observeEvent(input$reset,{
+            
+            # Remove outputs
+            output$RegUnit <- renderPlot(NULL)
+            output$Allocation_tbl <- renderFormattable(NULL)
+            output$distPlot <- renderPlot(NULL)
+            output$propPlot <- renderPlot(NULL)
+            output$propDiffPlot <- renderPlot(NULL)
+            output$Allocation_tbl <- renderFormattable(NULL)
+        })
         
 # ---------------------------- #
 # Data ####
@@ -666,17 +683,66 @@ shinyServer(function(input, output,session) {
         
     }) # close action button
     
-    observeEvent(input$reset,{
-        
-        # Remove outputs
-        output$RegUnit <- renderPlot(NULL)
-        output$Allocation_tbl <- renderFormattable(NULL)
-        output$distPlot <- renderPlot(NULL)
-        output$propPlot <- renderPlot(NULL)
-        output$propDiffPlot <- renderPlot(NULL)
-        output$Allocation_tbl <- renderFormattable(NULL)
-        })
     
+    # ---------------------------- #
+    ### Download report ####
+    # ---------------------------- #
+    
+    output$downloadReport = downloadHandler(
+        filename<- function(){
+            paste0(input$filename,Sys.Date(),switch(
+                input$format, PDF = '.pdf', Word = '.docx', HRML = '.html'
+            ))
+        },
+        # Report content
+        content = function(file) {
+            if (input$format=="PDF"){
+                #### Progressing indicator
+                withProgress(message = 'Download in progress',
+                             detail = 'This may take a while...', value = 0, {
+                                 for (i in 1:15) {
+                                     incProgress(1/15)
+                                     Sys.sleep(0.01)
+                                 }
+                                 
+                                 ## End of progression
+                                 src <- normalizePath('summary_report.Rmd')
+                                 
+                                 # temporarily switch to the temp dir, in case you do not have write
+                                 # permission to the current working directory
+                                 owd <- setwd(tempdir())
+                                 on.exit(setwd(owd))
+                                 file.copy(src, 'summary_report.Rmd', overwrite = TRUE)
+                                 
+
+                                 out <- render('summary_report.Rmd', pdf_document())
+                                 file.rename(out, file)
+                                 
+                             })
+                
+            }else{
+                withProgress(message = 'Download in progress',
+                             detail = 'This may take a while...', value = 0, {
+                                 for (i in 1:15) {
+                                     incProgress(1/15)
+                                     Sys.sleep(0.01)
+                                 }
+                                 
+                                 ## End of progression
+                                 src <- normalizePath('summary_report.Rmd')
+                                 
+                                 # temporarily switch to the temp dir, in case you do not have write
+                                 # permission to the current working directory
+                                 owd <- setwd(tempdir())
+                                 on.exit(setwd(owd))
+                                 file.copy(src, 'summary_report.Rmd', overwrite = TRUE)
+                                 
+                                 out <- render('summary_report.Rmd', word_document())
+                                 file.rename(out, file)
+                             })
+            }
+            
+        })
     
     
     

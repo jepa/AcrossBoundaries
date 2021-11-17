@@ -43,11 +43,15 @@ dashboardPage(
         ),
         div(
           downloadButton(
-            outputId = "downloadData",
+            outputId = "downloadReport",
             label = "Download report",
             icon = icon("download"),
             style = "color: black; margin-left: 15px; margin-bottom: 5px;"
           )
+        ),
+        div(
+        radioButtons('format', 'Document format', c('PDF', 'Word',"HTML"),
+                     inline = TRUE)
         ),
         div(
           downloadButton(
@@ -70,7 +74,7 @@ dashboardPage(
       br()
     ),
     hr(style = "border-top: 3px dashed lightgrey;"),
-    p("For any inquery regarding this tool, please email us at 
+    p("For any inquiry regarding this tool, please email us at 
     jpalacios2[at]wisc.edu"),
     a(img(src= 'https://github.githubassets.com/images/modules/logos_page/Octocat.png',
           height = 50,
@@ -95,7 +99,7 @@ dashboardPage(
                 offset = 1,
                 align = "justified",
                 h4("This tool was build with the objective of exploring different
-                  management apporaches to address changes in stocks distribution across management boundaries
+                  management approaches to address changes in stocks distribution across management boundaries
                     in response to a changing climate. The tool focuses on three stocks of the Northeast United 
                     States and is part of the project", em("Managing across boundaries: preventing interjurisdictional
                      conflicts arising from shifting fish stocks"))
@@ -105,14 +109,14 @@ dashboardPage(
                 offset = 1,
                 align = "justified",
                 h4("Below you can find information on the stocks available to explore in the tool.
-                  Navigate to",em("Tool"),"in the left pannel to access 
+                  Navigate to",em("Tool"),"in the left panel to access 
                    the dynamic tool", em("Information"), "to know more about the project and", em("Instructions"),
                   "to get familiarized with the tool.")
               ), # Close fluid row
               column(
                 width = 12,
                 align = "justified",
-                h2("Info on availabel stocks"),
+                h2("Info on available stocks"),
                 h4("Click in each picture to go to NOAAs site for the management of the stock")
               ),
               fluidRow(
@@ -182,7 +186,7 @@ dashboardPage(
                   offset = 2,
                   align = "center",
                   collapsible = TRUE,
-                  h4("In this section you will find information about the project including some background information, the project's obectives,
+                  h4("In this section you will find information about the project including some background information, the project's objectives,
                      as well as the partners involved in developing the tool and the research")
                 )
               ),
@@ -192,7 +196,7 @@ dashboardPage(
                   width = 12,
                   collapsible = TRUE,
                   collapsed = FALSE,
-                  h4("Climate change is driving shifts in fish stock distributions that will affect resource availability across different jurisdictions around the world. Elinor Ostrom’s fundamental principles of common pool resource governance include a requirement for clear boundaries over resource units. However, when stock ranges shift, governance systems and boundaries are no longer aligned. This misalignment has already created conflicts around access and the re-distribution of benefits flowing from the stocks. This is a global challenge that is likely to increase as the effects of climate change intensify in the coming years. Specific problems that arise from the movement of stocks across jurisdictions include: overfishing; conflicts over access; unfairness to stakeholders who have borne the costs of resource stewardship but cannot capture the benefits due to stock movement; and high costs and conflicts associated with re-negotiating allocation, which is typically the most contentious aspect of fishery management.")
+                  h4("Climate change is driving shifts in fish stock distributions that will affect resource availability across different jurisdictions around the world. Elinor Ostrom’s fundamental principles of common pool resource governance include a requirement for clear boundaries over resource units. However, when stock ranges shift, governance systems and boundaries are no longer aligned. This misalignment has already created conflicts around access and the redistribution of benefits flowing from the stocks. This is a global challenge that is likely to increase as the effects of climate change intensify in the coming years. Specific problems that arise from the movement of stocks across jurisdictions include: overfishing; conflicts over access; unfairness to stakeholders who have borne the costs of resource stewardship but cannot capture the benefits due to stock movement; and high costs and conflicts associated with re-negotiating allocation, which is typically the most contentious aspect of fishery management.")
                 )
               ),
               fluidRow(
@@ -236,7 +240,7 @@ dashboardPage(
       tabItem(tabName = "dashboard",
               useShinyjs(),
               h1("Control panel"),
-              h4(strong("Read me:"),"Please select from the following options in the blue boxes.", em("Note that all options need to be selected in order for results to apear")),
+              h4(strong("Read me:"),"Please select from the following options in the blue boxes.", em("Note that all options need to be selected in order for results to appear")),
               #______________________________________________________________________#
               ### Control panel ####
               #______________________________________________________________________#
@@ -311,7 +315,7 @@ dashboardPage(
                   width = 6,
                   solidHeader = TRUE,
                   collapsible = TRUE,
-                  title = "Choose port treshold",
+                  title = "Choose port threshold",
                   status = "primary",
                   sliderInput(inputId = "treshold",
                               label = "",
@@ -322,7 +326,7 @@ dashboardPage(
                               animate = FALSE,
                               value = 75
                   ),
-                  tags$p("Note: The treshold input will only apply for the Port Aproach. It determines the top ports to be included in the analysis."),
+                  tags$p("Note: The threshold input will only apply for the Port Approach It determines the top ports to be included in the analysis."),
                 )
               ),
               column(12,
@@ -341,7 +345,7 @@ dashboardPage(
               ),
               hr(style = "border-top: 3px dashed lightgrey;"),
               h1("Results"),
-              h4("Here you will see the results from your query.", em("Note some graphs can take some time to apear depending on your internet connection")),
+              h4("Here you will see the results from your query.", em("Note some graphs can take some time to appear depending on your internet connection")),
               #______________________________________________________________________#
               ### Results ####
               #______________________________________________________________________#
