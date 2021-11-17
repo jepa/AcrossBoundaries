@@ -36,11 +36,28 @@ dashboardPage(
         "Download report",
         tabName = "download",
         icon = icon("download"),
+        div(
         textInput(
           inputId = "filename",
           placeholder = "Name download file",
-          label = ""
+          label = "File name",
+          value = "Report"
+        )
         ),
+          textInput(
+            inputId = "UserName",
+            placeholder = "Name of user",
+            label = "User name",
+            value = "Annon"
+            
+          ),
+        checkboxGroupInput('results', 'Choose results', c("All",'Grid table', 'Grid plot',"Distribution map"),
+                           selected = "All",
+                     inline = FALSE
+        ),
+          radioButtons('format', 'Document format', c('PDF', 'Word',"HTML"),
+                       inline = TRUE
+                       ),
         div(
           downloadButton(
             outputId = "downloadReport",
@@ -48,10 +65,6 @@ dashboardPage(
             icon = icon("download"),
             style = "color: black; margin-left: 15px; margin-bottom: 5px;"
           )
-        ),
-        div(
-        radioButtons('format', 'Document format', c('PDF', 'Word',"HTML"),
-                     inline = TRUE)
         ),
         div(
           downloadButton(
