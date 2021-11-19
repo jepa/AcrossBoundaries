@@ -1,0 +1,85 @@
+---
+title: "Merge our grid with NEFSC"
+output: html_document
+---
+
+# Instructions
+
+Would it be possible for you to add a column that gives the NOAA-NMFS Statistical Area number for each row in the data file?  
+
+# Data
+
+## NEFSC Shapefile
+
+Shapefile provided by Chris on the NEFSC website:  ftp://ftp.nefsc.noaa.gov/pub/gis/
+
+- Statistical_Areas_2010_withNames.shp
+- Statistical_Areas_2010.shp
+
+- The description and metadata for the shape file are here: https://www.fisheries.noaa.gov/inport/item/26262
+
+This is the NEFSC-recommended citation for the shapefile:
+ 
+Northeast Fisheries Science Center, 2021: NEFSC Statistical Areas from 2010-06-15 to 2010-08-15. NOAA National Centers for Environmental Information, https://www.fisheries.noaa.gov/inport/item/26262.
+
+## Load Data
+
+```{r load_data}
+
+# oad our grid SF
+grid_sf <- st_read(my_path("D","Partial/grid_sw", name = "grid_eez_sw_sf.shp")) %>% 
+  st_transform(4326) %>% # to match shape
+  st_set_crs(4326) %>% 
+  select(index,geometry)
+
+
+#Load NEFSC shapefile
+nefsc_sf <- st_read(my_path("D","Spatial/nefsc", name = "Statistical_Areas_2010.shp")) %>% 
+  st_transform(4326) %>% # to match shape
+  st_set_crs(4326) %>% 
+  st_simplify(preserveTopology = TRUE, dTolerance = 0.1)
+
+# Visualize map (ok)
+# nefsc_sf %>% 
+#   st_simplify(preserveTopology = TRUE, dTolerance = 0.1) %>% 
+#   ggplot() +
+  # geom_sf()
+
+```
+
+## Merge shapefiles
+
+```{r merge_shapefiles}
+
+# Merge both sf
+nefsc_index <- nefsc_sf %>% 
+   st_join(grid_sf,
+           join = st_intersects) %>% 
+   filter(!is.na(index)) %>% 
+  as.data.frame() %>% 
+  select(Id,index) %>% 
+  distinct(.keep_all = T) %>% 
+  mutate(plop = "yes") %>% 
+  left_join(my_path("D", "Partial/grid_sw", name = "grid_eez_sw_df.csv", read = T)) %>% 
+  select(Id,index,state)
+ 
+# Make sure it works
+nefsc_sf %>%
+  left_join(nefsc_index) %>%
+  filter(!is.na(index)) %>%
+  ggplot() +
+  geom_sf(aes(fill = index))
+
+
+```
+
+## Save shapefile
+
+```{r}
+
+# File name
+file_name <- my_path("D","Spatial", name = "nefsc_index.csv")  
+
+write_csv(nefsc_index %>% select(-state), file_name)
+```
+
