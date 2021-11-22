@@ -116,9 +116,9 @@ shinyServer(function(input, output,session) {
             output$Allocation_tbl <- renderFormattable(NULL)
         })
         
-# ---------------------------- #
-# Data ####
-# ---------------------------- #
+        # ---------------------------- #
+        # Data ####
+        # ---------------------------- #
         
         raw_data <- reactive({
             
@@ -186,9 +186,9 @@ shinyServer(function(input, output,session) {
         })
         
         
-# ---------------------------- #
-# Regulatory Units Table ####
-# ---------------------------- #
+        # ---------------------------- #
+        # Regulatory Units Table ####
+        # ---------------------------- #
         output$gridN <- renderFormattable({
             
             customGreen = "#71CA97"
@@ -207,9 +207,9 @@ shinyServer(function(input, output,session) {
                 
                 
                 x <- formattable(n_grids,
-                            list(
-                                Grids = color_bar(customGreen)
-                            )
+                                 list(
+                                     Grids = color_bar(customGreen)
+                                 )
                 )
                 
             } 
@@ -228,10 +228,10 @@ shinyServer(function(input, output,session) {
                     arrange(Ports) 
                 
                 x <- formattable(n_grids,
-                            align =c("l",rep("c",9),"r"),
-                            list(
-                                Ports = color_bar(customGreen)
-                            )
+                                 align =c("l",rep("c",9),"r"),
+                                 list(
+                                     Ports = color_bar(customGreen)
+                                 )
                 )
                 
             }
@@ -258,19 +258,19 @@ shinyServer(function(input, output,session) {
                            "State waters" = sw,
                            Difference) %>% 
                     arrange(desc(Difference))
-                    
-
+                
+                
                 
                 x <- formattable(n_grids,
-                            align =c("l",rep("c",9),"r"),
-                            list(
-                                Difference = color_bar(customGreen)
-                            )
+                                 align =c("l",rep("c",9),"r"),
+                                 list(
+                                     Difference = color_bar(customGreen)
+                                 )
                 )
-                   
+                
             }
             x
-
+            
         })
         
         
@@ -445,6 +445,7 @@ shinyServer(function(input, output,session) {
         output$distPlot <- renderPlot({
             
             # Set the filters
+            
             years <- seq(input$YearSelection[1],input$YearSelection[2],1) #seq(1971,2019,1)
             
             # Set the plot data
@@ -653,7 +654,7 @@ shinyServer(function(input, output,session) {
                 mutate(Change = ifelse(`1973` < `2019`,"Increase",
                                        ifelse(`1973` > `2019`,"Decrease","No change")),
                        Difference =  `2019`-`1973`
-                       ) %>%
+                ) %>%
                 left_join(state_order) %>% 
                 arrange(order) %>% 
                 mutate(State = paste0(state," (",abrev,")")) %>% 
@@ -671,10 +672,10 @@ shinyServer(function(input, output,session) {
                             Change = formatter("span",
                                                x ~ icontext(ifelse(x == "Increase", "arrow-up",
                                                                    ifelse(x == "Decrease", "arrow-down", NA)
-                                                                   ), 
-                                                            ifelse(x == "Increase", "Increase",
-                                                                   ifelse(x == "Decrease", "Decrease","No change"))
-                                                            ),
+                                               ), 
+                                               ifelse(x == "Increase", "Increase",
+                                                      ifelse(x == "Decrease", "Decrease","No change"))
+                                               ),
                                                style = x ~ style(color = ifelse(x == "Increase", "green",
                                                                                 ifelse(x == "Decrease", "red", "grey"))))
                         )
@@ -714,7 +715,7 @@ shinyServer(function(input, output,session) {
                                  on.exit(setwd(owd))
                                  file.copy(src, 'summary_report.Rmd', overwrite = TRUE)
                                  
-
+                                 
                                  out <- render('summary_report.Rmd', pdf_document())
                                  file.rename(out, file)
                                  
@@ -742,11 +743,87 @@ shinyServer(function(input, output,session) {
                              })
             }
             
-        })
-    
+        }) # Close downloadReport
     
     
     # ---------------------------- #
-    # Tool end ####
+    # Tool Demo ####
     # ---------------------------- #
-}) # app closure
+    
+    observeEvent(input$do_demo, {
+        
+        years <- seq(2010,2015,1)
+        
+        # ---------------------------- #
+        # Regulatory Units Map ####
+        # ---------------------------- #
+        
+        output$DemoRegUnit <- renderPlot({
+            
+            gridExtra::grid.arrange(
+                # Overall (overlapping) position
+                ggplot(grid_eez_sw_sf) +
+                    geom_sf(aes(color =group , fill = group), alpha = 0.3) +
+                    geom_sf(data = subset(us_map,ID %in% c("maine", "new hampshire", "massachusetts", "connecticut",
+                                                           "rhode island", "new york", "new jersey", "delaware", "maryland",
+                                                           "virginia", "north carolina"))
+                    ) +
+                    scale_color_manual(values = state_pallet) +
+                    scale_fill_manual(values = state_pallet) +
+                    my_ggtheme_p(leg_pos = "",
+                                 ax_tx_s = 13) +
+                    coord_sf(ylim = c(30,48)) +
+                    scale_y_continuous(breaks = c(30,35,40,45))+
+                    labs(x = "", y = "", title = "") +
+                    theme(plot.title = element_text(size = 20)),
+                # Showing each state separately
+                ggplot(grid_eez_sw_sf) +
+                    geom_sf(data = subset(us_map,ID %in% c("maine", "new hampshire", "massachusetts", "connecticut",
+                                                           "rhode island", "new york", "new jersey", "delaware", "maryland",
+                                                           "virginia", "north carolina"))
+                    ) +
+                    geom_sf(aes(color = group),size = 0.1, alpha = 0.3) +
+                    facet_wrap(~ group) +
+                    theme(legend.position = "top") +
+                    scale_color_manual(values = state_pallet,
+                                       labels = grid_eez_sw_sf %>% arrange(order) %>%  pull(state) %>% unique()) +
+                    ggtitle("") +
+                    my_ggtheme_p(leg_pos = "",
+                                 ax_tx_s = 11,
+                                 axx_tx_ang = 45,
+                                 hjust = 1
+                    ),
+                nrow = 1)
+            
+        }) # Close DemoRegUnit
+        
+        
+        # ---------------------------- #
+        # Regulatory Units Table ####
+        # ---------------------------- #
+        output$DemogridN <- renderFormattable({
+            
+            customGreen = "#71CA97"
+            
+            n_grids <- grids %>%
+                filter(spatial == "sw") %>% 
+                group_by(state) %>% 
+                summarise(Grids = length(unique(index))) %>% 
+                arrange(Grids)
+            
+            
+            x <- formattable(n_grids,
+                             list(
+                                 Grids = color_bar(customGreen)
+                             )
+            )
+            
+            
+        }) # CLose DemogridN
+        
+    }) # Close  demoButton   
+        
+        # ---------------------------- #
+        # Tool end ####
+        # ---------------------------- #
+    }) # app closure

@@ -29,6 +29,7 @@ dashboardPage(
       menuItem("Information", tabName = "info", icon = icon("info")),
       br(),
       menuItem("Tool", tabName = "dashboard", icon = icon("dashboard")),
+      menuItem("Demo", tabName = "demo", icon = icon("test")),
       br(),
       menuItem("Instructions", tabName = "instructions", icon = icon("gear")),
       br(),
@@ -37,27 +38,27 @@ dashboardPage(
         tabName = "download",
         icon = icon("download"),
         div(
-        textInput(
-          inputId = "filename",
-          placeholder = "Name download file",
-          label = "File name",
-          value = "Report"
-        )
-        ),
           textInput(
-            inputId = "UserName",
-            placeholder = "Name of user",
-            label = "User name",
-            value = "Annon"
-            
-          ),
+            inputId = "filename",
+            placeholder = "Name download file",
+            label = "File name",
+            value = "Report"
+          )
+        ),
+        textInput(
+          inputId = "UserName",
+          placeholder = "Name of user",
+          label = "User name",
+          value = "Annon"
+          
+        ),
         checkboxGroupInput('results', 'Choose results', c("All",'Grid table', 'Grid plot',"Distribution map"),
                            selected = "All",
-                     inline = FALSE
+                           inline = FALSE
         ),
-          radioButtons('format', 'Document format', c('PDF', 'Word',"HTML"),
-                       inline = TRUE
-                       ),
+        radioButtons('format', 'Document format', c('PDF', 'Word',"HTML"),
+                     inline = TRUE
+        ),
         div(
           downloadButton(
             outputId = "downloadReport",
@@ -345,16 +346,16 @@ dashboardPage(
               column(12,
                      align = "center",
                      h4(strong("Read me:"), "Before running the query, select the outputs you want to show by clicking in the + sign of each box. Note that this step might take a couple of seconds"),
-              actionButton("do",
-                           "Run Query",
-                           icon = icon("gear"),
-                           class = "btn-warning"
-                           ),
-              actionButton("reset",
-                           "Clear all",
-                           icon = icon("clean"),
-                           class = "btn-warning"
-              ),
+                     actionButton("do",
+                                  "Run Query",
+                                  icon = icon("gear"),
+                                  class = "btn-warning"
+                     ),
+                     actionButton("reset",
+                                  "Clear all",
+                                  icon = icon("clean"),
+                                  class = "btn-warning"
+                     ),
               ),
               hr(style = "border-top: 3px dashed lightgrey;"),
               h1("Results"),
@@ -362,16 +363,16 @@ dashboardPage(
               #______________________________________________________________________#
               ### Results ####
               #______________________________________________________________________#
-                fluidRow(
-                  #### Distribution map -----------------
-                  box(width = 6, 
-                      solidHeader = TRUE,
-                      collapsible = TRUE,
-                      collapsed = TRUE,
-                      title = "Stock's distribution",
-                      status = "success", # green color
-                      plotOutput("distPlot")
-                  )
+              fluidRow(
+                #### Distribution map -----------------
+                box(width = 6, 
+                    solidHeader = TRUE,
+                    collapsible = TRUE,
+                    collapsed = TRUE,
+                    title = "Stock's distribution",
+                    status = "success", # green color
+                    plotOutput("distPlot")
+                )
               ),
               fluidRow(
                 #### Regulatory units map -----------------
@@ -423,13 +424,110 @@ dashboardPage(
               ) # close third fluid row
       ), # Close tool body
       #______________________________________________________________________#
+      ## Demo ####
+      #______________________________________________________________________#
+      tabItem(tabName = "demo",
+              h1("Control panel"),
+              h4(strong("Read me:"),"Please select from the following options in the blue boxes.", em("Note that all options need to be selected in order for results to appear")),
+              #______________________________________________________________________#
+              ### Control panel ####
+              #______________________________________________________________________#
+              fluidRow(
+                # Select species box
+                box(
+                  width = 4,
+                  solidHeader = TRUE,
+                  collapsible = TRUE,
+                  title = "Select species",
+                  status = "primary", # blue color
+                  # p("Inst. Select here the species you want to explore"),
+                  selectizeInput(
+                    "SppSelection","",
+                    choices = c("Centropristis striata"),
+                    options = list(
+                      placeholder = 'Type or click to search for species',
+                      onInitialize = I('function() { this.setValue(""); }')
+                    )
+                  )
+                ),
+                box(
+                  width = 4,
+                  solidHeader = TRUE,
+                  collapsible = TRUE,
+                  title = 'Select survey season(s)',
+                  status = "primary",
+                  selectizeInput(
+                    'SurveySelection', 
+                    "", 
+                    choices = unique(spp_survey$region)[1],
+                    options = list(
+                      placeholder = 'Type or click to select a season',
+                      onInitialize = I('function() { this.setValue(""); }')
+                    ),
+                    selected = unique(spp_survey$region)[1]
+                  )
+                ),
+                box(
+                  width = 4,
+                  solidHeader = TRUE,
+                  collapsible = TRUE,
+                  title = "Select regulatory unit (s)",
+                  status = "primary",
+                  selectizeInput(
+                    'SpatSelection',
+                    "", choices = c("State waters"),
+                    options = list(
+                      placeholder = 'Type or click to select an approach',
+                      onInitialize = I('function() { this.setValue(""); }')
+                    ),
+                    selected = "State waters"
+                  )
+                )
+              ),
+              column(12,
+                     align = "center",
+                     h4(strong("Read me:"), "Before running the query, select the outputs you want to show by clicking in the + sign of each box. Note that this step might take a couple of seconds"),
+                     actionButton("do_demo",
+                                  "Run Demo",
+                                  icon = icon("gear"),
+                                  class = "btn-warning"
+                     )
+              ),
+              hr(style = "border-top: 3px dashed lightgrey;"),
+              h1("Results"),
+              h4("Here you will see the results from your query.", em("Note some graphs can take some time to appear depending on your internet connection")),
+              #______________________________________________________________________#
+              ### Results ####
+              #______________________________________________________________________#
+              fluidRow(
+                #### Demo Grid Map -----------------
+                #### Regulatory units map -----------------
+                box(width = 6,
+                    solidHeader = TRUE,
+                    collapsible = TRUE,
+                    collapsed = FALSE,
+                    title = "Regulatory Units",
+                    status = "success", # green color
+                    plotOutput("DemoRegUnit")
+                ),
+                box(width = 6, 
+                    solidHeader = TRUE,
+                    collapsible = TRUE,
+                    collapsed = FALSE,
+                    title = "Number of grids per regulatory area",
+                    status = "success", # green color
+                    formattableOutput("DemogridN")
+                )
+              ), # close DemoResults
+      ),# close DemoTab
+      #______________________________________________________________________#
       ## Instructions ####
       #______________________________________________________________________#
       tabItem(tabName = "instructions",
               p("plop")
-      )
+      ) # Close instructions
       
     )
-  )# Close instructions
+  )
 )
 # )
