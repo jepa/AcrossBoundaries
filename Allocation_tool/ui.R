@@ -8,7 +8,7 @@
 #
 
 
-MyFunctions::my_lib(c("ggmap","sf","tidyverse","tools","readr","data.table","maps","shiny","plotly","formattable","shinydashboard","shinyjs"))
+MyFunctions::my_lib(c("ggmap","sf","tidyverse","tools","readr","data.table","maps","shiny","plotly","formattable","shinydashboard","shinyjs","shinycssloaders"))
 
 spp_survey <- read.csv("./data/spp_region.csv") %>% 
   filter(
@@ -372,7 +372,7 @@ dashboardPage(
                     collapsed = TRUE,
                     title = "Stock's distribution",
                     status = "success", # green color
-                    plotOutput("distPlot")
+                    plotOutput("distPlot") %>% withSpinner(color="#0dc5c1",type = 6)
                 )
               ),
               fluidRow(
@@ -383,7 +383,7 @@ dashboardPage(
                     collapsed = TRUE,
                     title = "Regulatory Units",
                     status = "success", # green color
-                    plotOutput("RegUnit")
+                    plotOutput("RegUnit") %>% withSpinner(color="#0dc5c1",type = 6)
                 ),
                 box(width = 6, 
                     solidHeader = TRUE,
@@ -391,7 +391,7 @@ dashboardPage(
                     collapsed = TRUE,
                     title = "Number of grids per regulatory area",
                     status = "success", # green color
-                    formattableOutput("gridN")
+                    formattableOutput("gridN") %>% withSpinner(color="#0dc5c1",type = 6)
                 )
               ), # close firs fluid row
               fluidRow(
@@ -402,7 +402,8 @@ dashboardPage(
                     collapsed = TRUE,
                     title = "State's proportion",
                     status = "success", # green color
-                    plotOutput("propPlot")),
+                    plotOutput("propPlot") %>% withSpinner(color="#0dc5c1",type = 6)
+                    ),
                 #### Area plot -----------------
                 box(width = 6, 
                     solidHeader = TRUE,
@@ -410,7 +411,7 @@ dashboardPage(
                     collapsed = TRUE,
                     title = "Difference between historic and current distribution",
                     status = "success", # green color
-                    plotOutput("propDiffPlot")
+                    plotOutput("propDiffPlot") %>% withSpinner(color="#0dc5c1",type = 6)
                 )
               ),# # close second fluid row
               fluidRow(
@@ -420,7 +421,7 @@ dashboardPage(
                     collapsed = TRUE,
                     title = "Historical proportion of the stock",
                     status = "success", # green color
-                    formattableOutput("Allocation_tbl")
+                    formattableOutput("Allocation_tbl") %>% withSpinner(color="#0dc5c1",type = 6)
                 )
               ) # close third fluid row
       ), # Close tool body
@@ -508,7 +509,7 @@ dashboardPage(
                     collapsed = FALSE,
                     title = "Regulatory Units",
                     status = "success", # green color
-                    plotOutput("DemoRegUnit")
+                    plotOutput("DemoRegUnit") %>% withSpinner(color="#0dc5c1",type = 6)
                 ),
                 box(width = 6, 
                     solidHeader = TRUE,
