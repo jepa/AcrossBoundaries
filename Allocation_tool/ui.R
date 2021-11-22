@@ -21,6 +21,7 @@ dashboardPage(
   dashboardHeader(title = "Across Boundaries Project"),
   #______________________________________________________________________#
   # Sidebar  ####
+  # Incons https://rstudio.github.io/shinydashboard/appearance.html
   #______________________________________________________________________#
   dashboardSidebar(
     sidebarMenu(
@@ -28,8 +29,8 @@ dashboardPage(
       br(),
       menuItem("Information", tabName = "info", icon = icon("info")),
       br(),
+      menuItem("Demo", tabName = "demo", icon = icon("dashboard", lib = "glyphicon")),
       menuItem("Tool", tabName = "dashboard", icon = icon("dashboard")),
-      menuItem("Demo", tabName = "demo", icon = icon("test")),
       br(),
       menuItem("Instructions", tabName = "instructions", icon = icon("gear")),
       br(),
@@ -427,8 +428,8 @@ dashboardPage(
       ## Demo ####
       #______________________________________________________________________#
       tabItem(tabName = "demo",
-              h1("Control panel"),
-              h4(strong("Read me:"),"Please select from the following options in the blue boxes.", em("Note that all options need to be selected in order for results to appear")),
+              h1("Demo Control panel"),
+              h4(strong("Read me:"),"This is a demonstration control pannel. It is exactlly the same as the original control panel but it has fewer options. It is inteded for familiarization and exploration of the tool. Please select from the following options in the blue boxes.", em("Note that all options need to be selected in order for results to appear")),
               #______________________________________________________________________#
               ### Control panel ####
               #______________________________________________________________________#
@@ -440,7 +441,6 @@ dashboardPage(
                   collapsible = TRUE,
                   title = "Select species",
                   status = "primary", # blue color
-                  # p("Inst. Select here the species you want to explore"),
                   selectizeInput(
                     "SppSelection","",
                     choices = c("Centropristis striata"),
@@ -486,7 +486,7 @@ dashboardPage(
               ),
               column(12,
                      align = "center",
-                     h4(strong("Read me:"), "Before running the query, select the outputs you want to show by clicking in the + sign of each box. Note that this step might take a couple of seconds"),
+                     h4(strong("Read me:"), "Ii the original tool you will have to select the outputs you want to show by clicking in the + sign of each box, before running the query. This is not needed in for the Demo version"),
                      actionButton("do_demo",
                                   "Run Demo",
                                   icon = icon("gear"),
@@ -495,7 +495,7 @@ dashboardPage(
               ),
               hr(style = "border-top: 3px dashed lightgrey;"),
               h1("Results"),
-              h4("Here you will see the results from your query.", em("Note some graphs can take some time to appear depending on your internet connection")),
+              h4("Here you will see the results from your query."),
               #______________________________________________________________________#
               ### Results ####
               #______________________________________________________________________#
