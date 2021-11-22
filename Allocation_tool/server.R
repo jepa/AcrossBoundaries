@@ -38,41 +38,44 @@ state_order <- my_path("D", "Partial/grid_sw", name = "grid_eez_sw_df.csv", read
 # Grid data ####
 # ---------------------------- #
 # Load grid of state waters
-grid_eez_sw_sf <- st_read(my_path("D","Partial/grid_sw", name = "grid_eez_sw_sf.shp")) %>%
-    select(index,state,geometry) %>%
-    mutate(method = "state_waters",
-           state = str_to_sentence(state)) %>%
-    left_join(state_order)
+# grid_eez_sw_sf <- st_read(my_path("D","Partial/grid_sw", name = "grid_eez_sw_sf.shp")) %>%
+#     select(index,state,geometry) %>%
+#     mutate(method = "state_waters",
+#            state = str_to_sentence(state)) %>%
+#     left_join(state_order)
+# 
+# grid_eez_sw_sf$group <- factor(grid_eez_sw_sf$abrev,      # Reordering group factor levels
+#                                levels = state_order$abrev)
+# 
+# # Load grid of fishing ports
+# grid_eez_fp_sf <-  st_read(my_path("D","Partial/grid_fp", name = "grid_eez_fp.shp")) %>%
+#     select(index,abrev=stt_pst,geometry) %>%
+#     mutate(method = "fishing_port"#,
+#            # state = str_to_sentence(landing_port)
+#     )%>%
+#     left_join(state_order)
+# 
+# grid_eez_fp_sf$group <- factor(grid_eez_fp_sf$abrev,      # Reordering group factor levels
+#                                levels = state_order$abrev)
+# 
+# grid_eez_fp_sf <- arrange(grid_eez_fp_sf,group)
 
-grid_eez_sw_sf$group <- factor(grid_eez_sw_sf$abrev,      # Reordering group factor levels
-                               levels = state_order$abrev)
-
-# Load grid of fishing ports
-grid_eez_fp_sf <-  st_read(my_path("D","Partial/grid_fp", name = "grid_eez_fp.shp")) %>%
-    select(index,abrev=stt_pst,geometry) %>%
-    mutate(method = "fishing_port"#,
-           # state = str_to_sentence(landing_port)
-    )%>%
-    left_join(state_order)
-
-grid_eez_fp_sf$group <- factor(grid_eez_fp_sf$abrev,      # Reordering group factor levels
-                               levels = state_order$abrev)
-
-grid_eez_fp_sf <- arrange(grid_eez_fp_sf,group)
-
-grids <- my_path("D", "Partial/grid_fp", name = "grid_eez_fp_df.csv", read = T) %>%
+grids <- my_path("D", "Partial/grid_sw", name = "grid_eez_sw_df.csv", read = T) %>% 
     mutate(
-        spatial = "fp"
+        spatial = "sw"
     ) %>% 
+    left_join(state_order) %>% 
+    select(-order) %>% 
     bind_rows(
-        my_path("D", "Partial/grid_sw", name = "grid_eez_sw_df.csv", read = T)
+        my_path("D", "Partial/grid_fp", name = "grid_eez_fp_df.csv", read = T)
     ) %>% 
     select(-spp) %>% 
     mutate(
-        spatial = ifelse(is.na(spatial),"sw",spatial)
+        spatial = ifelse(is.na(spatial),"fp",spatial)
     ) %>% 
     distinct(.keep_all = T) %>% 
-    rename(landing_port = port_name)
+    rename(landing_port = port_name) %>% 
+    left_join(state_order)
 
 
 # ---------------------------- #
@@ -760,10 +763,21 @@ shinyServer(function(input, output,session) {
         
         output$DemoRegUnit <- renderPlot({
             
+            
+            grids_data <- grids %>% 
+                filter(spatial == "sw")
+            
+            grids_data$group <- factor(grids_data$abrev,      # Reordering group factor levels
+                                           levels = state_order$abrev)
+            
             gridExtra::grid.arrange(
                 # Overall (overlapping) position
-                ggplot(grid_eez_sw_sf) +
-                    geom_sf(aes(color =group , fill = group), alpha = 0.3) +
+                    ggplot(grids_data) +
+                    geom_tile(aes(x = lon,
+                                  y = lat,
+                                  color = group , 
+                                  fill = group), 
+                              alpha = 0.3) +
                     geom_sf(data = subset(us_map,ID %in% c("maine", "new hampshire", "massachusetts", "connecticut",
                                                            "rhode island", "new york", "new jersey", "delaware", "maryland",
                                                            "virginia", "north carolina"))
@@ -777,16 +791,20 @@ shinyServer(function(input, output,session) {
                     labs(x = "", y = "", title = "") +
                     theme(plot.title = element_text(size = 20)),
                 # Showing each state separately
-                ggplot(grid_eez_sw_sf) +
+                ggplot(grids_data) +
                     geom_sf(data = subset(us_map,ID %in% c("maine", "new hampshire", "massachusetts", "connecticut",
                                                            "rhode island", "new york", "new jersey", "delaware", "maryland",
                                                            "virginia", "north carolina"))
                     ) +
-                    geom_sf(aes(color = group),size = 0.1, alpha = 0.3) +
+                    geom_tile(aes(x = lon,
+                                  y = lat,
+                                  color =group , 
+                                  fill = group), 
+                              alpha = 0.3) +
                     facet_wrap(~ group) +
                     theme(legend.position = "top") +
                     scale_color_manual(values = state_pallet,
-                                       labels = grid_eez_sw_sf %>% arrange(order) %>%  pull(state) %>% unique()) +
+                                       labels = grids_data %>% arrange(group) %>%  pull(group) %>% unique()) +
                     ggtitle("") +
                     my_ggtheme_p(leg_pos = "",
                                  ax_tx_s = 11,
