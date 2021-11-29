@@ -1270,12 +1270,10 @@ state_lat <- historic_spp %>%
     order = mean(lat)
   ) %>% 
   filter(!is.na(state)) %>% 
-  mutate(abrev = c("CT","DE","ME","MD","MA","NH","NJ","NY","NC","RI","VA")
+  mutate(abrev = c("CT","DE","ME","MD","MA","NH","NJ","NY","NC","RI","VA"),
+         order = ifelse(abrev == "ME", order+1,order)
   ) %>% 
-  arrange(desc(order)) %>% 
-  mutate(lat = order,
-    # order = letters[1:11],
-    order = c("b","a",letters[3:11]),)
+  arrange(desc(order)) 
 
 
 
