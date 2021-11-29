@@ -148,7 +148,9 @@ ports_data <- read_excel(ports_path,sheet = 2) %>%
                         common_name)
     ),
     total_live_pounds = as.numeric(total_live_pounds),
-    total_value = as.numeric(total_value)
+    total_value = as.numeric(total_value),
+    # Allocate all bsb NC data to Wanchese
+    port_name = ifelse(species_name == "black sea bass" & state_postal == "nc" & port_name == "unknown","wanchese",port_name)
   ) %>% 
   filter(
     !port_name %in% c("**roll-up to state-wide**","**roll-up to coast-wide**","unknown")
@@ -168,6 +170,21 @@ overall_port_data <- ports_data %>%
     year_value = sum(total_value)
   ) 
 
+# quantiles_df <- overall_port_data %>% 
+#   group_by(species_name) %>% 
+#   summarise(
+#     "95th" = quantile(year_ton, 0.95),
+#     "75th" = quantile(year_ton, 0.75),
+#     "50th" = quantile(year_ton, 0.50)) %>% 
+#   gather("tresh","quant",`95th`:`50th`)
+# 
+# 
+# top_portsb <- overall_port_data %>% 
+#   left_join(quantiles_df,
+#             by = "species_name") %>% 
+#   mutate(
+#     treshold = ifelse(year_ton >= quant,tresh,NA) 
+#   )
 
 top_ports <- bind_rows(
   # 75th percentile used in project
@@ -181,13 +198,13 @@ top_ports <- bind_rows(
   # 95%
   overall_port_data %>% 
     group_by(species_name) %>% 
-    top_frac(0.5,year_ton) %>%  
-    mutate(tresh = "95th"),
+    top_frac(0.05,year_ton) %>%  
+    mutate(tresh = "95th"), # top 95
   # 85%
   overall_port_data %>% 
     group_by(species_name) %>% 
     top_frac(0.15,year_ton) %>% 
-    mutate(tresh = "85th"),
+    mutate(tresh = "85th"), # top 85
   # 65%
   overall_port_data %>% 
     group_by(species_name) %>% 
@@ -196,7 +213,7 @@ top_ports <- bind_rows(
   # 50%
   overall_port_data %>% 
     group_by(species_name) %>% 
-    top_frac(0.5,year_ton) %>%  # top 75
+    top_frac(0.5,year_ton) %>%  # top 50
     mutate(tresh = "50th")
 )
   
@@ -355,9 +372,9 @@ noaa_ports_complete %>%
   View()
 
 # Save data for future analysis
-# write_csv(noaa_ports_complete,
-#           my_path("D","Partial", name = "top_ports.csv")
-#           )
+write_csv(noaa_ports_complete,
+          my_path("D","Partial", name = "top_ports.csv")
+          )
 
 noaa_ports_complete
 
@@ -492,6 +509,9 @@ Here we expand a grid within the buffer so we can estimate the proportion of eac
 
 # Create grid of the region
 bbox <- c(st_bbox(state_bf))
+
+# xmin      ymin      xmax      ymax 
+# -82.57346  29.77459 -62.88543  49.19141 
 
 # Expand the grid
 ne_grid <- expand.grid(
@@ -704,18 +724,30 @@ state_names <- grid_eez_sw_df %>%
   distinct(.keep_all = T)
 
 # Get the overlapping segments 
-# NOTE: Takes some gooooood time (~20 min)
+# NOTE: Takes some gooooood time (~ min)
 Sys.time()
 grid_eez_sf_fp <- st_intersection(grid_fp_sf,eez_sf)
 Sys.time()
 
-write_sf(grid_eez_sf_fp, my_path("D", "Partial/grid_fp",name="grid_eez_fp.shp"))
+
+grid_eez_sf_fp_save <- grid_eez_sf_fp %>% 
+  select(spp = species_name,
+         index,
+         port_name,
+         abrev = state_postal,
+         geometry) %>% 
+  left_join(as.data.frame(land_sf),
+            by = "abrev") %>% 
+  select(-geom,-ID)
+
+write_sf(grid_eez_sf_fp_save, my_path("D", "Partial/grid_fp",name="grid_eez_fp.shp"))
 
 # Get final df with index
-grid_eez_fp_df <- as.data.frame(grid_eez_sf_fp) %>%
-  select(index,port_name,abrev=state_postal,spp=species_name) %>% 
-  left_join(ne_grid,
-            by = "index")
+grid_eez_fp_df <- as.data.frame(st_coordinates(grid_eez_sf_fp_save)) %>% 
+  rename(lon = X, lat = Y) %>% 
+  bind_cols(grid_eez_sf_fp_save) %>% 
+  select(-geometry)
+
 
 write_csv(grid_eez_fp_df, my_path("D", "Partial/grid_fp",name = "grid_eez_fp_df.csv"))
 
@@ -726,8 +758,6 @@ grid_eez_sf_fp %>%
   scale_color_manual(values = state_pallet) +
   geom_sf(data = eez_sf,aes(), fill = NA) +
   theme_dark()
-
-
 
 
 ```
@@ -1124,9 +1154,10 @@ grids_sw <- bind_rows(
   my_path("D", "Partial/grid_sw", name = "grid_eez_sw_df.csv", read = T) %>% 
     mutate(spp = "Centropristis striata")
 ) %>% 
+  left_join(land_sf) %>% 
+  select(index,state,abrev,lat,lon,spp) %>% 
   mutate(spatial = "sw",
-         port_name = NA,
-         abrev = NA
+         port_name = NA
          )
 
 grids_fp <- my_path("D", "Partial/grid_fp", name = "grid_eez_fp_df.csv", read = T
