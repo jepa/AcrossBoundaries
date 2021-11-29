@@ -1789,9 +1789,14 @@ diff_plot <- land_sf %>%
   filter(season == "Difference") %>% 
   ggplot() +
   geom_sf(aes(fill = mean_per)) +
-  viridis::scale_fill_viridis("Difference (%)", alpha = 0.8,option = "C",
-                              breaks = seq(0,5,1),
-                              limits=(c(0,5)),
+  # viridis::scale_fill_viridis("Difference (%)", alpha = 0.8,option = "C",
+  #                             breaks = seq(0,5,1),
+  #                             limits=(c(0,5)),
+  #                             # labels = c("<-10",seq(-75,75,25),">100")
+  #                             ) +
+  scale_fill_gradient2("% Difference\n(Fall-Spring)", 
+                       breaks = seq(-4,4,2),
+                       limits=(c(-4,4)),
                               # labels = c("<-10",seq(-75,75,25),">100")
                               ) +
   facet_grid(season~ spp+label) +
