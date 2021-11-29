@@ -1,11 +1,22 @@
 ---
 title: "Quantifying fish range shifts across poorly defined management boundaries"
-subtitle: "DRAFT. Target journal *PlosOne*"
-author: "Palacios-Abrantes Juliano, Crosson Scott, Dumas Chris, Fujita Rod, Levine Arielle, Longo Catherine, Jensen Olaf"
+author: "DRAFT. Target journal *PlosOne*"
+subtitle: "Juliano Palacios-Abrantes*^1^, Scott Crosson^2^, Chris Dumas^3^, Rod Fujita^4^, Arielle Levine^5^, Catherine Longo^6^, Olaf Jensen^1^"
+date: "Affiliations: ^1^Center for Limnology, University of Wisconsin-Madison, US. ^2^National Oceanic and Atmospheric Administration, US. ^3^University of North Carolina Wilmington, US. ^4^Rod Fujita, Environmental Defense Fund, US. ^5^San Diego State University, US. ^6^Marine Stewardship Council, UK."
 output: 
   bookdown::word_document2:
     number_section: no
     toc: no
+    latex_engine: xelatex
+bibliography: ../References/Across_Bound_Ref.bib
+csl: ../References/plos-one.csl
+header-includes:
+  - \usepackage{setspace}
+  - \usepackage{caption}
+  - \usepackage[left]{lineno} # for numbers in lines
+  - \usepackage{float} # Use the 'float' package
+  - \captionsetup[figure]{name = Fig}
+  - \floatplacement{figure}{H}
 ---
 
 
@@ -124,6 +135,8 @@ tibble(
 
 
 Distribution data for all three species was gathered from NOAA's yearly Northeast Fisheries Science Center Spring and Fall Bottom Trawl Surveys [data](https://www.fisheries.noaa.gov/region/new-england-mid-atlantic#science) provided by [Ocean adapt](https://oceanadapt.rutgers.edu/) and standardized as catch per unit of effort (CPUE) [@Pinsky2013]. CPUE was defined as trawl-catch in weight per area swept (kg/ha). For the extrapolation and subsequent analysis we focused on the Atlantic U.S. EEZ spatial division using the *Sea Around Us* shape file (updated 2020; http://www.seaaroundus.org). The EEZ shapefile was gridded to a 3 x 3 degrees matrix. We extrapolated trawl CPUE data to the U.S. EEZ from the southern border of North Carolina to the U.S.-Canadian border by following a triangular irregular surface (TIS) method using the *R* package *interp* [@REFInterp]. Overall, the TIS method creates multiple non-overlapping triangles that cover the entire extrapolated region (i.e., the EEZ) from an initial set of sample points (i.e., NOAAs survey) generating a spatially-continuous surface [@REF; @REF]. The extrapolation was done separately for both Fall and Spring seasons covering the time period of 1971 to 2019.
+
+**WANCHEESE NORTH CAROLINA FOR BLACK SEA BASS**
 
 ## Determining regulatory units
 
