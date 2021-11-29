@@ -1162,7 +1162,14 @@ grids_sw <- bind_rows(
 
 grids_fp <- my_path("D", "Partial/grid_fp", name = "grid_eez_fp_df.csv", read = T
 ) %>%
-  mutate(spatial = "fp")
+  mutate(spatial = "fp",
+  spp = ifelse(spp == "summer flounder","Paralichthys dentatus", 
+                 ifelse(spp == "scup", "Stenotomus chrysops", 
+                        "Centropristis striata"
+                 )
+    )
+  )
+  
 
 # Join both approaches
 grids <- bind_rows(grids_sw,grids_fp)
@@ -1240,9 +1247,12 @@ historic_spp <- bind_rows(lapply(taxon_sw, fread)) %>%
 #   geom_sf(data = land_sf,aes()) +
 #   geom_sf(data = eez_sf, aes(), fill =NA)
 
-unique(historic_spp$spp)
-unique(historic_spp$region)
-unique(historic_spp$season)
+# Data summary
+c(unique(historic_spp$spp),
+  unique(historic_spp$region),
+  unique(historic_spp$season),
+  unique(historic_spp$spatial)
+)
 
 # Periods
 periods <-tibble(
@@ -1641,7 +1651,7 @@ reg_unit <- state_fit %>%
   mutate(fp = replace_na(fp,0)) %>%
   # View()
   mutate(
-    difference = abs(fp-sw),
+    difference = fp-sw,
     difference = ifelse(difference > 100,100,
                         ifelse(difference < -100,-100,difference)
     )
@@ -1683,9 +1693,14 @@ diff_plot <- land_sf %>%
   filter(spatial == "Difference") %>% 
   ggplot() +
   geom_sf(aes(fill = mean_per)) +
-  viridis::scale_fill_viridis("Difference (%)", alpha = 0.8,option = "C",
-                              breaks = seq(0,25,5),
-                              limits=(c(0,25)),
+  # viridis::scale_fill_viridis("Difference (%)", alpha = 0.8,option = "C",
+  #                             breaks = seq(0,25,5),
+  #                             limits=(c(0,25)),
+  #                             # labels = c("<-10",seq(-75,75,25),">100")
+  #                             ) +
+  scale_fill_gradient2("% Difference\n(fp-sw)", 
+                       breaks = seq(-14,35,7),
+                       limits=(c(-14,35)),
                               # labels = c("<-10",seq(-75,75,25),">100")
                               ) +
   facet_grid(spatial~ spp+label) +
@@ -1737,7 +1752,7 @@ season_fit <- state_fit %>%
   filter(spatial != "fp") %>%
   spread(season,mean_per) %>%
   mutate(
-    Difference = abs(Fall-Spring),
+    Difference = Fall-Spring,
     Difference = ifelse(Difference > 100,100,
                         ifelse(Difference < -100,-100,Difference)
     )
