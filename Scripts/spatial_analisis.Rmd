@@ -1291,18 +1291,19 @@ state_lat <- historic_spp %>%
 
 state_pallet <- c(wes_palette(n = 5, name = "Darjeeling1"),
                                wes_palette(n = 5, name = "Darjeeling2"),
-                               # wes_palette(n = 2, name = "GrandBudapest1")
                   "#FD6467"
                   )
 
+length(state_pallet)
 
+barplot(c(1,2,3,4,5,6,7,8,9,10,11), col=state_pallet)
 
 # print for notebook
 head(historic_spp)
 ```
 
 
-## Regulatory units result
+## F1 Regulatory units result
 
 ```{r cropped_plot_paper, eval = F, echo = T}
 
@@ -1904,8 +1905,8 @@ ssp_area <-
     aes(
       x = year,
       y = round(RMean),
-      fill = order
-      # fill = state
+      # fill = abrev
+      fill = state
     )
   ) +
   geom_area(data = historic_periods,
@@ -1918,13 +1919,12 @@ ssp_area <-
              alpha = 0.3,
             stat = "identity"
              ) +
-
   ylab("Propotion (10 yrs running average)") +
   # viridis::scale_fill_viridis(discrete = T, alpha = 0.8) +
   scale_fill_manual(
     "State\n(Latitudinal order)",
-    values = state_pallet,
-    labels = state_fit %>% arrange(order) %>%  pull(state) %>% unique()
+    values = c(state_pallet[1:10],state_pallet[10]),
+                      labels = state_fit %>% arrange(desc(order)) %>%  pull(state) %>% unique()
   ) +
     scale_color_manual("",values = "grey90"
   ) +
