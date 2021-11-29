@@ -1300,42 +1300,28 @@ head(historic_spp)
 
 #### Data needed ####
 
-# Get state order from North to south
-state_order <- my_path("D","Spatial/grid_eez_sw", name = "grid_eez_sw_df.csv",read = T) %>%
-  group_by(state) %>% 
-  summarise(
-    order = mean(lat)
-  ) %>% 
-  mutate(abrev = c("CT","DE","ME","MD","MA","NH","NJ","NY","NC","RI","VA")
-  ) %>% 
-  arrange(desc(order)) %>% 
-  mutate(order= c("b","a",letters[3:11])) %>% # weirdly maine goes below
-  arrange(order)
-
-
-
 # Load grid of state waters
-grid_eez_sw_sf <-  st_read(my_path("D","Spatial/grid_eez_sw", name = "grid_eez_sw_sf.shp")) %>%
+grid_eez_sw_sf <-  st_read(my_path("D","Partial/grid_sw", name = "grid_eez_sw_sf.shp")) %>%
   select(index,state,geometry) %>% 
   mutate(method = "state_waters",
          state = str_to_sentence(state)) %>% 
-  left_join(state_order)
+  left_join(state_lat)
 
 grid_eez_sw_sf$group <- factor(grid_eez_sw_sf$abrev,      # Reordering group factor levels
-                               levels = state_order$abrev)
+                               levels = state_lat$abrev)
 
 
 # Load grid of fishing ports
-grid_eez_fp_sf <-  st_read(my_path("D","Spatial/grid_eez_fp", name = "grid_eez_fp.shp")) %>%
-  select(index,abrev=lndng_s,geometry) %>% 
+grid_eez_fp_sf <-  st_read(my_path("D","Partial/grid_fp", name = "grid_eez_fp.shp")) %>%
+  select(index,abrev,geometry) %>% 
   mutate(method = "fishing_port"#,
          # state = str_to_sentence(landing_port)
          )%>% 
-  left_join(state_order)
+  left_join(state_lat)
 
 
 grid_eez_fp_sf$group <- factor(grid_eez_fp_sf$abrev,      # Reordering group factor levels
-                               levels = state_order$abrev)
+                               levels = state_lat$abrev)
 
 grid_eez_fp_sf <- arrange(grid_eez_fp_sf,group)
 # Plotting 
@@ -1403,8 +1389,8 @@ p_fp <- gridExtra::grid.arrange(
                                    hjust = 1) +
     # scale_color_manual(values = state_pallet) +
     # scale_fill_manual(values = state_pallet) +
-    scale_color_manual(values = c(state_pallet[3:4],state_pallet[6:13])) +
-    scale_fill_manual(values = c(state_pallet[3:4],state_pallet[6:13])) +
+    scale_color_manual(values = c(state_pallet[3:7],state_pallet[9:11])) +
+    scale_fill_manual(values = c(state_pallet[3:7],state_pallet[9:11])) +
     my_ggtheme_p(leg_pos = "",
                  ax_tx_s = 13) +
     coord_sf(ylim = c(30,48)) +
@@ -1420,7 +1406,7 @@ p_fp <- gridExtra::grid.arrange(
     # geom_point(data = rename(ports_df, group = state_postal), aes(x = lon, y = lat), color = "#E6A0C4") +
     theme(legend.position = "top") +
     # scale_color_manual(values = state_pallet,
-    scale_color_manual(values = c(state_pallet[3:4],state_pallet[6:13]),
+    scale_color_manual(values = c(state_pallet[3:7],state_pallet[9:11]),
                        # labels = unique(grid_eez_fp_sf$group)) +
                        labels = grid_eez_fp_sf %>% arrange(order) %>%  pull(state) %>% unique()) +
     ggtitle("") +
