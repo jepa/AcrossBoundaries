@@ -1905,8 +1905,8 @@ ssp_area <-
     aes(
       x = year,
       y = round(RMean),
-      # fill = abrev
-      fill = state
+      fill = abrev
+      # fill = state
     )
   ) +
   geom_area(data = historic_periods,
@@ -1921,13 +1921,11 @@ ssp_area <-
              ) +
   ylab("Propotion (10 yrs running average)") +
   # viridis::scale_fill_viridis(discrete = T, alpha = 0.8) +
-  scale_fill_manual(
-    "State\n(Latitudinal order)",
-    values = c(state_pallet[1:10],state_pallet[10]),
-                      labels = state_fit %>% arrange(desc(order)) %>%  pull(state) %>% unique()
-  ) +
-    scale_color_manual("",values = "grey90"
-  ) +
+  scale_fill_manual("State\n(Latitudinal order)",
+                    values = state_pallet,
+                               labels = state_fit %>% arrange(desc(order)) %>%  pull(state) %>% unique()
+                    ) +
+    scale_color_manual("",values = "grey90") +
   facet_grid(spp~spatial) +
   scale_x_continuous(breaks = seq(1979,2015,9),limits = c(1979,2015))+
   xlab("Year") +
