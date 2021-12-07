@@ -123,11 +123,11 @@ tibble(
       0.0002490 #NC
     )
 ) %>% 
-  mutate_if(is.numeric,round,3) %>% 
-  mutate_if(is.numeric,~.*100) %>% 
-  # readr::write_csv("quota_table.csv")
-  # group_by() %>% #just checking they add up
-  # summarise_if(is.numeric,sum)
+  mutate_if(is.numeric,round,3) %>%
+  mutate_if(is.numeric,~.*100) %>%
+  readr::write_csv("../Results/quota_table.csv")
+  group_by() %>% #just checking they add up
+  summarise_if(is.numeric,sum)
   kable("latex",
         caption = "State wide commercial quota allocation for black sea bass (*Centropristis striata*), summer flounder (*Paralichthys dentatus*) and scup (*Stenotomus chrysops*) according to the Mid-Atlantic Fishery Management Council. Values shown as percentage of total quota. States ordered latitudinally"
         )
