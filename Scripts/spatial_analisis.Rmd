@@ -544,6 +544,13 @@ state_sf %>%
   theme_bw() +
   theme_dark()
 
+
+
+expand.grid(
+    lon = seq(from = 40, to = 44, by = 0.1),
+    lat = seq(from = 40, to = 45, by = 0.1)
+) 
+
 ```
 
 ##### 2.1 Create grid for interpolation
@@ -1225,7 +1232,7 @@ historic_spp <- bind_rows(lapply(taxon_sw, fread)) %>%
     label = ifelse(spp == "Paralichthys dentatus" & year >= 1980 & year <= 1986,"Reference",
                    ifelse(spp == "Stenotomus chrysops" & year >= 1988 & year <= 1992,"Reference",
                           ifelse( spp == "Centropristis striata" & year >= 1980 & year <= 2001,"Reference",
-                                 ifelse(year > 2001,"Today",NA)
+                                 ifelse(year > 2009,"2010-2019",NA)
                           )
                    )
     )
@@ -1305,6 +1312,71 @@ head(historic_spp)
 
 ## F1 Regulatory units result
 
+```{r numbers_for_paper}
+
+# Estimate Area
+# Degree ressolution for area estimation
+# https://rdrr.io/github/stineb/rbeni/src/R/area.R
+# https://www.pmel.noaa.gov/maillists/tmap/ferret_users/fu_2004/msg00023.html
+# https://www.engr.scu.edu/~emaurer/tools/calc_cell_area_cgi.pl
+
+r_earth <- 6371000 # NASA's volumetric mean radious https://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html
+res_lon <- 0.3 # data degree ressolution 
+
+grids %>% 
+  group_by(state,spatial,spp,index,lat,lon) %>%
+  tally() %>% 
+  # View()
+  mutate(
+    area = (4 * r_earth^2 * 0.5 * 0.3 * pi/180 * cos(abs(lat) * pi/180 ) * sin(0.5 * 0.3 * pi/180))/1000000
+  ) %>% 
+  # View()
+  group_by(state,spatial,spp) %>%
+  summarise(tot_area = sum(area)) %>% 
+  select(-spp) %>%
+  group_by(state,spatial) %>%
+  top_n(1,tot_area) %>%
+  group_by(state,spatial) %>%
+  summarise(tot_area = mean(tot_area)) %>%
+  spread(spatial,tot_area) %>%
+  mutate(
+    # fp = replace_na(fp,0),
+    diff = round((abs(fp-sw))/((fp+sw)/2)*100)
+  ) %>% 
+  View()
+
+
+# Estimate distance between points
+
+my_path("D","Partial","top_ports.csv", read = T) %>% 
+  filter(tresh == "75th",
+         state_postal == "NY") %>% 
+  ggplot() +
+  geom_point(
+    aes(
+      x = lon,
+      y = lat,
+      color = port_name
+    )
+  )
+
+# Most distant ports Mntauk and point lookout
+   
+
+ny_dist <- grids %>% 
+  filter(port_name %in% c("montauk","point lookout")) %>% 
+  group_by(port_name) %>% 
+  summarise_at(vars(lat,lon),
+               mean)
+  
+
+# Distance between furthest ports in NY
+geosphere::distm(c(ny_dist$lon[1], ny_dist$lat[1]), c(ny_dist$lon[2], ny_dist$lat[2]), fun = geosphere::distHaversine)/1000
+
+```
+
+
+
 ```{r cropped_plot_paper, eval = F, echo = T}
 
 #### Data needed ####
@@ -1318,7 +1390,6 @@ grid_eez_sw_sf <-  st_read(my_path("D","Partial/grid_sw", name = "grid_eez_sw_sf
 
 grid_eez_sw_sf$group <- factor(grid_eez_sw_sf$abrev,      # Reordering group factor levels
                                levels = state_lat$abrev)
-
 
 # Load grid of fishing ports
 grid_eez_fp_sf <-  st_read(my_path("D","Partial/grid_fp", name = "grid_eez_fp.shp")) %>%
@@ -1441,7 +1512,10 @@ ggsave(filename = "buffer_figure.jpg",
 
 ```
 
-## Interpolation result
+
+
+
+## F2 Interpolation result
 
 ```{r}
 
@@ -1501,6 +1575,10 @@ centroid_db <- historic_spp %>%
 # For alternative color pallet
 pal <- wes_palette("Zissou1",100,type = "continuous")
 
+# For face order
+interpol_result$labelx = factor(interpol_result$label, levels=c("Reference","2010-2019"))
+centroid_db$labelx = factor(centroid_db$label, levels=c("Reference","2010-2019"))
+
 inter_map <- ggplot() +
   geom_tile(data = subset(interpol_result, mean_cpue == 0),
             aes(
@@ -1526,7 +1604,7 @@ inter_map <- ggplot() +
                y = lat
              ),
              shape = 3,
-             color = "white"
+             color = "black"
   ) + 
   geom_sf(data = land_sf,aes()) +
   labs(x = "Longitude",
@@ -1549,20 +1627,20 @@ inter_map <- ggplot() +
 #                     end = 0.9
 #                     ) +
 # wes anderson option
-scale_fill_gradientn("CPUE",
+scale_fill_gradientn("CPUE\n(log 10)",
                      colours = pal,
                      # limits = c(0,40) # For cpue
                      limits = c(-5,1) # for log10
 
 ) +
-  scale_color_gradientn("CPUE",
+  scale_color_gradientn("CPUE\n(log 10)",
                         colours = pal,
                         # limits = c(0,40) # for cpue
                         limits = c(-5,1) # for log10
   ) +
-  facet_grid(spp~season+label) +
-  my_ggtheme_m(map_type = "na", leg_pos = "right",ax_tx_s = 7,ax_tl_s = 10,leg_tx_s = 12) #+
-# theme(legend.key.width = unit(3,"line"))
+  facet_grid(spp~season+labelx) +
+  my_ggtheme_m(map_type = "na", leg_pos = "right",ax_tx_s = 7,ax_tl_s = 10,leg_tx_s = 12)
+  
 
 
 ggsave("interpolation_wa.jpg",
@@ -1570,6 +1648,7 @@ ggsave("interpolation_wa.jpg",
        path = my_path("R","Figures"),
        width = 9,
        height = 7)
+
 
 ```
 
@@ -1665,6 +1744,9 @@ reg_unit <- state_fit %>%
   )
 
 
+# For face order
+reg_unit$labelx = factor(reg_unit$label, levels=c("Reference","2010-2019"))
+
 # The plot
 map_plot <- land_sf %>% 
   left_join(reg_unit,
@@ -1676,7 +1758,7 @@ map_plot <- land_sf %>%
                               breaks = seq(0,35,5),
                               limits=(c(0,35))
                               )+
-  facet_grid(spatial~ spp+label) +
+  facet_grid(spatial~ spp+labelx) +
   labs(x = "", 
        y = "") +
   my_ggtheme_p(facet_tx_s = 20,
@@ -1685,7 +1767,7 @@ map_plot <- land_sf %>%
                ax_tx_s = 12,
                ax_tl_s = 18,
                hjust = 1) +
-  theme(legend.key.width = unit(4,"line")) 
+  theme(legend.key.width = unit(4,"line"))
 
 
 diff_plot <- land_sf %>% 
@@ -1704,7 +1786,7 @@ diff_plot <- land_sf %>%
                        limits=(c(-14,35)),
                               # labels = c("<-10",seq(-75,75,25),">100")
                               ) +
-  facet_grid(spatial~ spp+label) +
+  facet_grid(spatial~ spp+labelx) +
   labs(x = "", 
        y = "") +
   my_ggtheme_p(facet_tx_s = 20,
@@ -1719,12 +1801,29 @@ diff_plot <- land_sf %>%
         ) 
 
 
+
+library(cowplot)
+
+
 # Cowplot option
 p <- ggdraw() +
   # Revenue circular
   draw_plot(map_plot, x = 0, y = 0.2, width = 1, height = 0.8) +
   # Catch circular
   draw_plot(diff_plot, x = 0, y = 0, width = 1, height = 0.4) +
+  # Logos/images
+  # draw_image("https://media.fisheries.noaa.gov/styles/original/s3/dam-migration/640x427-black-sea-bass.png?itok=7Ax8suz_", 
+  #            x = -0.31,
+  #            y = 0.345, 
+  #            scale = 0.15) +
+  # draw_image("https://media.fisheries.noaa.gov/styles/original/s3/dam-migration/scup.png?itok=noMUoDe0", 
+  #            x = 0.05,
+  #            y = 0.345, 
+  #            scale = 0.15) +
+  # draw_image("https://media.fisheries.noaa.gov/styles/original/s3/2021-03/640x427-summer-flounder.png?itok=B6G4jkW7", 
+  #            x = 0.35,
+  #            y = 0.345, 
+  #            scale = 0.15) +
   draw_plot_label(label = c("Latitude", "Longitude"), 
                   size = 18,
                   angle = c(90,0),
@@ -1740,6 +1839,7 @@ save_plot(
   base_height = 14,
   base_width = 14
 )
+
 
 
 ```
@@ -1761,6 +1861,11 @@ season_fit <- state_fit %>%
   gather("season","mean_per",Fall:Difference) %>% 
   mutate(spp = gsub(" ","\n",spp))
 
+
+# For face order
+season_fit$labelx = factor(season_fit$label, levels=c("Reference","2010-2019"))
+
+
 # The plot
 map_plot <- land_sf %>% 
   left_join(season_fit,
@@ -1772,7 +1877,7 @@ map_plot <- land_sf %>%
                               breaks = seq(0,15,5),
                               limits=(c(0,15))
                               )+
-  facet_grid(season~ spp+label) +
+  facet_grid(season~ spp+labelx) +
   labs(x = "", 
        y = "") +
   my_ggtheme_p(facet_tx_s = 20,
@@ -1796,11 +1901,11 @@ diff_plot <- land_sf %>%
   #                             # labels = c("<-10",seq(-75,75,25),">100")
   #                             ) +
   scale_fill_gradient2("% Difference\n(Fall-Spring)", 
-                       breaks = seq(-4,4,2),
-                       limits=(c(-4,4)),
+                       breaks = seq(-5,5,1),
+                       limits=(c(-5,5)),
                               # labels = c("<-10",seq(-75,75,25),">100")
                               ) +
-  facet_grid(season~ spp+label) +
+  facet_grid(season~ spp+labelx) +
   labs(x = "", 
        y = "") +
   my_ggtheme_p(facet_tx_s = 20,
