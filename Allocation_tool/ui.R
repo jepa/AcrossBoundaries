@@ -391,6 +391,12 @@ dashboardPage(
                     collapsed = TRUE,
                     title = "Regulatory Units",
                     status = "success", # green color
+                    # Include number of maps 
+                    radioButtons('map_type', "Map type", 
+                                 c("Both",'Overlapping',"By State"),
+                                 selected = "Both",
+                                 inline = TRUE
+                    ),
                     plotOutput("RegUnit") %>% withSpinner(color="#0dc5c1",type = 6)
                 ),
                 box(width = 6, 
