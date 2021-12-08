@@ -23,9 +23,10 @@ sf::sf_use_s2(use_s2 = FALSE)
 
 
 # Create specific state pallet from our friend Wes Andersson
+
 state_pallet <- c(wes_palette(n = 5, name = "Darjeeling1"),
                                wes_palette(n = 5, name = "Darjeeling2"),
-                               wes_palette(n = 3, name = "Royal1")
+                  "#FD6467"
                   )
 
 ```
@@ -1294,12 +1295,6 @@ state_lat <- historic_spp %>%
 
 
 
-# State pallet
-
-state_pallet <- c(wes_palette(n = 5, name = "Darjeeling1"),
-                               wes_palette(n = 5, name = "Darjeeling2"),
-                  "#FD6467"
-                  )
 
 length(state_pallet)
 
@@ -1311,6 +1306,8 @@ head(historic_spp)
 
 
 ## F1 Regulatory units result
+
+### NUmbers for papaer
 
 ```{r numbers_for_paper}
 
@@ -1376,6 +1373,7 @@ geosphere::distm(c(ny_dist$lon[1], ny_dist$lat[1]), c(ny_dist$lon[2], ny_dist$la
 ```
 
 
+### Figure plotting
 
 ```{r cropped_plot_paper, eval = F, echo = T}
 
@@ -1396,7 +1394,7 @@ grid_eez_fp_sf <-  st_read(my_path("D","Partial/grid_fp", name = "grid_eez_fp.sh
   select(index,abrev,geometry) %>% 
   mutate(method = "fishing_port"#,
          # state = str_to_sentence(landing_port)
-         )%>% 
+         ) %>% 
   left_join(state_lat)
 
 
