@@ -178,6 +178,42 @@ shinyServer(function(input, output,session) {
         # Regulatory Units ####
         # ---------------------------- #
         
+        grids_sw_data <- reactive({
+        
+            # State waters data
+            sw_data <- grids %>% 
+            filter(spatial == "sw")
+
+        sw_data$group <- factor(sw_data$abrev,      # Reordering group factor levels
+                                      levels = state_order$abrev)
+        sw_data
+        })
+        
+        
+        grids_fp_data <- reactive({
+            
+            
+            # Fishing port data
+            grids_fp_data <- grids %>% 
+                filter(spatial == "fp",
+                       spp == input$SppSelection) 
+            
+            empty_data <- grids %>% 
+                filter(spatial == "sw")%>% 
+                filter(!state %in% unique(grids_fp_data$state)) %>% 
+                group_by(state,abrev,spp,spatial) %>% 
+                tally()
+            
+            fp_data <- grids_fp_data %>% bind_rows(empty_data)
+            
+        
+            
+            fp_data$group <- factor(fp_data$abrev,      # Reordering group factor levels
+                                          levels = state_order$abrev)
+            
+            fp_data
+        })
+        
         ## ---------------------------- ##
         #### Table #####
         ## ---------------------------- ##
@@ -275,36 +311,10 @@ shinyServer(function(input, output,session) {
         # ---------------------------- #        
         output$RegUnit <- renderPlot({
             
-            # if(input$SpatSelection == "Both apporaches"){
             
-            # State waters data
-            grids_sw_data <- grids %>% 
-                filter(spatial == "sw")
+            grids_sw_data <- grids_sw_data() 
             
-            
-            # Fishing port data
-            grids_fp_data <- grids %>% 
-                filter(spatial == "fp",
-                       spp == input$SppSelection) #%>% 
-            # group_by(index,state,abrev,lat,lon,spatial,port_name) %>% 
-            # summarise(n())
-            
-            empty_data <- grids_sw_data %>% 
-                filter(!state %in% unique(grids_fp_data$state)) %>% 
-                group_by(state,abrev,spp,spatial) %>% 
-                tally()
-            
-            grids_fp_data <- grids_fp_data %>% bind_rows(empty_data)
-            
-            
-            
-            grids_sw_data$group <- factor(grids_sw_data$abrev,      # Reordering group factor levels
-                                          levels = state_order$abrev)
-            
-            
-            grids_fp_data$group <- factor(grids_fp_data$abrev,      # Reordering group factor levels
-                                          levels = state_order$abrev)
-            
+            grids_fp_data <- grids_fp_data() 
             
             # Maps
             # Overall (overlapping) position
@@ -374,6 +384,8 @@ shinyServer(function(input, output,session) {
                 scale_y_continuous(breaks = c(30,35,40,45))+
                 labs(x = "", y = "", title = "") +
                 theme(plot.title = element_text(size = 20))
+            
+            
             
             fp_by_state_map <- ggplot() +
                 geom_sf(data = subset(us_map,ID %in% c("maine", "new hampshire", "massachusetts", "connecticut",
