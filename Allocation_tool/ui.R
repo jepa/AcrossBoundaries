@@ -399,12 +399,20 @@ dashboardPage(
                     ),
                     plotOutput("RegUnit") %>% withSpinner(color="#0dc5c1",type = 6)
                 ),
+                #### Regulatory units table --------------
                 box(width = 6, 
                     solidHeader = TRUE,
                     collapsible = TRUE,
                     collapsed = TRUE,
                     title = "Number of grids per regulatory area",
                     status = "success", # green color
+                    radioButtons('table_output', "Output unit", 
+                                 c('n grid-cells' = "n_grids",
+                                   "Area (thousand km2)" = "tot_area"
+                                 ),
+                                 selected = "n_grids",
+                                 inline = TRUE
+                    ),
                     formattableOutput("gridN") %>% withSpinner(color="#0dc5c1",type = 6)
                 )
               ), # close firs fluid row

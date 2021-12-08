@@ -215,47 +215,45 @@ shinyServer(function(input, output,session) {
         })
         
         ## ---------------------------- ##
-        #### Table #####
+        ### Table #####
         ## ---------------------------- ##
         output$gridN <- renderFormattable({
             
             customGreen = "#71CA97"
+            r_earth <- 6371000 # NASA's volumetric mean radious https://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html
+            res_lon <- 0.3 # data degree resolution 
             
-            # ---------------------------- #
-            ##### State waters ######
-            # ---------------------------- #
+            n_grids <- grids %>% 
+                group_by(state,spatial,port_name,spp,index,lat,lon) %>%
+                tally() %>% 
+                # View()
+                mutate(
+                    area = (4 * r_earth^2 * 0.5 * 0.3 * pi/180 * cos(abs(lat) * pi/180 ) * sin(0.5 * 0.3 * pi/180))/1000000
+                ) %>% 
+                # View()
+                group_by(state,spp,spatial) %>%
+                summarise(tot_area = sum(area),
+                          n_grids = n(),
+                          n_ports = length(unique(port_name))
+                ) %>% 
+                gather("unit","value",tot_area:n_grids)
             
-            if(input$SpatSelection == "State waters"){
-                
-                n_grids <- grids %>%
-                    filter(spatial == "sw") %>% 
-                    group_by(state) %>% 
-                    summarise(Grids = length(unique(index))) %>% 
-                    arrange(Grids)
-                
-                
-                x <- formattable(n_grids,
-                                 list(
-                                     Grids = color_bar(customGreen)
-                                 )
-                )
-                
-            } 
             # ---------------------------- #
             #### Fishing Ports ######
             # ---------------------------- #
             if(input$SpatSelection == "Fishing ports"){
                 
                 
-                n_grids <- grids %>%
-                    filter(spatial == "fp") %>% 
-                    group_by(state) %>% 
-                    summarise(Grids = length(unique(index)),
-                              Ports = length(unique(landing_port))
-                    ) %>% 
-                    arrange(Ports) 
+                grid_table <- n_grids %>% 
+                    filter(spatial == "fp",
+                           spp == input$SppSelection,
+                           unit == input$table_output
+                           ) %>%  
+                    ungroup() %>% 
+                    select(state,n_ports,value) %>% 
+                    arrange(desc(n_ports))
                 
-                x <- formattable(n_grids,
+                x <- formattable(grid_table,
                                  align =c("l",rep("c",9),"r"),
                                  list(
                                      Ports = color_bar(customGreen)
@@ -264,24 +262,47 @@ shinyServer(function(input, output,session) {
                 
             }
             # ---------------------------- #
+            #### State waters ######
+            # ---------------------------- #
+            if(input$SpatSelection == "State waters"){
+                
+                grid_table <- n_grids %>% 
+                    filter(spatial == "sw",
+                           spp == input$SppSelection,
+                           unit == input$table_output
+                    ) %>%
+                    ungroup() %>% 
+                    select(state,value) %>% 
+                arrange(desc(value))
+                
+                x <- formattable(grid_table,
+                                 list(
+                                     Grids = color_bar(customGreen)
+                                 )
+                )
+                
+            } 
+            # ---------------------------- #
             #### Both approaches ######
             # ---------------------------- #
             if(input$SpatSelection == "Both apporaches"){
                 
                 
-                n_grids <- grids %>%
-                    group_by(state,spatial) %>% 
-                    summarise(Grids = length(unique(index)),
-                              Ports = length(unique(landing_port))
-                    ) %>% 
-                    gather("Category","type",Grids,Ports) %>% 
-                    spread(spatial,type) %>% 
-                    filter(Category == "Grids") %>% 
-                    arrange(Category,state) %>% 
+                grid_table <- n_grids %>% 
+                    filter(
+                        # spp == "Paralichthys dentatus",
+                        # unit == "tot_area"
+                           spp == input$SppSelection,
+                           unit == input$table_output
+                    ) %>%
+                    ungroup() %>% 
+                    select(-spp,-unit,-n_ports) %>% 
+                    spread(spatial,value) %>% 
                     mutate(
                         Difference = abs(replace_na(fp,0) - sw)
                     ) %>% 
                     left_join(state_order) %>% 
+                    ungroup() %>% 
                     select(State = state,
                            "Fishing ports" = fp,
                            "State waters" = sw,
@@ -290,7 +311,7 @@ shinyServer(function(input, output,session) {
                 
                 
                 
-                x <- formattable(n_grids,
+                x <- formattable(grid_table,
                                  align =c("l",rep("c",9),"r"),
                                  list(
                                      Difference = color_bar(customGreen)
@@ -306,17 +327,14 @@ shinyServer(function(input, output,session) {
         ##### Map ######
         # ---------------------------- #        
         
-        # ---------------------------- #
-        ###### Create maps ######
-        # ---------------------------- #        
         output$RegUnit <- renderPlot({
-            
+            # ---------------------------- #
+            ###### Fishing ports ######
+            # ---------------------------- #            
             
             if(input$SpatSelection == "Fishing ports"){
-                print("test fp")
-                grids_fp_data <- grids_fp_data() 
                 
-                fp_overlapping_map <- ggplot(grids_fp_data) +
+                fp_overlapping_map <- ggplot(grids_fp_data()) +
                     geom_tile(aes(x = lon,
                                   y = lat,
                                   color = group , 
@@ -327,9 +345,9 @@ shinyServer(function(input, output,session) {
                                                            "maryland","virginia", "north carolina"))
                     ) +
                     scale_color_manual(values = state_pallet,
-                                       labels = grids_fp_data %>% arrange(group) %>%  pull(group) %>% unique()) +
+                                       labels = grids_fp_data() %>% arrange(group) %>%  pull(group) %>% unique()) +
                     scale_fill_manual(values = state_pallet,
-                                      labels = grids_fp_data %>% arrange(group) %>%  pull(group) %>% unique()) +
+                                      labels = grids_fp_data() %>% arrange(group) %>%  pull(group) %>% unique()) +
                     my_ggtheme_p(leg_pos = "",
                                  ax_tx_s = 11) +
                     coord_sf(ylim = c(30,48)) +
@@ -344,7 +362,7 @@ shinyServer(function(input, output,session) {
                                                            "rhode island", "new york", "new jersey", "delaware",
                                                            "maryland","virginia", "north carolina"))
                     ) +
-                    geom_tile(data = grids_fp_data,
+                    geom_tile(data = grids_fp_data(),
                               aes(x = lon,
                                   y = lat,
                                   color =group , 
@@ -354,11 +372,9 @@ shinyServer(function(input, output,session) {
                     facet_wrap(~ group) +
                     theme(legend.position = "top") +
                     scale_color_manual(values = state_pallet,
-                                       labels = grids_fp_data %>% arrange(group) %>%  pull(group) %>% unique()) +
+                                       labels = grids_fp_data() %>% arrange(group) %>%  pull(group) %>% unique()) +
                     scale_fill_manual(values = state_pallet,
-                                      labels = grids_fp_data %>% arrange(group) %>%  pull(group) %>% unique()) +
-                    # scale_color_manual(values = c(state_pallet[3:7],state_pallet[9:11])) +
-                    # scale_fill_manual(values = c(state_pallet[3:7],state_pallet[9:11])) +
+                                      labels = grids_fp_data() %>% arrange(group) %>%  pull(group) %>% unique()) +
                     scale_y_continuous(breaks = c(30,35,40,45))+
                     my_ggtheme_m(leg_pos = "")
                 
@@ -378,15 +394,14 @@ shinyServer(function(input, output,session) {
                 }
             }else{
                 
-                
+                # ---------------------------- #
+                ##### State waters ######
+                # ---------------------------- #        
                 if(input$SpatSelection == "State waters"){
                     
-                    grids_sw_data <- grids_sw_data() 
-                    
-                    print("test sw")
                     # Maps
                     # Overall (overlapping) position
-                    sw_overlapping_map <- ggplot(grids_sw_data) +
+                    sw_overlapping_map <- ggplot(grids_sw_data()) +
                         geom_tile(aes(x = lon,
                                       y = lat,
                                       color = group , 
@@ -397,9 +412,9 @@ shinyServer(function(input, output,session) {
                                                                "virginia", "north carolina"))
                         ) +
                         scale_color_manual(values = state_pallet,
-                                           labels = grids_sw_data %>% arrange(group) %>%  pull(group) %>% unique()) +
+                                           labels = grids_sw_data() %>% arrange(group) %>%  pull(group) %>% unique()) +
                         scale_fill_manual(values = state_pallet,
-                                          labels = grids_sw_data %>% arrange(group) %>%  pull(group) %>% unique()) +
+                                          labels = grids_sw_data() %>% arrange(group) %>%  pull(group) %>% unique()) +
                         my_ggtheme_p(leg_pos = "",
                                      ax_tx_s = 10) +
                         coord_sf(ylim = c(30,48)) +
@@ -409,7 +424,7 @@ shinyServer(function(input, output,session) {
                     
                     
                     # Showing each state separately
-                    sw_by_state_map <- ggplot(grids_sw_data) +
+                    sw_by_state_map <- ggplot(grids_sw_data()) +
                         geom_sf(data = subset(us_map,ID %in% c("maine", "new hampshire", "massachusetts", "connecticut",
                                                                "rhode island", "new york", "new jersey", "delaware", "maryland",
                                                                "virginia", "north carolina"))
@@ -421,9 +436,9 @@ shinyServer(function(input, output,session) {
                         labs(x = "", y = "", title = "") +
                         facet_wrap(~ group) +
                         scale_color_manual(values = state_pallet,
-                                           labels = grids_sw_data %>% arrange(group) %>%  pull(group) %>% unique()) +
+                                           labels = grids_sw_data() %>% arrange(group) %>%  pull(group) %>% unique()) +
                         scale_fill_manual(values = state_pallet,
-                                          labels = grids_sw_data %>% arrange(group) %>%  pull(group) %>% unique()) +
+                                          labels = grids_sw_data() %>% arrange(group) %>%  pull(group) %>% unique()) +
                         ggtitle("") +
                         my_ggtheme_m(leg_pos = "",
                                      hjust = 1
@@ -447,16 +462,13 @@ shinyServer(function(input, output,session) {
                 }else{
                     
                     # ---------------------------- #
-                    ###### Outputs ######
+                    ##### Both approaches ######
                     # ---------------------------- #        
                     
                     if(input$SpatSelection == "Both apporaches"){
                         
-                        print("test both")
-                        grids_fp_data <- grids_fp_data() 
-                        grids_sw_data <- grids_sw_data() 
                         
-                        fp_overlapping_map <- ggplot(grids_fp_data) +
+                        fp_overlapping_map <- ggplot(grids_fp_data()) +
                             geom_tile(aes(x = lon,
                                           y = lat,
                                           color = group , 
@@ -467,9 +479,9 @@ shinyServer(function(input, output,session) {
                                                                    "maryland","virginia", "north carolina"))
                             ) +
                             scale_color_manual(values = state_pallet,
-                                               labels = grids_fp_data %>% arrange(group) %>%  pull(group) %>% unique()) +
+                                               labels = grids_fp_data() %>% arrange(group) %>%  pull(group) %>% unique()) +
                             scale_fill_manual(values = state_pallet,
-                                              labels = grids_fp_data %>% arrange(group) %>%  pull(group) %>% unique()) +
+                                              labels = grids_fp_data() %>% arrange(group) %>%  pull(group) %>% unique()) +
                             my_ggtheme_p(leg_pos = "",
                                          ax_tx_s = 11) +
                             coord_sf(ylim = c(30,48)) +
@@ -484,7 +496,7 @@ shinyServer(function(input, output,session) {
                                                                    "rhode island", "new york", "new jersey", "delaware",
                                                                    "maryland","virginia", "north carolina"))
                             ) +
-                            geom_tile(data = grids_fp_data,
+                            geom_tile(data = grids_fp_data(),
                                       aes(x = lon,
                                           y = lat,
                                           color =group , 
@@ -492,17 +504,14 @@ shinyServer(function(input, output,session) {
                             ) +
                             labs(x = "", y = "", title = "") +
                             facet_wrap(~ group) +
-                            theme(legend.position = "top") +
                             scale_color_manual(values = state_pallet,
-                                               labels = grids_fp_data %>% arrange(group) %>%  pull(group) %>% unique()) +
+                                               labels = grids_fp_data() %>% arrange(group) %>%  pull(group) %>% unique()) +
                             scale_fill_manual(values = state_pallet,
-                                              labels = grids_fp_data %>% arrange(group) %>%  pull(group) %>% unique()) +
-                            # scale_color_manual(values = c(state_pallet[3:7],state_pallet[9:11])) +
-                            # scale_fill_manual(values = c(state_pallet[3:7],state_pallet[9:11])) +
+                                              labels = grids_fp_data() %>% arrange(group) %>%  pull(group) %>% unique()) +
                             scale_y_continuous(breaks = c(30,35,40,45))+
                             my_ggtheme_m(leg_pos = "")
                         
-                        sw_overlapping_map <- ggplot(grids_sw_data) +
+                        sw_overlapping_map <- ggplot(grids_sw_data()) +
                             geom_tile(aes(x = lon,
                                           y = lat,
                                           color = group , 
@@ -513,9 +522,9 @@ shinyServer(function(input, output,session) {
                                                                    "virginia", "north carolina"))
                             ) +
                             scale_color_manual(values = state_pallet,
-                                               labels = grids_sw_data %>% arrange(group) %>%  pull(group) %>% unique()) +
+                                               labels = grids_sw_data() %>% arrange(group) %>%  pull(group) %>% unique()) +
                             scale_fill_manual(values = state_pallet,
-                                              labels = grids_sw_data %>% arrange(group) %>%  pull(group) %>% unique()) +
+                                              labels = grids_sw_data() %>% arrange(group) %>%  pull(group) %>% unique()) +
                             my_ggtheme_p(leg_pos = "",
                                          ax_tx_s = 10) +
                             coord_sf(ylim = c(30,48)) +
@@ -525,7 +534,7 @@ shinyServer(function(input, output,session) {
                         
                         
                         # Showing each state separately
-                        sw_by_state_map <- ggplot(grids_sw_data) +
+                        sw_by_state_map <- ggplot(grids_sw_data()) +
                             geom_sf(data = subset(us_map,ID %in% c("maine", "new hampshire", "massachusetts", "connecticut",
                                                                    "rhode island", "new york", "new jersey", "delaware", "maryland",
                                                                    "virginia", "north carolina"))
@@ -537,9 +546,9 @@ shinyServer(function(input, output,session) {
                             labs(x = "", y = "", title = "") +
                             facet_wrap(~ group) +
                             scale_color_manual(values = state_pallet,
-                                               labels = grids_sw_data %>% arrange(group) %>%  pull(group) %>% unique()) +
+                                               labels = grids_sw_data() %>% arrange(group) %>%  pull(group) %>% unique()) +
                             scale_fill_manual(values = state_pallet,
-                                              labels = grids_sw_data %>% arrange(group) %>%  pull(group) %>% unique()) +
+                                              labels = grids_sw_data() %>% arrange(group) %>%  pull(group) %>% unique()) +
                             ggtitle("") +
                             my_ggtheme_m(leg_pos = "",
                                          hjust = 1
@@ -564,7 +573,7 @@ shinyServer(function(input, output,session) {
                                         nrow = 1)
                                 }
                             }
-                        } # Close output options
+                        } 
                     }
                 }
                 
