@@ -495,20 +495,20 @@ shinyServer(function(input, output,session) {
                 filter(spp %in% input$SppSelection,
                        year %in% years) %>%
                 group_by(region,spp,lon,lat) %>% 
-                summarise(mean_wtcpue = mean(wtcpue,na.rm = T), .groups = T)
+                summarise(mean_wtcpue = mean(wtcpue,na.rm = T), .groups = "drop")
             
             
             # Set the plot data
             tif_plot_data <- tif_data %>%
                 group_by(index,region,spp,lon,lat) %>% 
-                summarise(mean_cpue = mean(value,na.rm = T)) %>% 
+                summarise(mean_cpue = mean(value,na.rm = T), .groups = "drop") %>% 
                 mutate(cpue_log10 = log10(mean_cpue)) %>% 
                 gather("type","cpue",mean_cpue,cpue_log10)
             
             
             plot <- ggplot(us_map) +
                 geom_sf()+
-                geom_tile( data = subset(tif_plot_data, type == "mean_cpue"),
+                geom_tile( data = subset(tif_plot_data, type == input$output),
                            aes(
                                x = lon,
                                y = lat,
@@ -534,13 +534,15 @@ shinyServer(function(input, output,session) {
                 ggtitle("Distribution estimated by using Triangular Irregular Surface method")
             
             
-            if(input$SurveySelection != "Both surveys"){
-                plot + facet_wrap(~type, ncol = 2)
-            }else{
+            # if(input$SurveySelection != "Both surveys"){
+            #     plot + facet_wrap(~type, ncol = 2)
+            # }else{
                 if(input$SurveySelection == "Both surveys"){
-                    plot + facet_wrap(~type+region, ncol = 2)
+                    plot + facet_wrap(~region, ncol = 2)
+                }else{
+                    plot
                 }
-            }
+            # }
         })
         
         # ---------------------------- #

@@ -372,6 +372,14 @@ dashboardPage(
                     collapsed = TRUE,
                     title = "Stock's distribution",
                     status = "success", # green color
+                    # Include output option
+                    radioButtons('output', "Output unit", 
+                                 c('Mean CPUE' = "mean_cpue",
+                                   "Log 10 CPUE" = "cpue_log10"
+                                   ),
+                                 selected = "mean_cpue",
+                                 inline = TRUE
+                    ),
                     plotOutput("distPlot") %>% withSpinner(color="#0dc5c1",type = 6)
                 )
               ),
