@@ -15,17 +15,17 @@
 library(MyFunctions)
 MyFunctions::my_lib(c("ggmap","sf","tidyverse","tools","readr","data.table","maps","shiny","DT","plotly","wesanderson","zoo","formattable","viridis","shinydashboard","rmarkdown"))
 
-# state_pallet <- c(wes_palette(n = 5, name = "Darjeeling1"),
-#                   wes_palette(n = 5, name = "Darjeeling2"),
-#                   wes_palette(n = 3, name = "Royal1")
-# )
+state_pallet <- c(wes_palette(n = 5, name = "Darjeeling1"),
+                  wes_palette(n = 5, name = "Darjeeling2"),
+                  wes_palette(n = 3, name = "Royal1")
+)
 
 
 # Create specific state pallet from our friend Wes Andersson
-state_pallet <- c(wes_palette(n = 5, name = "Darjeeling1"),
-                  wes_palette(n = 5, name = "Darjeeling2"),
-                  "#FD6467"
-)
+# state_pallet <- c(wes_palette(n = 5, name = "Darjeeling1"),
+#                   wes_palette(n = 5, name = "Darjeeling2"),
+#                   "#FD6467"
+# )
 
 # Set the filters
 state_order <- my_path("D", "Partial/grid_sw", name = "grid_eez_sw_df.csv", read = T) %>%
@@ -341,8 +341,7 @@ shinyServer(function(input, output,session) {
                         geom_tile(aes(x = lon,
                                       y = lat,
                                       color =group , 
-                                      fill = group), 
-                                  alpha = 0.3) +
+                                      fill = group)) +
                         labs(x = "", y = "", title = "") +
                         facet_wrap(~ group) +
                         scale_color_manual(values = state_pallet,
@@ -383,32 +382,31 @@ shinyServer(function(input, output,session) {
                         geom_tile(aes(x = lon,
                                       y = lat,
                                       color =group , 
-                                      fill = group), 
-                                  alpha = 0.3) +
+                                      fill = group)
+                                  ) +
                         labs(x = "", y = "", title = "") +
                         facet_wrap(~ group) +
                         theme(legend.position = "top") +
                 scale_color_manual(values = c(state_pallet[3:7],state_pallet[9:11])) +
                 scale_fill_manual(values = c(state_pallet[3:7],state_pallet[9:11])) +
                         scale_y_continuous(breaks = c(30,35,40,45))+
-                        ggtitle("") +
                         my_ggtheme_m(leg_pos = "")
             
             
             if(input$map_type == "Both"){
-                gridExtra::grid.arrange(sw_overlapping_map,fp_overlapping_map,
+                gridExtra::grid.arrange(sw_overlapping_map + ggtitle("State Waters") ,fp_overlapping_map +ggtitle("Fishing Ports"),
                                         sw_by_state_map,fp_by_state_map,
                                         nrow = 2)
             }else{
                 
                 if(input$map_type == "Overlapping"){
-                    gridExtra::grid.arrange(sw_overlapping_map,fp_overlapping_map,
+                    gridExtra::grid.arrange(sw_overlapping_map+ ggtitle("State Waters"),fp_overlapping_map+ ggtitle("Fishing Ports"),
                                             nrow = 1)
                 }else{
                     
                     if(input$map_type == "By State"){
                         gridExtra::grid.arrange(
-                                                sw_by_state_map,fp_by_state_map,
+                                                sw_by_state_map+ ggtitle("State Waters"),fp_by_state_map+ ggtitle("Fishing ports"),
                                                 nrow = 1)
                     }
                 }
