@@ -286,7 +286,7 @@ dashboardPage(
                   selectizeInput(
                     'SurveySelection', 
                     "", 
-                    choices = unique(spp_survey$region),
+                    choices = c(unique(spp_survey$region),"Both surveys"),
                     options = list(
                       placeholder = 'Type or click to select a season',
                       onInitialize = I('function() { this.setValue(""); }')

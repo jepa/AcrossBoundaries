@@ -128,8 +128,9 @@ shinyServer(function(input, output,session) {
             name <- paste0("obs_",str_replace(input$SppSelection," ","_"),".csv")
             
             data <- my_path("D","Spp/Observation",name = name, read = T)
-            
-            # data <- readRDS("/Volumes/Enterprise/Data/AcrossBoundaries/Data/pinskylab-OceanAdapt-966adf0/data_clean/dat_exploded.rds") %>%
+
+              # Test Data
+            # raw_data <- readRDS("/Volumes/Enterprise/Data/AcrossBoundaries/Data/pinskylab-OceanAdapt-966adf0/data_clean/dat_exploded.rds") %>%
             #     filter(
             #         spp %in% c("Centropristis striata","Paralichthys dentatus","Stenotomus chrysops"),
             #         region %in% c("Northeast US Fall" , "Northeast US Spring")
@@ -149,8 +150,8 @@ shinyServer(function(input, output,session) {
             
             # Set the filters
             species <- input$SppSelection #"Centropristis striata"
-            survey <-input$SurveySelection # "Northeast US Fall"
-            reg_area <- input$SpatSelection # "State waters"
+            # survey <-input$SurveySelection # "Northeast US Fall"
+            # reg_area <- input$SpatSelection # "State waters"
             
             
             data <- my_path("R","Partial/Interpolation/",name = name, read = T) %>% 
@@ -163,9 +164,7 @@ shinyServer(function(input, output,session) {
                                      ifelse(spatial == "sw","State waters","Difference")
                     )
                 ) %>% 
-                filter(spp %in% species,
-                       region %in% survey,
-                       spatial %in% reg_area)
+                filter(spp %in% species)
             
             # For testing
             # data <- my_path("R","Partial/Interpolation/",name = "tif_Centropristis_striata.csv", read = T)
@@ -471,26 +470,45 @@ shinyServer(function(input, output,session) {
         output$distPlot <- renderPlot({
             
             # Set the filters
+            # years <- seq(1971,2019,1) # for testing
+            years <- seq(input$YearSelection[1],input$YearSelection[2],1) 
             
-            years <- seq(input$YearSelection[1],input$YearSelection[2],1) #seq(1971,2019,1)
+            if(input$SurveySelection == "Both surveys"){
+                tif_data <- tif_data()
+                raw_data <- raw_data()
+            }else{
+                
+                tif_data <- tif_data() %>%
+                    filter(region %in% input$SurveySelection)
+                
+                raw_data <- raw_data() %>%
+                    filter(region %in% input$SurveySelection)
+            }
+            
             
             # Set the plot data
-            plot_data <- raw_data() %>%
+            plot_data <- raw_data %>%
+                # For testing
+                # filter(spp %in% "Centropristis striata",
+                       # year %in% years) %>% 
+                # End testing
                 filter(spp %in% input$SppSelection,
-                       year %in% years)
+                       year %in% years) %>%
+                group_by(region,spp,lon,lat) %>% 
+                summarise(mean_wtcpue = mean(wtcpue,na.rm = T), .groups = T)
             
             
             # Set the plot data
-            tif_plot_data <- tif_data() %>%
-                mutate(
-                    cpue_log10 = log10(value)
-                ) %>% 
-                gather("type","cpue",value,cpue_log10)
+            tif_plot_data <- tif_data %>%
+                group_by(index,region,spp,lon,lat) %>% 
+                summarise(mean_cpue = mean(value,na.rm = T)) %>% 
+                mutate(cpue_log10 = log10(mean_cpue)) %>% 
+                gather("type","cpue",mean_cpue,cpue_log10)
             
             
             plot <- ggplot(us_map) +
                 geom_sf()+
-                geom_tile( data = tif_plot_data,
+                geom_tile( data = subset(tif_plot_data, type == "mean_cpue"),
                            aes(
                                x = lon,
                                y = lat,
@@ -498,7 +516,7 @@ shinyServer(function(input, output,session) {
                                colour = cpue
                            )
                 ) +
-                geom_point(data = subset(plot_data, wtcpue > 0),
+                geom_point(data = subset(plot_data, mean_wtcpue > 0),
                            aes(
                                x = lon,
                                y = lat
@@ -516,10 +534,10 @@ shinyServer(function(input, output,session) {
                 ggtitle("Distribution estimated by using Triangular Irregular Surface method")
             
             
-            if(input$SpatSelection != "Both apporaches"){
+            if(input$SurveySelection != "Both surveys"){
                 plot + facet_wrap(~type, ncol = 2)
             }else{
-                if(input$SpatSelection == "Both apporaches"){
+                if(input$SurveySelection == "Both surveys"){
                     plot + facet_wrap(~type+region, ncol = 2)
                 }
             }
