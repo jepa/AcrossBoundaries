@@ -50,52 +50,52 @@ us_map <- st_as_sf(map("state", plot = FALSE, fill = TRUE)) %>%
 # Grid data ####
 # ---------------------------- #
 
-# grids_sw <- bind_rows(
-#     my_path("D", "Partial/grid_sw", name = "grid_eez_sw_df.csv", read = T) %>% 
-#         mutate(spp = "Paralichthys dentatus"),
-#     my_path("D", "Partial/grid_sw", name = "grid_eez_sw_df.csv", read = T) %>% 
-#         mutate(spp = "Stenotomus chrysops"),
-#     my_path("D", "Partial/grid_sw", name = "grid_eez_sw_df.csv", read = T) %>% 
-#         mutate(spp = "Centropristis striata")
-# ) %>% 
+grids_sw <- bind_rows(
+    my_path("D", "Partial/grid_sw", name = "grid_eez_sw_df.csv", read = T) %>%
+        mutate(spp = "Paralichthys dentatus"),
+    my_path("D", "Partial/grid_sw", name = "grid_eez_sw_df.csv", read = T) %>%
+        mutate(spp = "Stenotomus chrysops"),
+    my_path("D", "Partial/grid_sw", name = "grid_eez_sw_df.csv", read = T) %>%
+        mutate(spp = "Centropristis striata")
+) %>%
+    left_join(state_order) %>%
+    select(index,state,abrev,lat,lon,spp) %>%
+    mutate(spatial = "sw",
+           port_name = NA
+    )
+
+grids_fp <- my_path("D", "Partial/grid_fp", name = "grid_eez_fp_df.csv", read = T
+) %>%
+    mutate(spatial = "fp",
+           spp = ifelse(spp == "summer flounder","Paralichthys dentatus",
+                        ifelse(spp == "scup", "Stenotomus chrysops",
+                               "Centropristis striata"
+                        )
+           )
+    )
+
+# Join both approaches
+grids <- bind_rows(grids_sw,grids_fp)
+
+unique(grids_fp$state)
+unique(grids_sw$state)
+
+# grids <- my_path("D", "Partial/grid_sw", name = "grid_eez_sw_df.csv", read = T) %>% 
+#     mutate(
+#         spatial = "sw"
+#     ) %>% 
 #     left_join(state_order) %>% 
-#     select(index,state,abrev,lat,lon,spp) %>% 
-#     mutate(spatial = "sw",
-#            port_name = NA
-#     )
-# 
-# grids_fp <- my_path("D", "Partial/grid_fp", name = "grid_eez_fp_df.csv", read = T
-# ) %>%
-#     mutate(spatial = "fp",
-#            spp = ifelse(spp == "summer flounder","Paralichthys dentatus", 
-#                         ifelse(spp == "scup", "Stenotomus chrysops", 
-#                                "Centropristis striata"
-#                         )
-#            )
-#     )
-# 
-# 
-# # Join both approaches
-# grids <- bind_rows(grids_sw,grids_fp)
-
-# unique(grids_fp$state)
-
-grids <- my_path("D", "Partial/grid_sw", name = "grid_eez_sw_df.csv", read = T) %>% 
-    mutate(
-        spatial = "sw"
-    ) %>% 
-    left_join(state_order) %>% 
-    select(-order) %>% 
-    bind_rows(
-        my_path("D", "Partial/grid_fp", name = "grid_eez_fp_df.csv", read = T)
-    ) %>% 
-    select(-spp) %>% 
-    mutate(
-        spatial = ifelse(is.na(spatial),"fp",spatial)
-    ) %>% 
-    distinct(.keep_all = T) %>% 
-    rename(landing_port = port_name) %>% 
-    left_join(state_order)
+#     select(-order) %>% 
+#     bind_rows(
+#         my_path("D", "Partial/grid_fp", name = "grid_eez_fp_df.csv", read = T)
+#     ) %>% 
+#     select(-spp) %>% 
+#     mutate(
+#         spatial = ifelse(is.na(spatial),"fp",spatial)
+#     ) %>% 
+#     distinct(.keep_all = T) %>% 
+#     rename(landing_port = port_name) %>% 
+#     left_join(state_order)
 
 
 # ---------------------------- #
@@ -281,17 +281,30 @@ shinyServer(function(input, output,session) {
                 grids_sw_data <- grids %>% 
                     filter(spatial == "sw")
                 
-                grids_sw_data$group <- factor(grids_sw_data$abrev,      # Reordering group factor levels
-                                              levels = state_order$abrev)
                 
                 # Fishing port data
                 grids_fp_data <- grids %>% 
-                    filter(spatial == "fp") #%>% 
+                    filter(spatial == "fp",
+                           spp == input$SppSelection) #%>% 
                 # group_by(index,state,abrev,lat,lon,spatial,port_name) %>% 
                 # summarise(n())
                 
+                empty_data <- grids_sw_data %>% 
+                    filter(!state %in% unique(grids_fp_data$state)) %>% 
+                    group_by(state,abrev,spp,spatial) %>% 
+                    tally()
+                
+                grids_fp_data <- grids_fp_data %>% bind_rows(empty_data)
+                
+                
+                
+                grids_sw_data$group <- factor(grids_sw_data$abrev,      # Reordering group factor levels
+                                              levels = state_order$abrev)
+                
+                
                 grids_fp_data$group <- factor(grids_fp_data$abrev,      # Reordering group factor levels
                                               levels = state_order$abrev)
+                
                 
                 
                 
@@ -307,8 +320,10 @@ shinyServer(function(input, output,session) {
                                                            "rhode island", "new york", "new jersey", "delaware", "maryland",
                                                            "virginia", "north carolina"))
                     ) +
-                    scale_color_manual(values = state_pallet) +
-                    scale_fill_manual(values = state_pallet) +
+                    scale_color_manual(values = state_pallet,
+                                       labels = grids_sw_data %>% arrange(group) %>%  pull(group) %>% unique()) +
+                    scale_fill_manual(values = state_pallet,
+                                      labels = grids_sw_data %>% arrange(group) %>%  pull(group) %>% unique()) +
                     my_ggtheme_p(leg_pos = "",
                                  ax_tx_s = 10) +
                     coord_sf(ylim = c(30,48)) +
@@ -331,6 +346,8 @@ shinyServer(function(input, output,session) {
                     facet_wrap(~ group) +
                     scale_color_manual(values = state_pallet,
                                        labels = grids_sw_data %>% arrange(group) %>%  pull(group) %>% unique()) +
+                    scale_fill_manual(values = state_pallet,
+                                       labels = grids_sw_data %>% arrange(group) %>%  pull(group) %>% unique()) +
                     ggtitle("") +
                     my_ggtheme_m(leg_pos = "",
                                  hjust = 1
@@ -349,8 +366,10 @@ shinyServer(function(input, output,session) {
                                                            "rhode island", "new york", "new jersey", "delaware", 
                                                            "maryland","virginia", "north carolina"))
                     ) +
-                    scale_color_manual(values = c(state_pallet[3:7],state_pallet[9:11])) +
-                    scale_fill_manual(values = c(state_pallet[3:7],state_pallet[9:11])) +
+                    scale_color_manual(values = state_pallet,
+                                       labels = grids_fp_data %>% arrange(group) %>%  pull(group) %>% unique()) +
+                    scale_fill_manual(values = state_pallet,
+                                      labels = grids_fp_data %>% arrange(group) %>%  pull(group) %>% unique()) +
                     my_ggtheme_p(leg_pos = "",
                                  ax_tx_s = 11) +
                     coord_sf(ylim = c(30,48)) +
@@ -359,12 +378,13 @@ shinyServer(function(input, output,session) {
                     theme(plot.title = element_text(size = 20))
                 
                 
-                fp_by_state_map <- ggplot(grids_fp_data) +
+                fp_by_state_map <- ggplot() +
                     geom_sf(data = subset(us_map,ID %in% c("maine", "new hampshire", "massachusetts", "connecticut",
                                                            "rhode island", "new york", "new jersey", "delaware",
                                                            "maryland","virginia", "north carolina"))
                     ) +
-                    geom_tile(aes(x = lon,
+                    geom_tile(data = grids_fp_data,
+                              aes(x = lon,
                                   y = lat,
                                   color =group , 
                                   fill = group)
@@ -372,8 +392,12 @@ shinyServer(function(input, output,session) {
                     labs(x = "", y = "", title = "") +
                     facet_wrap(~ group) +
                     theme(legend.position = "top") +
-                    scale_color_manual(values = c(state_pallet[3:7],state_pallet[9:11])) +
-                    scale_fill_manual(values = c(state_pallet[3:7],state_pallet[9:11])) +
+                    scale_color_manual(values = state_pallet,
+                                       labels = grids_fp_data %>% arrange(group) %>%  pull(group) %>% unique()) +
+                    scale_fill_manual(values = state_pallet,
+                                      labels = grids_fp_data %>% arrange(group) %>%  pull(group) %>% unique()) +
+                    # scale_color_manual(values = c(state_pallet[3:7],state_pallet[9:11])) +
+                    # scale_fill_manual(values = c(state_pallet[3:7],state_pallet[9:11])) +
                     scale_y_continuous(breaks = c(30,35,40,45))+
                     my_ggtheme_m(leg_pos = "")
                 
@@ -404,7 +428,7 @@ shinyServer(function(input, output,session) {
                 
                 
                 # ---------------------------- #
-                ## Specific approahc ######
+                ## Specific approach ######
                 # ---------------------------- #
                 if(input$SpatSelection == "State waters"){
                     grids_data <- grids %>% 
@@ -414,7 +438,8 @@ shinyServer(function(input, output,session) {
                     
                     if(input$SpatSelection == "Fishing ports"){
                         grids_data <- grids %>% 
-                            filter(spatial == "fp") #%>% 
+                            filter(spatial == "fp",
+                                   spp == input$SppSelection) #%>% 
                         # group_by(index,state,abrev,lat,lon,spatial,port_name) %>% 
                         # summarise(n())
                     }
