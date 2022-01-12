@@ -90,6 +90,16 @@ ggplot(eez_sf) +
   geom_sf() +
   theme_dark()
 
+# Save image for manuscript
+
+eez_plot <- ggplot(eez_sf) +
+  geom_sf()
+  
+
+name <- my_path("G", "AcrossBoundaries/Results/Figures", name = "eez_map.png")
+ggsave(name,
+       eez_plot)
+
 ```
 
 #####  3.-  State waters
@@ -116,6 +126,33 @@ ggplot(state_sf) +
   scale_fill_manual(values = state_pallet) +
   theme_dark()
 
+# Visual exploration (o.k! )
+state_mpa <- st_read("~/OneDrive - UW-Madison/FederalAndStateWaters/FederalAndStateWaters.gdb") %>%
+  janitor::clean_names() %>% 
+  mutate(jurisdicti = str_to_lower(jurisdicti)) %>% 
+  filter(jurisdicti %in% States) %>% 
+  mutate(state = str_to_sentence(jurisdicti)) %>% 
+  st_transform(crs = 4326) %>%   # for matching projections
+  st_simplify(preserveTopology = TRUE, dTolerance = 0.01) %>% 
+  left_join(state_lat)
+  
+state_mpa$group <- factor(state_mpa$abrev,      # Reordering group factor levels
+                               levels = state_lat$abrev)
+
+state_mpa <- ggplot() +
+  geom_sf(data = eez_sf,aes(), fill = "grey90") +
+  geom_sf(data = land_sf,aes(), fill = "grey50") +
+  geom_sf(data = state_mpa, aes(fill = group, color = group)) +
+  scale_fill_manual(values = state_pallet) +
+  scale_color_manual(values = state_pallet) +
+  my_ggtheme_p(leg_pos = "right")
+
+
+
+name <- my_path("G", "AcrossBoundaries/Results/Figures", name = "state_sw_map.png")
+ggsave(name,
+       state_mpa)
+
 ```
 
 ##### 4.- Fishing ports
@@ -134,7 +171,7 @@ In order to make the report non-confidential, I am displaying as much of the por
 ```{r}
 # NOAA DATA
 
-ports_path <- my_path("D","NOAA", name = "PalaciosJ - BSB, SFlounder, Scup by Port 1970-2020 - 2021.10.25.xlsx")
+ports_path <- my_path("G","AcrossBoundaries/Data/NOAA", name = "PalaciosJ - BSB, SFlounder, Scup by Port 1970-2020 - 2021.10.25.xlsx")
 
 
 # Load ports
@@ -364,7 +401,7 @@ noaa_ports_complete <- top_ports %>%
     state_postal = str_to_upper(state_postal)
   )
   
-# Check for missing ports
+# Check for missing ports (Should be empty!)
 noaa_ports_complete %>% 
   filter(tresh == "75th",
     is.na(lat)) %>% 
@@ -373,9 +410,9 @@ noaa_ports_complete %>%
   View()
 
 # Save data for future analysis
-write_csv(noaa_ports_complete,
-          my_path("D","Partial", name = "top_ports.csv")
-          )
+# write_csv(noaa_ports_complete,
+#           my_path("D","Partial", name = "top_ports.csv")
+#           )
 
 noaa_ports_complete
 
@@ -386,19 +423,30 @@ noaa_ports_complete
 
 ```{r}
 
-noaa_ports_complete %>% 
-  filter(tresh == "75th") %>% 
-  ggplot() +
-  geom_point(
+port_map <- noaa_ports_complete %>%  
+  filter(tresh == "75th") 
+  
+port_map <- ggplot() +
+  geom_sf(data = eez_sf,aes(), fill = "grey90") +
+  geom_sf(data = land_sf,aes(), fill = "grey50") +
+  geom_point( data = port_map,
     aes(
       x = lon,
       y = lat,
       shape = species_name, 
       color = species_name
     ),
-    size = 5,
+    size = 3,
     alpha = 0.5
-  )
+  ) +
+  my_ggtheme_p(leg_pos = "right")
+
+
+name <- my_path("G", "AcrossBoundaries/Results/Figures", name = "state_fp_map.png")
+
+ggsave(name,
+       port_map)
+
 
 ```
 
@@ -464,6 +512,33 @@ state_bf_plot <- ggplot() +
 
 state_bf_plot
 
+# ------------------------------ #
+# Saving for plot
+# ------------------------------ #
+
+state_bf_plot <- state_bf %>% 
+  left_join(state_lat)
+
+state_bf_plot$group <- factor(state_bf_plot$abrev, levels = state_lat$abrev)
+
+state_sf_plot <- state_sf %>% 
+  left_join(state_lat)
+
+state_sf_plot$group <- factor(state_sf_plot$abrev, levels = state_lat$abrev)
+  
+state_bf_map <- ggplot(state_bf_plot) +
+  geom_sf(data = eez_sf,aes(), fill = "grey90") +
+  geom_sf(data = land_sf,aes(), fill = "grey50") +
+  geom_sf(data = state_bf_plot, aes(color = group), fill = NA) +
+  geom_sf(data = state_sf_plot, aes(color = group), fill = NA) +
+  scale_color_manual(values = state_pallet) +
+  my_ggtheme_p(leg_pos = "right")
+
+name <- my_path("G", "AcrossBoundaries/Results/Figures", name = "state_bf_plot_sw.png")
+
+ggsave(name,
+       state_bf_map)
+
 ```
 
 ##### 1.1 US. Ports
@@ -474,7 +549,7 @@ We set a buffer of *5* deg (510 km, ~ 221 nm) that overshoots the EEZ a bit, but
 
 
 #Load top port data 
-ports_df <- my_path("D","Partial", "top_ports.csv", read = T) %>% 
+ports_df <- my_path("G","AcrossBoundaries/Data/Partial", "top_ports.csv", read = T) %>% 
   filter(tresh == "75th")
   
 
@@ -496,6 +571,30 @@ ggplot() +
   geom_sf(data = port_bf, aes(), fill = NA) +
   scale_color_manual(values = state_pallet)+
   theme_dark()
+
+
+ #------------------------------ #
+# Saving for plot
+# ------------------------------ #
+
+state_bf_plot_fp <- port_bf %>% 
+  rename(abrev = state_postal) %>% 
+  left_join(state_lat)
+
+state_bf_plot_fp$group <- factor(state_bf_plot_fp$abrev, levels = state_lat$abrev)
+
+state_bf_map_fp <- ggplot() +
+  geom_sf(data = eez_sf,aes(), fill = "grey90") +
+  geom_sf(data = land_sf,aes(), fill = "grey50") +
+  geom_sf(data = state_bf_plot_fp, aes(color = group), fill = NA) +
+  geom_sf(data = state_sf_plot, aes(color = group), fill = NA) +
+  scale_color_manual(values = state_pallet) +
+  my_ggtheme_p(leg_pos = "right")
+
+name <- my_path("G", "AcrossBoundaries/Results/Figures", name = "state_bf_plot_fp.png")
+
+ggsave(name,
+       state_bf_map_fp)
 
 ```
 
@@ -1307,7 +1406,7 @@ head(historic_spp)
 
 ## F1 Regulatory units result
 
-### NUmbers for papaer
+### Numbers for papaer
 
 ```{r numbers_for_paper}
 
@@ -1380,7 +1479,7 @@ geosphere::distm(c(ny_dist$lon[1], ny_dist$lat[1]), c(ny_dist$lon[2], ny_dist$la
 #### Data needed ####
 
 # Load grid of state waters
-grid_eez_sw_sf <-  st_read(my_path("D","Partial/grid_sw", name = "grid_eez_sw_sf.shp")) %>%
+grid_eez_sw_sf <-  st_read(my_path("G","AcrossBoundaries/Data/Partial/grid_sw", name = "grid_eez_sw_sf.shp")) %>%
   select(index,state,geometry) %>% 
   mutate(method = "state_waters",
          state = str_to_sentence(state)) %>% 
@@ -1390,7 +1489,7 @@ grid_eez_sw_sf$group <- factor(grid_eez_sw_sf$abrev,      # Reordering group fac
                                levels = state_lat$abrev)
 
 # Load grid of fishing ports
-grid_eez_fp_sf <-  st_read(my_path("D","Partial/grid_fp", name = "grid_eez_fp.shp")) %>%
+grid_eez_fp_sf <-  st_read(my_path("G","AcrossBoundaries/Data/Partial/grid_fp", name = "grid_eez_fp.shp")) %>%
   select(index,abrev,geometry) %>% 
   mutate(method = "fishing_port"#,
          # state = str_to_sentence(landing_port)
@@ -1410,24 +1509,24 @@ grid_eez_fp_sf <- arrange(grid_eez_fp_sf,group)
 p_sw <- gridExtra::grid.arrange(
   # Overall (overlapping) position
   ggplot(grid_eez_sw_sf) +
-    geom_sf(data = eez_sf, aes(), fill = "white") + 
+    geom_sf(data = eez_sf, aes(), fill = "grey90") + 
     geom_sf(aes(color =group , fill = group), alpha = 0.3) +
-    geom_sf(data = land_sf, aes()) +
-    ggsflabel::geom_sf_label_repel(data = land_sf, aes(label= abrev), 
-                                   size = 4,
-                                   box.padding = 0.10,
-                                   hjust = 1) +
+    geom_sf(data = land_sf, aes(), fill = "grey50") +
+    # ggsflabel::geom_sf_label_repel(data = land_sf, aes(label= abrev), 
+    #                                size = 4,
+    #                                box.padding = 0.10,
+    #                                hjust = 1) +
     scale_color_manual(values = state_pallet) +
     scale_fill_manual(values = state_pallet) +
     my_ggtheme_p(leg_pos = "",
                  ax_tx_s = 13) +
     coord_sf(ylim = c(30,48)) +
     scale_y_continuous(breaks = c(30,35,40,45))+
-    labs(x = "", y = "", title = "A) State waters approach") +
-    theme(plot.title = element_text(size = 20)),
+    labs(x = "", y = "", title = ""),
+    # theme(plot.title = element_text(size = 20)),
   # Showing each state separately
   ggplot(grid_eez_sw_sf) +
-    geom_sf(data = land_sf, aes(), fill = "grey80") +
+    geom_sf(data = land_sf, aes(), fill = "grey50") +
     geom_sf(aes(color = group),size = 0.1, alpha = 0.3) +
     facet_wrap(~ group) +
     theme(legend.position = "top") +
@@ -1443,11 +1542,18 @@ p_sw <- gridExtra::grid.arrange(
   nrow = 1)
 
 
+name <- my_path("G", "AcrossBoundaries/Results/Figures", name = "sw_reg_units.png")
+
+ggsave(name,
+       p_sw,
+       width = 9,
+       height = 9)
+
 ##### ------------- ####
 # Fishing Ports plot
 ##### ------------- ####
 
-
+# Include state with no Regulaotry units in plot
 grid_eez_fp_sf <- grid_eez_sw_sf %>% 
   filter(!group %in% grid_eez_fp_sf$group) %>% 
   mutate(index = NA) %>% 
@@ -1458,13 +1564,13 @@ grid_eez_fp_sf <- grid_eez_sw_sf %>%
 p_fp <- gridExtra::grid.arrange(
   # Overall (overlapping) position
   ggplot(data = subset(grid_eez_fp_sf, index != "NA")) +
-    geom_sf(data = eez_sf, aes(), fill = "white") + 
+    geom_sf(data = eez_sf, aes(), fill = "grey90") + 
     geom_sf(aes(color = group, fill = abrev), alpha = 0.3) +
-    geom_sf(data = land_sf, aes()) +
-    ggsflabel::geom_sf_label_repel(data = land_sf, aes(label= abrev), 
-                                   size = 4,
-                                   box.padding = 0.10,
-                                   hjust = 1) +
+    geom_sf(data = land_sf, aes(), fill = "grey50") +
+    # ggsflabel::geom_sf_label_repel(data = land_sf, aes(label= abrev), 
+    #                                size = 4,
+    #                                box.padding = 0.10,
+    #                                hjust = 1) +
     # scale_color_manual(values = state_pallet) +
     # scale_fill_manual(values = state_pallet) +
     scale_color_manual(values = c(state_pallet[3:7],state_pallet[9:11])) +
@@ -1473,13 +1579,13 @@ p_fp <- gridExtra::grid.arrange(
                  ax_tx_s = 13) +
     coord_sf(ylim = c(30,48)) +
     scale_y_continuous(breaks = c(30,35,40,45)) +
-    labs(x = "", y = "", title = "B) Fishing ports approach") +
+    # labs(x = "", y = "", title = "B) Fishing ports approach") +
     theme(plot.title = element_text(size = 20)),
   # Showing each state separately
   ggplot() +
     geom_sf(data = subset(grid_eez_fp_sf, index = "NA"), color = "white") +
     geom_sf(data = subset(grid_eez_fp_sf, index != "NA"), aes(color = group),size = 0.1, alpha = 0.3) +
-    geom_sf(data = land_sf, aes(), fill = "grey80") +
+    geom_sf(data = land_sf, aes(), fill = "grey50") +
     facet_wrap(~ group) +
     # geom_point(data = rename(ports_df, group = state_postal), aes(x = lon, y = lat), color = "#E6A0C4") +
     theme(legend.position = "top") +
@@ -1494,6 +1600,14 @@ p_fp <- gridExtra::grid.arrange(
                  hjust = 1
     ),
   nrow = 1)
+
+
+name <- my_path("G", "AcrossBoundaries/Results/Figures", name = "fp_reg_units.png")
+
+ggsave(name,
+       p_fp,
+       width = 9,
+       height = 9)
 
 
 
