@@ -1155,11 +1155,11 @@ eez_sf <- st_read(my_path("G", extra_path = "Spatial/SAU/SAU_Shapefile", name = 
 ### Previously created grids 
 
 grids_sw <- bind_rows(
-  my_path("D", "Partial/grid_sw", name = "grid_eez_sw_df.csv", read = T) %>% 
+  my_path("G", "AcrossBoundaries/Data/Partial/grid_sw", name = "grid_eez_sw_df.csv", read = T) %>% 
     mutate(spp = "Paralichthys dentatus"),
-  my_path("D", "Partial/grid_sw", name = "grid_eez_sw_df.csv", read = T) %>% 
+  my_path("G", "AcrossBoundaries/Data/Partial/grid_sw", name = "grid_eez_sw_df.csv", read = T) %>% 
     mutate(spp = "Stenotomus chrysops"),
-  my_path("D", "Partial/grid_sw", name = "grid_eez_sw_df.csv", read = T) %>% 
+  my_path("G", "AcrossBoundaries/Data/Partial/grid_sw", name = "grid_eez_sw_df.csv", read = T) %>% 
     mutate(spp = "Centropristis striata")
 ) %>% 
   left_join(land_sf) %>% 
@@ -1168,7 +1168,7 @@ grids_sw <- bind_rows(
          port_name = NA
          )
 
-grids_fp <- my_path("D", "Partial/grid_fp", name = "grid_eez_fp_df.csv", read = T
+grids_fp <- my_path("G", "AcrossBoundaries/Data/Partial/grid_fp", name = "grid_eez_fp_df.csv", read = T
 ) %>%
   mutate(spatial = "fp",
   spp = ifelse(spp == "summer flounder","Paralichthys dentatus", 
@@ -1185,7 +1185,7 @@ grids <- bind_rows(grids_sw,grids_fp)
 # unique(grids$spp)
   
 # Ports data
-ports_df <- my_path("D","Partial", "top_ports.csv", read = T) %>% 
+ports_df <- my_path("G","AcrossBoundaries/Data/Partial", "top_ports.csv", read = T) %>% 
   filter(tresh == "75th") %>%
   group_by(species_name,state_postal) %>% 
   summarise(n =n()) %>% 
@@ -1203,7 +1203,7 @@ Species <- c(
   "Centropristis striata"#, # black sea bass
   )
 
-spp_paths <- list.files(my_path("R",extra_path = "Partial/Interpolation/"))
+spp_paths <- list.files(my_path("G",extra_path = "AcrossBoundaries/Results/Partial/Interpolation/"))
 
 # Some gibiris for names
 taxon_list <- gsub("_"," ",spp_paths)
@@ -1220,7 +1220,7 @@ taxon_read <- spp_paths[spp_paths %in% taxon_read]
 
 #### Load sw interpolation 
 
-taxon_sw <- my_path("R",extra_path = "Partial/Interpolation/", name = taxon_read)
+taxon_sw <- my_path("G",extra_path = "AcrossBoundaries/Results/Partial/Interpolation/", name = taxon_read)
 
 # Load all sp in one table
 historic_spp <- bind_rows(lapply(taxon_sw, fread)) %>% 
