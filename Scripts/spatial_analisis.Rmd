@@ -25,9 +25,9 @@ sf::sf_use_s2(use_s2 = FALSE)
 # Create specific state pallet from our friend Wes Andersson
 
 state_pallet <- c(wes_palette(n = 5, name = "Darjeeling1"),
-                               wes_palette(n = 5, name = "Darjeeling2"),
+                  wes_palette(n = 5, name = "Darjeeling2"),
                   "#FD6467"
-                  )
+)
 
 ```
 
@@ -58,14 +58,14 @@ land_sf <- st_as_sf(map("state", plot = FALSE, fill = TRUE)) %>%
   filter(ID %in% States) %>% 
   mutate(abrev = c("CT","DE","ME","MD","MA","NH","NJ","NY","NC","RI","VA"),
          state = str_to_sentence(ID)
-         )
+  )
 
 # Visual exploration (o.k! )
 ggplot(land_sf) +
   geom_sf(aes(fill = state)) +
   scale_fill_manual(values = state_pallet) +
   theme_dark()
-          
+
 
 ```
 
@@ -94,7 +94,7 @@ ggplot(eez_sf) +
 
 eez_plot <- ggplot(eez_sf) +
   geom_sf()
-  
+
 
 name <- my_path("G", "AcrossBoundaries/Results/Figures", name = "eez_map.png")
 ggsave(name,
@@ -135,9 +135,9 @@ state_mpa <- st_read("~/OneDrive - UW-Madison/FederalAndStateWaters/FederalAndSt
   st_transform(crs = 4326) %>%   # for matching projections
   st_simplify(preserveTopology = TRUE, dTolerance = 0.01) %>% 
   left_join(state_lat)
-  
+
 state_mpa$group <- factor(state_mpa$abrev,      # Reordering group factor levels
-                               levels = state_lat$abrev)
+                          levels = state_lat$abrev)
 
 state_mpa <- ggplot() +
   geom_sf(data = eez_sf,aes(), fill = "grey90") +
@@ -182,8 +182,8 @@ ports_data <- read_excel(ports_path,sheet = 2) %>%
   ) %>% 
   mutate(
     species_name = ifelse(str_detect(common_name,"black"),"black sea bass",
-                 ifelse(str_detect(common_name,"summer"),"summer flounder",
-                        common_name)
+                          ifelse(str_detect(common_name,"summer"),"summer flounder",
+                                 common_name)
     ),
     total_live_pounds = as.numeric(total_live_pounds),
     total_value = as.numeric(total_value),
@@ -254,14 +254,14 @@ top_ports <- bind_rows(
     top_frac(0.5,year_ton) %>%  # top 50
     mutate(tresh = "50th")
 )
-  
+
 ```
 
 ###### 4.1.2 Ports coordinates
 
 
 ```{r sarahs_word_data}
- 
+
 noaa_ports <- data.table(
   port =str_to_sentence(c(
     "POINT JUDITH, RI", #41.359907914553574,-71.48323250872187,
@@ -304,7 +304,36 @@ noaa_ports <- data.table(
     "newport, RI",
     "point lookout, ny", #40.587646134955875, -73.5763748512927
     "shinnecock indian reservation, ny", #40.865873983968754, -72.4420929172018
-    "westport, ma"
+    "westport, ma",
+    "east haven, ct", # 41.287588297369965, -72.91332498109327
+    "menemsha, ma", #41.35483795676015, -70.76878790249602
+    "sandwich (census name for sandwich center), ma", #41.773295466525006, -70.4834693734216
+    "niantic (east lyme (sta.)), ct", #41.307802578709925, -72.18573251980143
+    "chilmark, ma", # 41.33168444645112, -70.73421932978907
+    "edgartown, ma", # 41.43835263574402, -70.49271845442495
+    "harwich port, ma", # 41.66230920340751, -70.05980519928022
+    "hyannis, ma", # 41.62905544508146, -70.29939641433006
+    "mattapoisett, ma", # 41.65055975280539, -70.81223286674746
+    "menemsha, ma", # 41.373297740713404, -70.77670726558624
+    "center moriches, ny", # 40.782258285123575, -72.7953069671706
+    "east hampton, ny", # 41.11361718020251, -72.06705712645356
+    "greenport, ny", # 41.09916125257237, -72.35456699786954
+    "island park, ny", # 40.94632184498529, -73.72913173589376
+    "mount sinai, ny", # 41.01174251897529, -73.03449296418835
+    "wainscott, ny", # 40.91995090087518, -72.22936945904769
+    "bristol, ri", # 41.65577918701731, -71.28875398475536
+    "jamestown, ri", # 41.470526163808394, -71.37037477616862 
+    "north kingstown (local name wickford), ri", # 41.572678906576364, -71.43055123261533
+    "portsmouth, ri", # 41.59982450656618, -71.22606882143374
+    "south kingstown (town of), ri", # 41.60580919505512, -71.22689676246267
+    "tiverton, ri", # 41.61012807350179, -71.21924759566026
+     "warwick (rr name apponaug), ri", # 41.684523257387276, -71.44148310924662
+    "westerly (rr name apponaug), ri", # 41.35954244353175, -71.83754886478252
+    "westerly (census name westerly center), ri", # 41.35954244353175, -71.83754886478252
+    "accomac, va", # 37.772002695051725, -75.82419557195219
+    "little wicomico river, va", #37.89065111324239, -76.28371085150121
+    "northampton (county), va",  # 37.019536098970725, -76.26084869871761
+    "northumberland (county), va" # 37.82813770009578, -76.30849827818871
   )),
   lat = c(
     41.359907914553574,
@@ -345,7 +374,37 @@ noaa_ports <- data.table(
     41.485514346683956,
     40.587646134955875,
     40.865873983968754,
-    41.49267875746873
+    41.49267875746873,
+    41.287588297369965,
+    41.35483795676015,
+    41.773295466525006,
+    41.307802578709925,
+    41.33168444645112,
+    41.43835263574402,
+    41.66184849328297,
+    41.62905544508146,
+    41.65055975280539,
+    41.373297740713404,
+    40.782258285123575,
+    41.11361718020251,
+    41.09916125257237,
+    40.93886056049701,
+    41.01174251897529,
+    40.91995090087518,
+    41.65577918701731,
+    41.470526163808394,
+    41.572678906576364,
+    41.59982450656618,
+    41.60580919505512,
+    41.61012807350179,
+    41.684523257387276,
+    41.35954244353175,
+    41.35954244353175,
+    37.772002695051725,
+    37.89065111324239,
+    37.019536098970725,
+    37.82813770009578
+    
   ),
   lon = c(
     -71.48323250872187,
@@ -378,43 +437,80 @@ noaa_ports <- data.table(
     -72.0829697106489,
     -72.11879306740798,
     -74.09927831868308,
-     -69.95466452556448,
+    -69.95466452556448,
     -70.13193663798509,
     -70.60001340709665,
-     -73.59162509402208,
+    -73.59162509402208,
     -69.95617277257985,
-     -71.32263326975122,
-     -73.5763748512927,
-     -72.4420929172018,
-    -71.05551342392039
+    -71.32263326975122,
+    -73.5763748512927,
+    -72.4420929172018,
+    -71.05551342392039,
+    -72.91332498109327,
+    -70.76878790249602,
+    -70.4834693734216,
+    -72.18573251980143,
+    -70.73421932978907,
+    -70.49271845442495,
+    -70.05918851677775,
+    -70.29939641433006,
+    -70.81223286674746,
+    -70.77670726558624,
+    -72.7953069671706,
+    -72.06705712645356,
+    -72.35456699786954,
+    -73.71669826711323,
+    -73.03449296418835,
+    -72.22936945904769,
+    -71.28875398475536,
+    -71.37037477616862,
+    -71.43055123261533,
+    -71.22606882143374,
+    -71.22689676246267,
+    -71.21924759566026,
+     -71.44148310924662,
+     -71.83754886478252,
+    -71.83754886478252,
+     -75.82419557195219,
+     -76.28371085150121,
+     -76.26084869871761,
+     -76.30849827818871
   )
 ) %>% 
   separate(port, into = c("port_name","state_postal"), sep = ',') %>% 
   mutate(port_name = str_to_lower(port_name),
          state_postal = str_squish(state_postal))
-  
+
 # Include coordinates
 noaa_ports_complete <- top_ports %>% 
   left_join(noaa_ports,
-             by = c("port_name", "state_postal")) %>% 
+            by = c("port_name", "state_postal")) %>% 
   mutate(
     state_postal = str_to_upper(state_postal)
   )
-  
+
 # Check for missing ports (Should be empty!)
 noaa_ports_complete %>% 
-  filter(tresh == "75th",
-    is.na(lat)) %>% 
+  filter(
+         is.na(lat)) %>%
   group_by(port_name,state_postal) %>% 
   summarise(n()) %>% 
   View()
 
 # Save data for future analysis
-# write_csv(noaa_ports_complete,
-#           my_path("D","Partial", name = "top_ports.csv")
-#           )
+write_csv(noaa_ports_complete,
+          my_path("G","AcrossBoundaries/Data/Partial", name = "top_ports.csv")
+          )
 
 noaa_ports_complete
+
+
+my_path("G","AcrossBoundaries/Data/Partial","top_ports.csv", read = T) %>% 
+  filter(is.na(lat)) %>% 
+  group_by(port_name,state_postal,lat,lon) %>% 
+  tally() %>% 
+  View()
+
 
 ```
 
@@ -425,19 +521,19 @@ noaa_ports_complete
 
 port_map <- noaa_ports_complete %>%  
   filter(tresh == "75th") 
-  
+
 port_map <- ggplot() +
   geom_sf(data = eez_sf,aes(), fill = "grey90") +
   geom_sf(data = land_sf,aes(), fill = "grey50") +
   geom_point( data = port_map,
-    aes(
-      x = lon,
-      y = lat,
-      shape = species_name, 
-      color = species_name
-    ),
-    size = 3,
-    alpha = 0.5
+              aes(
+                x = lon,
+                y = lat,
+                shape = species_name, 
+                color = species_name
+              ),
+              size = 3,
+              alpha = 0.5
   ) +
   my_ggtheme_p(leg_pos = "right")
 
@@ -462,7 +558,7 @@ ggplot() +
   geom_sf(data = land_sf, aes(fill = state), alpha = 0.3) +
   geom_sf(data = state_sf, aes(color = state), fill = NA) +
   geom_point(data = subset(noaa_ports_complete, tresh == "75th"), aes(x = lon, y = lat,
-                                  shape = species_name), size = 3, alpha = 0.7) +
+                                                                      shape = species_name), size = 3, alpha = 0.7) +
   scale_color_manual(values = state_pallet) +
   scale_fill_manual(values = state_pallet) +
   theme_dark() +
@@ -525,7 +621,7 @@ state_sf_plot <- state_sf %>%
   left_join(state_lat)
 
 state_sf_plot$group <- factor(state_sf_plot$abrev, levels = state_lat$abrev)
-  
+
 state_bf_map <- ggplot(state_bf_plot) +
   geom_sf(data = eez_sf,aes(), fill = "grey90") +
   geom_sf(data = land_sf,aes(), fill = "grey50") +
@@ -551,7 +647,7 @@ We set a buffer of *5* deg (510 km, ~ 221 nm) that overshoots the EEZ a bit, but
 #Load top port data 
 ports_df <- my_path("G","AcrossBoundaries/Data/Partial", "top_ports.csv", read = T) %>% 
   filter(tresh == "75th")
-  
+
 
 port_sf <- st_as_sf(ports_df,
                     coords =c("lon","lat"),
@@ -573,7 +669,7 @@ ggplot() +
   theme_dark()
 
 
- #------------------------------ #
+#------------------------------ #
 # Saving for plot
 # ------------------------------ #
 
@@ -615,8 +711,8 @@ bbox <- c(st_bbox(state_bf))
 
 # Expand the grid
 ne_grid <- expand.grid(
-    lon = seq(from = bbox["xmin"], to = bbox["xmax"], by = 0.3),
-    lat = seq(from = bbox["ymin"], to = bbox["ymax"], by = 0.3)
+  lon = seq(from = bbox["xmin"], to = bbox["xmax"], by = 0.3),
+  lat = seq(from = bbox["ymin"], to = bbox["ymax"], by = 0.3)
 ) %>% 
   rowid_to_column("index")
 
@@ -647,8 +743,8 @@ state_sf %>%
 
 
 expand.grid(
-    lon = seq(from = 40, to = 44, by = 0.1),
-    lat = seq(from = 40, to = 45, by = 0.1)
+  lon = seq(from = 40, to = 44, by = 0.1),
+  lat = seq(from = 40, to = 45, by = 0.1)
 ) 
 
 ```
@@ -659,8 +755,8 @@ expand.grid(
 
 # Crop grid to EEz
 inter_grid_sf <- st_as_sf(ne_grid,
-             coords = c("lon", "lat"),
-             crs = 4326) %>% 
+                          coords = c("lon", "lat"),
+                          crs = 4326) %>% 
   st_intersection(eez_sf)
 
 inter_grid_df <- as.data.frame(inter_grid_sf) %>% 
@@ -690,17 +786,17 @@ Once we have a gridded area, we converted the grid to a `sf` so we can merge it 
 # Convert grid to sf
 # ---------------- #
 grid_sw_sf <- st_as_sf(ne_grid,
-             coords = c("lon", "lat"),
-             crs = 4326) %>% 
+                       coords = c("lon", "lat"),
+                       crs = 4326) %>% 
   st_join(state_bf) %>% 
   filter(!is.na(state))
 
 # Create data frame for future computations
 # Note, will be used in next chunk
 grid_sw_bf_dt <- as.data.frame(grid_sw_sf) %>%
-    select(index,state)
-    # group_by(state) %>% 
-    # summarise(length(index))
+  select(index,state)
+# group_by(state) %>% 
+# summarise(length(index))
 
 
 # ---------------- #
@@ -736,16 +832,16 @@ gridExtra::grid.arrange(
 # Convert grid to sf 
 # ---------------- #
 grid_fp_sf <- st_as_sf(ne_grid,
-             coords = c("lon", "lat"),
-             crs = 4326) %>% 
+                       coords = c("lon", "lat"),
+                       crs = 4326) %>% 
   st_join(port_bf) %>% # join to port sf
   filter(!is.na(port_name)) #%>%
-  # distinct(index,port_name, .keep_all = TRUE) #removes like 400K overlapping rows
+# distinct(index,port_name, .keep_all = TRUE) #removes like 400K overlapping rows
 
 # Create data frame for future computations
 # Note, will be used in next chunk
 grid_fp_bf_dt <- as.data.frame(grid_fp_sf) %>%
-    select(index,port_name,species_name)
+  select(index,port_name,species_name)
 
 # ---------------- #
 # [TEST] 
@@ -789,10 +885,10 @@ eez_sf <- st_read(my_path("G", extra_path = "Spatial/SAU/SAU_Shapefile", name = 
   st_transform(crs = 4326) %>% # 4326
   filter(eez_name == "USA (East Coast)") %>% 
   
-
-# Get the overlapping segments 
-# NOTE: Takes some gooooood time (~20 min)
-Sys.time()
+  
+  # Get the overlapping segments 
+  # NOTE: Takes some gooooood time (~20 min)
+  Sys.time()
 grid_eez_sw_sf <- st_intersection(grid_sw_sf,eez_sf)
 Sys.time()
 
@@ -886,7 +982,7 @@ my_path("R", "Partial",name = "grid_eez_sw_sf.csv", read = T) %>%
   spread(approach,n_grid) %>% 
   mutate(difference =state_waters-fishing_port,
          percentage_sw = round((difference/state_waters)*100)
-         )
+  )
 
 ```
 
@@ -947,34 +1043,34 @@ tis <- function(input_data, grid, yr, taxa, reg){
     group_by(region,year,spp,lat,lon) %>%
     summarise_at(vars(wtcpue),
                  mean,na.rm = T)
-    
+  
   # Only interpolate cases where there is more than 3 rows
   # Marked by the function 
-    if(nrow(data) <= 3){
-      fit_tin <- tibble()
-    }else{
-      
-      # Triangular Irregular Surface
-      fit_tin <- interp::interp( # using {interp}
-        x = data$lon,           # the function actually accepts coordinate vectors
-        y = data$lat,
-        z = data$wtcpue,
-        xo = grid$lon,     # here we already define the target grid
-        yo = grid$lat,
-        output = "points"
-      ) %>% 
-        bind_cols() %>% 
-        bind_cols(grid) %>%
-        mutate(year = yr,
-               region = reg,
-               spp = taxa) %>% 
-        select(index, 
-               # state,
-               year, region, spp, lon=x, lat=y, value = z)
-      
-    }
-   
-    return(fit_tin)
+  if(nrow(data) <= 3){
+    fit_tin <- tibble()
+  }else{
+    
+    # Triangular Irregular Surface
+    fit_tin <- interp::interp( # using {interp}
+      x = data$lon,           # the function actually accepts coordinate vectors
+      y = data$lat,
+      z = data$wtcpue,
+      xo = grid$lon,     # here we already define the target grid
+      yo = grid$lat,
+      output = "points"
+    ) %>% 
+      bind_cols() %>% 
+      bind_cols(grid) %>%
+      mutate(year = yr,
+             region = reg,
+             spp = taxa) %>% 
+      select(index, 
+             # state,
+             year, region, spp, lon=x, lat=y, value = z)
+    
+  }
+  
+  return(fit_tin)
 }
 
 # Test me
@@ -1044,7 +1140,7 @@ run_tis <- function(input_data, grid, years, taxa, reg){
 }
 
 # Test me
-    # run_tis(input_data = ocean_data, grid = grid_eez_fp_df, taxa = "Centropristis striata", years = seq(1970,1980), reg = regions, method = "testa")
+# run_tis(input_data = ocean_data, grid = grid_eez_fp_df, taxa = "Centropristis striata", years = seq(1970,1980), reg = regions, method = "testa")
 
 ```
 
@@ -1066,19 +1162,19 @@ This is just a sub-step to split up the data into single species files. This mak
 ```{r dat_exploded, eval = F, echo = F, fig.width = 9}
 
 ocean_data <- readRDS("/Volumes/Enterprise/Data/pinskylab-OceanAdapt-966adf0/data_clean/dat_exploded.rds") #%>% 
-  # filter(spp == "Centropristis striata",
-       # region %in% c("Northeast US Fall" , "Northeast US Spring")) #No more seasons
+# filter(spp == "Centropristis striata",
+# region %in% c("Northeast US Fall" , "Northeast US Spring")) #No more seasons
 
 
 spp_data <- function(spp){
   
   name_save <- paste0(my_path("D","Spp/Observation"),"obs_",str_replace(spp[1], " ", "_"),".csv")
-
-ocean_data %>% 
-  filter(spp == spp,
-       region %in% c("Northeast US Fall" , "Northeast US Spring")
-       ) %>% 
-  write_csv(., name_save)
+  
+  ocean_data %>% 
+    filter(spp == spp,
+           region %in% c("Northeast US Fall" , "Northeast US Spring")
+    ) %>% 
+    write_csv(., name_save)
   
 }
 
@@ -1087,15 +1183,15 @@ spp_list <- ocean_data %>%
          spp != "NA") %>% 
   pull(spp) %>% 
   unique()
-  
+
 
 lapply(spp_list, spp_data)
 
 
 subset_data <- ocean_data %>% 
   filter(spp == "Centropristis striata",
-       region %in% c("Northeast US Fall" , "Northeast US Spring")
-       )
+         region %in% c("Northeast US Fall" , "Northeast US Spring")
+  )
 
 ggplot() +
   geom_point(data = subset(subset_data, wtcpue = 0.0),
@@ -1216,7 +1312,7 @@ x <- as.data.frame(st_read(my_path("D", "Partial/grid_fp",name="grid_eez_fp.shp"
   mutate(state= str_to_sentence(ID)) %>% 
   select(1:6,state) %>% 
   mutate(
-     spp = ifelse(spp == "summer flounder","Paralichthys dentatus", 
+    spp = ifelse(spp == "summer flounder","Paralichthys dentatus", 
                  ifelse(spp == "scup", "Stenotomus chrysops", 
                         "Centropristis striata"
                  )
@@ -1242,7 +1338,7 @@ land_sf <- st_as_sf(map("state", plot = FALSE, fill = TRUE)) %>%
   filter(ID %in% States) %>% 
   mutate(abrev = c("CT","DE","ME","MD","MA","NH","NJ","NY","NC","RI","VA"),
          state = str_to_sentence(ID)
-         )
+  )
 
 # US EEZ shapefile
 eez_sf <- st_read(my_path("G", extra_path = "Spatial/SAU/SAU_Shapefile", name = "SAUEEZ_July2015.shp")) %>% 
@@ -1265,31 +1361,31 @@ grids_sw <- bind_rows(
   select(index,state,abrev,lat,lon,spp) %>% 
   mutate(spatial = "sw",
          port_name = NA
-         )
+  )
 
 grids_fp <- my_path("G", "AcrossBoundaries/Data/Partial/grid_fp", name = "grid_eez_fp_df.csv", read = T
 ) %>%
   mutate(spatial = "fp",
-  spp = ifelse(spp == "summer flounder","Paralichthys dentatus", 
-                 ifelse(spp == "scup", "Stenotomus chrysops", 
-                        "Centropristis striata"
-                 )
-    )
+         spp = ifelse(spp == "summer flounder","Paralichthys dentatus", 
+                      ifelse(spp == "scup", "Stenotomus chrysops", 
+                             "Centropristis striata"
+                      )
+         )
   )
-  
+
 
 # Join both approaches
 grids <- bind_rows(grids_sw,grids_fp)
 
 # unique(grids$spp)
-  
+
 # Ports data
 ports_df <- my_path("G","AcrossBoundaries/Data/Partial", "top_ports.csv", read = T) %>% 
   filter(tresh == "75th") %>%
   group_by(species_name,state_postal) %>% 
   summarise(n =n()) %>% 
   select(-n)
-  # distinct(c(,state_postal), .keep_all = T) # No need for duplication
+# distinct(c(,state_postal), .keep_all = T) # No need for duplication
 
 # Species data
 
@@ -1300,7 +1396,7 @@ Species <- c(
   "Paralichthys dentatus", #summer flounder
   "Stenotomus chrysops", #Scup"
   "Centropristis striata"#, # black sea bass
-  )
+)
 
 spp_paths <- list.files(my_path("G",extra_path = "AcrossBoundaries/Results/Partial/Interpolation/"))
 
@@ -1332,7 +1428,7 @@ historic_spp <- bind_rows(lapply(taxon_sw, fread)) %>%
     label = ifelse(spp == "Paralichthys dentatus" & year >= 1980 & year <= 1986,"Reference",
                    ifelse(spp == "Stenotomus chrysops" & year >= 1988 & year <= 1992,"Reference",
                           ifelse( spp == "Centropristis striata" & year >= 1980 & year <= 2001,"Reference",
-                                 ifelse(year > 2009,"2010-2019",NA)
+                                  ifelse(year > 2009,"2010-2019",NA)
                           )
                    )
     )
@@ -1378,7 +1474,7 @@ periods <-tibble(
            seq(1997,2008,1),
            seq(2009,2019,1)
   )
-  )
+)
 
 
 state_lat <- historic_spp %>%
@@ -1457,14 +1553,14 @@ my_path("D","Partial","top_ports.csv", read = T) %>%
   )
 
 # Most distant ports Mntauk and point lookout
-   
+
 
 ny_dist <- grids %>% 
   filter(port_name %in% c("montauk","point lookout")) %>% 
   group_by(port_name) %>% 
   summarise_at(vars(lat,lon),
                mean)
-  
+
 
 # Distance between furthest ports in NY
 geosphere::distm(c(ny_dist$lon[1], ny_dist$lat[1]), c(ny_dist$lon[2], ny_dist$lat[2]), fun = geosphere::distHaversine)/1000
@@ -1493,7 +1589,7 @@ grid_eez_fp_sf <-  st_read(my_path("G","AcrossBoundaries/Data/Partial/grid_fp", 
   select(index,abrev,geometry) %>% 
   mutate(method = "fishing_port"#,
          # state = str_to_sentence(landing_port)
-         ) %>% 
+  ) %>% 
   left_join(state_lat)
 
 
@@ -1523,7 +1619,7 @@ p_sw <- gridExtra::grid.arrange(
     coord_sf(ylim = c(30,48)) +
     scale_y_continuous(breaks = c(30,35,40,45))+
     labs(x = "", y = "", title = ""),
-    # theme(plot.title = element_text(size = 20)),
+  # theme(plot.title = element_text(size = 20)),
   # Showing each state separately
   ggplot(grid_eez_sw_sf) +
     geom_sf(data = land_sf, aes(), fill = "grey50") +
@@ -1559,8 +1655,8 @@ grid_eez_fp_sf <- grid_eez_sw_sf %>%
   mutate(index = NA) %>% 
   bind_rows(grid_eez_fp_sf) %>% 
   distinct(.keep_all = T) 
-  
-  
+
+
 p_fp <- gridExtra::grid.arrange(
   # Overall (overlapping) position
   ggplot(data = subset(grid_eez_fp_sf, index != "NA")) +
@@ -1620,7 +1716,7 @@ ggsave(filename = "buffer_figure.jpg",
        path = my_path("R","Figures"),
        width = 11,
        height = 11
-       )
+)
 
 ```
 
@@ -1726,12 +1822,12 @@ inter_map <- ggplot() +
   #                                  box.padding = 0.10,
   #                                  hjust = 1) +
   # Viridis option
-# scale_fill_viridis("CPUE",
-#                    limits = c(0,40),
-#                    # limits = c(-5,1), # for log10
-#                    direction = -1,
-#                     end = 0.9
-#                    ) +
+  # scale_fill_viridis("CPUE",
+  #                    limits = c(0,40),
+  #                    # limits = c(-5,1), # for log10
+  #                    direction = -1,
+  #                     end = 0.9
+  #                    ) +
 # scale_color_viridis("CPUE",
 #                     limits = c(0,40),
 #                     # limits = c(-5,1), # for log10
@@ -1743,7 +1839,7 @@ scale_fill_gradientn("CPUE\n(log 10)",
                      colours = pal,
                      # limits = c(0,40) # For cpue
                      limits = c(-5,1) # for log10
-
+                     
 ) +
   scale_color_gradientn("CPUE\n(log 10)",
                         colours = pal,
@@ -1752,7 +1848,7 @@ scale_fill_gradientn("CPUE\n(log 10)",
   ) +
   facet_grid(spp~season+labelx) +
   my_ggtheme_m(map_type = "na", leg_pos = "right",ax_tx_s = 7,ax_tl_s = 10,leg_tx_s = 12)
-  
+
 
 
 ggsave("interpolation_wa.jpg",
@@ -1869,7 +1965,7 @@ map_plot <- land_sf %>%
   viridis::scale_fill_viridis("Average proportion per State", alpha = 0.8, 
                               breaks = seq(0,35,5),
                               limits=(c(0,35))
-                              )+
+  )+
   facet_grid(spatial~ spp+labelx) +
   labs(x = "", 
        y = "") +
@@ -1896,8 +1992,8 @@ diff_plot <- land_sf %>%
   scale_fill_gradient2("% Difference\n(fp-sw)", 
                        breaks = seq(-14,35,7),
                        limits=(c(-14,35)),
-                              # labels = c("<-10",seq(-75,75,25),">100")
-                              ) +
+                       # labels = c("<-10",seq(-75,75,25),">100")
+  ) +
   facet_grid(spatial~ spp+labelx) +
   labs(x = "", 
        y = "") +
@@ -1910,7 +2006,7 @@ diff_plot <- land_sf %>%
   theme(legend.key.width = unit(4,"line"),
         strip.background = element_blank(),
         strip.text.x = element_blank()
-        ) 
+  ) 
 
 
 
@@ -1934,15 +2030,15 @@ p <- ggdraw() +
   #            scale = 0.15) +
   # draw_image("https://media.fisheries.noaa.gov/styles/original/s3/2021-03/640x427-summer-flounder.png?itok=B6G4jkW7", 
   #            x = 0.35,
-  #            y = 0.345, 
-  #            scale = 0.15) +
-  draw_plot_label(label = c("Latitude", "Longitude"), 
-                  size = 18,
-                  angle = c(90,0),
-                  x = c(0,0.45), 
-                  y = c(0.45,0.15)
-  )
-  
+#            y = 0.345, 
+#            scale = 0.15) +
+draw_plot_label(label = c("Latitude", "Longitude"), 
+                size = 18,
+                angle = c(90,0),
+                x = c(0,0.45), 
+                y = c(0.45,0.15)
+)
+
 
 save_plot(
   path = my_path("R","Figures"),
@@ -1988,7 +2084,7 @@ map_plot <- land_sf %>%
   viridis::scale_fill_viridis("Average proportion per State", alpha = 0.8, 
                               breaks = seq(0,15,5),
                               limits=(c(0,15))
-                              )+
+  )+
   facet_grid(season~ spp+labelx) +
   labs(x = "", 
        y = "") +
@@ -2015,8 +2111,8 @@ diff_plot <- land_sf %>%
   scale_fill_gradient2("% Difference\n(Fall-Spring)", 
                        breaks = seq(-5,5,1),
                        limits=(c(-5,5)),
-                              # labels = c("<-10",seq(-75,75,25),">100")
-                              ) +
+                       # labels = c("<-10",seq(-75,75,25),">100")
+  ) +
   facet_grid(season~ spp+labelx) +
   labs(x = "", 
        y = "") +
@@ -2029,7 +2125,7 @@ diff_plot <- land_sf %>%
   theme(legend.key.width = unit(4,"line"),
         strip.background = element_blank(),
         strip.text.x = element_blank()
-        ) 
+  ) 
 
 
 # Cowplot option
@@ -2044,7 +2140,7 @@ p <- ggdraw() +
                   x = c(0,0.45), 
                   y = c(0.45,0.15)
   )
-  
+
 
 save_plot(
   path = my_path("R","Figures"),
@@ -2083,19 +2179,19 @@ state_fit <- historic_spp %>%
   mutate(percentage = state_value/total_value*100) %>% 
   group_by(state,region,spp,spatial) %>% 
   mutate(RMean = zoo::rollmean(x = percentage, 
-                            10,
-                            fill = NA,
-                            na.rm=T)
-    ) %>% 
+                               10,
+                               fill = NA,
+                               na.rm=T)
+  ) %>% 
   #Only show results for spring
   filter(str_detect(region,"Spring"),
          !is.na(RMean) # Remove NAs from rollmean
-         ) %>%  
+  ) %>%  
   left_join(state_lat) %>% 
   mutate(
-         spatial = ifelse(spatial == "fp","Fishing ports",
-                          ifelse(spatial == "sw","State waters","Difference")
-         )
+    spatial = ifelse(spatial == "fp","Fishing ports",
+                     ifelse(spatial == "sw","State waters","Difference")
+    )
   )
 
 
@@ -2127,22 +2223,22 @@ ssp_area <-
     )
   ) +
   geom_area(data = historic_periods,
-             aes(
-               x = year,
-               y = n,
-               color = period
-             ),
-             # fill = "gray90",
-             alpha = 0.3,
+            aes(
+              x = year,
+              y = n,
+              color = period
+            ),
+            # fill = "gray90",
+            alpha = 0.3,
             stat = "identity"
-             ) +
+  ) +
   ylab("Propotion (10 yrs running average)") +
   # viridis::scale_fill_viridis(discrete = T, alpha = 0.8) +
   scale_fill_manual("State\n(Latitudinal order)",
                     values = state_pallet,
-                               labels = state_fit %>% arrange(desc(order)) %>%  pull(state) %>% unique()
-                    ) +
-    scale_color_manual("",values = "grey90") +
+                    labels = state_fit %>% arrange(desc(order)) %>%  pull(state) %>% unique()
+  ) +
+  scale_color_manual("",values = "grey90") +
   facet_grid(spp~spatial) +
   scale_x_continuous(breaks = seq(1979,2015,9),limits = c(1979,2015))+
   xlab("Year") +
@@ -2151,17 +2247,133 @@ ssp_area <-
         legend.title.align=0.5)
 
 
-  ggsave(filename = "area_plot_avg_spp_sptl.jpg",
-         plot = ssp_area,
-         path = my_path("R","Figures"),
-         width = 14,
-         height = 8
-  )
+ggsave(filename = "area_plot_avg_spp_sptl.jpg",
+       plot = ssp_area,
+       path = my_path("R","Figures"),
+       width = 14,
+       height = 8
+)
 
 
 ```
 <!-- ![Proportion change aggregated all species map for paper](/Volumes/Enterprise/Data/AcrossBoundaries/Results/Figures/area_plot_avg_spp_sptl.jpg) -->
 
+# Sensitivity analysis
+
+## Top ports sensitivity
+
+```{r sen_data}
+# Estimate distance between points
+
+top_ports_sen <- my_path("G","AcrossBoundaries/Data/Partial","top_ports.csv", read = T)
+
+eez_sf <- st_read(my_path("G", extra_path = "Spatial/SAU/SAU_Shapefile", name = "SAUEEZ_July2015.shp")) %>% 
+  st_transform(crs = 4326) %>% # 4326
+  filter(Name == "USA (East Coast)") %>% 
+  st_simplify(preserveTopology = TRUE, dTolerance = 0.1) #0.1 for paper
+```
+
+
+### Number of ports per state and sen
+
+```{r number}
+# Number of ports per tresh
+
+top_ports_sen %>% 
+  group_by(species_name, state_postal,tresh) %>% 
+  tally() %>% 
+  # View()
+  ggplot() +
+  geom_bar(
+    aes(
+      x = tresh,
+      y = n,
+      fill = tresh
+    ),
+    stat = "identity"
+  ) +
+  facet_grid(species_name~state_postal) +
+  labs(y = "Number of ports")
+
+```
+
+
+
+### Number of ports per state and sen
+
+```{r data_prep}
+
+port_sf <- st_as_sf(top_ports_sen,
+                    coords =c("lon","lat"),
+                    crs = 4326)
+
+# Buffer state waters
+port_bf <- st_buffer(port_sf, 5) %>% # port
+  st_transform(4326) %>% # to match shape
+  st_set_crs(4326)
+
+
+# Expand grid
+
+# xmin      ymin      xmax      ymax 
+# -82.57346  29.77459 -62.88543  49.19141 
+
+# Expand the grid
+ne_grid <- expand.grid(
+  lon = seq(from = -82.57346, to = -62.88543, by = 0.3),
+  lat = seq(from = 29.77459, to = 49.19141 , by = 0.3)
+) %>% 
+  rowid_to_column("index")
+
+# Crop grid to EEz
+grid_fp_sf <- st_as_sf(ne_grid,
+                       coords = c("lon", "lat"),
+                       crs = 4326) %>% 
+  st_join(port_bf) %>% # join to port sf
+  filter(!is.na(port_name)) #%>%
+# distinct(index,port_name, .keep_all = TRUE) #removes like 400K overlapping rows
+
+
+
+# Create data frame for future computations
+# Note, will be used in next chunk
+grid_fp_bf_dt <- as.data.frame(grid_fp_sf) %>%
+  select(index,port_name,state_postal,species_name,tresh)
+
+```
+
+#### Numbers
+
+```{r numbers_per_tresh}
+
+sens_plot <- grid_fp_bf_dt %>% 
+  group_by(species_name,state_postal,Threshold = tresh) %>% 
+  summarise(n = n(),
+            nuni = length(unique(as.character(index)))
+  ) %>% 
+  ggplot() +
+  geom_bar(
+    aes(
+      x = Threshold,
+      y = nuni,
+      fill = Threshold
+    ),
+    stat = "identity"
+  ) +
+  facet_grid(species_name~state_postal) +
+  my_ggtheme_p(leg_pos = "right",
+               ax_tx_s = 11
+               ) +
+  theme(axis.text.x = element_blank(),
+        strip.background = element_rect(fill = "grey"))+
+  labs(y = "Number of grid-cells (n)", x = "Threshold") +
+  scale_fill_brewer(palette = "Set3")
+  
+
+ggsave(filename = "tresh_sens_plot.png",
+       sens_plot)
+
+```
 # Old code
 
 ## Fishing ports WPI
@@ -2189,8 +2401,8 @@ gfw_data <- my_path("D","Spatial",name = "gfw_portdata.csv", read = T) %>%
 
 # Convert data to sf for mergig
 gfw_sf <- st_as_sf(gfw_data,
-             coords = c("lon", "lat"),
-             crs = 4326)
+                   coords = c("lon", "lat"),
+                   crs = 4326)
 
 # Merge data with state waters to,locate ports 
 port_sf <- st_join(gfw_sf,state_sf) %>% 
@@ -2209,9 +2421,9 @@ So...Looks like some ports are "far from shore" which I don't really know what i
 # Get number of ports per state
 ports_n_data <- port_sf %>% 
   as.data.frame() %>% 
-    filter(distance_from_shore_m == 0) %>% 
-    group_by(state) %>% 
-    summarise(n_ports = n()) 
+  filter(distance_from_shore_m == 0) %>% 
+  group_by(state) %>% 
+  summarise(n_ports = n()) 
 
 # plot it
 gridExtra::grid.arrange(
@@ -2368,14 +2580,14 @@ quota_df <- quota_allocation %>%
          Historic = quota*100) %>% 
   group_by(state,quota,spp) %>% 
   mutate(RMean = zoo::rollmean(x = Distribution, 
-                            10,
-                            fill = NA,
-                            na.rm=T)
-    ) %>% 
+                               10,
+                               fill = NA,
+                               na.rm=T)
+  ) %>% 
   #Only show results for spring
   filter(str_detect(region,"Spring"),
          !is.na(RMean) # Remove NAs from rollmean
-         ) %>%  
+  ) %>%  
   left_join(state_lat) %>% 
   filter(
     # spp =="Centropristis striata"
@@ -2412,9 +2624,9 @@ quota_df %>%
     )
   ) +
   scale_color_manual("State",
-    values = state_pallet,
-    labels = quota_df %>% arrange(order) %>%  pull(state) %>% unique()
-    ) +
+                     values = state_pallet,
+                     labels = quota_df %>% arrange(order) %>%  pull(state) %>% unique()
+  ) +
   facet_grid(type~spp, 
              scales = "free") +
   theme_dark()
@@ -2441,13 +2653,13 @@ quota_df %>%
   ) +
   labs(x = "Year",y = "Quota (%)") +
   scale_fill_manual("State",
-    values = state_pallet,
-    labels = quota_df %>% arrange(order) %>%  pull(state) %>% unique()
-    ) +
+                    values = state_pallet,
+                    labels = quota_df %>% arrange(order) %>%  pull(state) %>% unique()
+  ) +
   scale_color_manual("State",
-    values = state_pallet,
-    labels = quota_df %>% arrange(order) %>%  pull(state) %>% unique()
-    ) +
+                     values = state_pallet,
+                     labels = quota_df %>% arrange(order) %>%  pull(state) %>% unique()
+  ) +
   scale_linetype("Quota") +
   facet_grid(spp ~ level)+
   theme_dark()
@@ -2478,8 +2690,8 @@ eff_index <- quota_df %>%
          index_rmean = RMean/Historic) %>%
   gather("level","index",index:index_rmean) %>%
   filter(index < 5) # there are some craaaazy outliers
-  # View()
-  
+# View()
+
 ggplot(eff_index) +
   geom_line(
     aes(
@@ -2490,13 +2702,13 @@ ggplot(eff_index) +
   ) +
   labs(x = "Year",y = "Efficiency index") +
   scale_fill_manual("State",
-    values = state_pallet,
-    labels = quota_df %>% arrange(order) %>%  pull(state) %>% unique()
-    ) +
+                    values = state_pallet,
+                    labels = quota_df %>% arrange(order) %>%  pull(state) %>% unique()
+  ) +
   scale_color_manual("State",
-    values = state_pallet,
-    labels = quota_df %>% arrange(order) %>%  pull(state) %>% unique()
-    ) +
+                     values = state_pallet,
+                     labels = quota_df %>% arrange(order) %>%  pull(state) %>% unique()
+  ) +
   facet_grid(level~spp,
              scales = "free")+
   theme_dark()
@@ -2539,7 +2751,7 @@ port_data <- as.data.frame(str_split_fixed(noaa_landings$Port., ",",2)) %>%
   group_by(abrv,name,port) %>% 
   summarise(sum_pounds_million = sum(millions_of_pounds),
             sum_dlr_million = sum(x_millions_of_dollars)
-            ) %>% 
+  ) %>% 
   left_join(state_totals) %>% 
   mutate(
     per_sum = sum_dlr_million/total_dlr_million*100,
@@ -2548,24 +2760,24 @@ port_data <- as.data.frame(str_split_fixed(noaa_landings$Port., ",",2)) %>%
     cum_per_pnds = cumsum(sum_pounds_million/total_pounds_million*100)
   )
 
- 
 
 
-  # Function to get percentiles
-      # https://www.tidyverse.org/blog/2020/03/dplyr-1-0-0-summarise/
-      quibble <- function(x, q = p) {
-        tibble(x = quantile(x, q), q = q)
-      }
-      # Get the percentile treshold per year, ensemble and neighbour id
-    percentile <- port_data %>% 
-        group_by(abrv) %>%
-        do(quibble(.$com_sum, 0.50)) %>% 
-      left_join(port_data) %>% 
-      mutate(drop = ifelse(x < sum_dlr_million,"drop","keep" )) %>% 
-      filter(drop == "keep")
 
- 
- 
+# Function to get percentiles
+# https://www.tidyverse.org/blog/2020/03/dplyr-1-0-0-summarise/
+quibble <- function(x, q = p) {
+  tibble(x = quantile(x, q), q = q)
+}
+# Get the percentile treshold per year, ensemble and neighbour id
+percentile <- port_data %>% 
+  group_by(abrv) %>%
+  do(quibble(.$com_sum, 0.50)) %>% 
+  left_join(port_data) %>% 
+  mutate(drop = ifelse(x < sum_dlr_million,"drop","keep" )) %>% 
+  filter(drop == "keep")
+
+
+
 # Number of ports per state
 percentile %>%
   group_by(abrv) %>%
@@ -2594,59 +2806,59 @@ top_ports <- top_dlr %>%
   arrange(abrv) %>% 
   group_by(abrv) %>% 
   summarise(n())
-  
-  
-  
-  
-  # Manually estimated from google maps
-  bind_cols(
-    lat = c(41.3345476816744,
-            41.34138388600569,
-            41.636467065626505,
-            38.32347787720262, 
-            44.15386541519202, 
-            43.66617357876293,
-            35.90400984508054, 
-            43.1123838312889,
-            38.971394018750296, 
-            41.05268318179009, 
-            41.37054800823896, 
-            36.992858601329836, 
-            37.839637137249234
-            ),
-    long = c(-71.91332744028196,
-             -72.08202556545858,
-             -70.91964446265216,
-             -75.1014183484163,
-             -68.66402196775981,
-             -70.2288380196981,
-             -75.55554059613718,
-             -70.85815866495484,
-             -74.8122413826507,
-             -71.9688254628936,
-             -71.48032452726083,
-             -76.26817146730399,
-              -76.24292771914955
-             )
-  ) %>% 
+
+
+
+
+# Manually estimated from google maps
+bind_cols(
+  lat = c(41.3345476816744,
+          41.34138388600569,
+          41.636467065626505,
+          38.32347787720262, 
+          44.15386541519202, 
+          43.66617357876293,
+          35.90400984508054, 
+          43.1123838312889,
+          38.971394018750296, 
+          41.05268318179009, 
+          41.37054800823896, 
+          36.992858601329836, 
+          37.839637137249234
+  ),
+  long = c(-71.91332744028196,
+           -72.08202556545858,
+           -70.91964446265216,
+           -75.1014183484163,
+           -68.66402196775981,
+           -70.2288380196981,
+           -75.55554059613718,
+           -70.85815866495484,
+           -74.8122413826507,
+           -71.9688254628936,
+           -71.48032452726083,
+           -76.26817146730399,
+           -76.24292771914955
+  )
+) %>% 
   # Delaware
   bind_rows(
     data.frame(abrv = "DE",
-      name = "Indian river",
-      port = "Indian river, DE",
-      lat = as.double(38.62113593403746),
-      long = -75.06397021718345
-      )
+               name = "Indian river",
+               port = "Indian river, DE",
+               lat = as.double(38.62113593403746),
+               long = -75.06397021718345
+    )
   )
 
 # write_csv(top_ports,"top_neus_ports.csv")
 
 
-  port_data %>% 
-    filter(com_mean >= 75) %>% 
-    group_by(abrv) %>% 
-    View()
-    summarise(n())
+port_data %>% 
+  filter(com_mean >= 75) %>% 
+  group_by(abrv) %>% 
+  View()
+summarise(n())
 
 ```
 
@@ -2676,9 +2888,9 @@ write_sf(grid_eez_sf, paste0(my_path("D", "Spatial"),"grid_eez_sf.shp"))
 # Now save it as a DF too
 
 # grid_eez_df <- as.data.frame(grid_eez_sf) %>%
-  # select(state,index) %>%
-  # left_join(ne_grid,
-            # by = "index")
+# select(state,index) %>%
+# left_join(ne_grid,
+# by = "index")
 
 # write_csv(grid_eez_df, paste0(my_path("R", "Partial"),"grid_eez_df.csv"))
 ```
@@ -2728,7 +2940,7 @@ p <- land_sf %>%
 ggplotly(p,
          tooltip = "text",
          dynamicTicks = FALSE) %>% 
-    style(hoverlabel = list(bgcolor = "white"), hoveron = "fill")
+  style(hoverlabel = list(bgcolor = "white"), hoveron = "fill")
 
 
 ```
@@ -2748,15 +2960,15 @@ state_change <-historic_spp %>%
             by = c("year","region","spp","spatial")) %>%
   mutate(percentage = state_value/total_value*100,
          label = ifelse(year >= 1980 & year <= 2001,"Reference",
-                         ifelse(year > 2001,"Today",NA)
-                         )
-         ) %>% 
+                        ifelse(year > 2001,"Today",NA)
+         )
+  ) %>% 
   group_by(state,label,region,spp,spatial) %>% 
   summarise(mean_per = round(mean(percentage)),.groups = "drop") %>% 
   # Only show results for spring
   filter(str_detect(region,"Spring"),
          !is.na(label)
-         ) %>% 
+  ) %>% 
   select(-region) %>% 
   spread(label,mean_per) %>% 
   mutate(change = (Today-Reference)/(Today)*100,
@@ -2769,18 +2981,18 @@ state_change <-historic_spp %>%
   mutate(
     #difference = (fp-sw)/((fp+sw)/2)*100,
     difference = abs(fp-sw)#,
-         # difference = ifelse(difference > 100,100,
-         #                     ifelse(difference < -100,-100,difference)
-         # )
+    # difference = ifelse(difference > 100,100,
+    #                     ifelse(difference < -100,-100,difference)
+    # )
   ) %>% 
   gather("spatial","mean_per",fp:difference) %>% 
   mutate(
-         spatial = ifelse(spatial == "fp","Fishing ports",
-                          ifelse(spatial == "sw","State Waters","Difference")
-         ),
-         mean_per= replace_na(mean_per,0)# for those 0/0
+    spatial = ifelse(spatial == "fp","Fishing ports",
+                     ifelse(spatial == "sw","State Waters","Difference")
+    ),
+    mean_per= replace_na(mean_per,0)# for those 0/0
   )
-   
+
 
 # The plot
 prop_chng_map <- land_sf %>% 
@@ -2793,7 +3005,7 @@ prop_chng_map <- land_sf %>%
                               limits = c(-100,100),
                               breaks = seq(-100,100,25),
                               labels = c("<-100",seq(-75,75,25),">100")
-                              ) +
+  ) +
   facet_grid(spatial~ spp) +
   labs(x = "", 
        y = "") +
@@ -2827,7 +3039,7 @@ prop_chng_map_diff <- land_sf %>%
                               limits = c(-100,100),
                               breaks = seq(-100,100,25),
                               labels = c("<-100",seq(-75,75,25),">100")
-                              ) +
+  ) +
   facet_grid(spatial~ spp) +
   labs(x = "", 
        y = "") +
@@ -2855,7 +3067,7 @@ p <- ggdraw() +
                   x = c(0.1,0.45), 
                   y = c(0.45,0.11)
   )
-    
+
 
 save_plot(
   path = my_path("R","Figures"),
@@ -2884,15 +3096,15 @@ state_change <-historic_spp %>%
             by = c("year","region","spp","spatial")) %>%
   mutate(percentage = state_value/total_value*100,
          label = ifelse(year >= 1980 & year <= 2001,"Reference",
-                         ifelse(year > 2001,"Today",NA)
-                         )
-         ) %>% 
+                        ifelse(year > 2001,"Today",NA)
+         )
+  ) %>% 
   group_by(state,label,region,spp,spatial) %>% 
   summarise(mean_per = round(mean(percentage)),.groups = "drop") %>% 
   # Only show results for spring
   filter(str_detect(region,"Spring"),
          !is.na(label)
-         ) %>% 
+  ) %>% 
   select(-region) %>% 
   spread(label,mean_per) %>% 
   mutate(change = (Today-Reference)/(Today)*100,
@@ -2905,18 +3117,18 @@ state_change <-historic_spp %>%
   mutate(
     #difference = (fp-sw)/((fp+sw)/2)*100,
     difference = abs(fp-sw)#,
-         # difference = ifelse(difference > 100,100,
-         #                     ifelse(difference < -100,-100,difference)
-         # )
+    # difference = ifelse(difference > 100,100,
+    #                     ifelse(difference < -100,-100,difference)
+    # )
   ) %>% 
   gather("spatial","mean_per",fp:difference) %>% 
   mutate(
-         spatial = ifelse(spatial == "fp","Fishing ports",
-                          ifelse(spatial == "sw","State Waters","Difference")
-         ),
-         mean_per= replace_na(mean_per,0)# for those 0/0
+    spatial = ifelse(spatial == "fp","Fishing ports",
+                     ifelse(spatial == "sw","State Waters","Difference")
+    ),
+    mean_per= replace_na(mean_per,0)# for those 0/0
   )
-   
+
 
 # The plot
 prop_chng_map <- land_sf %>% 
@@ -2929,7 +3141,7 @@ prop_chng_map <- land_sf %>%
                               limits = c(-100,100),
                               breaks = seq(-100,100,25),
                               labels = c("<-100",seq(-75,75,25),">100")
-                              ) +
+  ) +
   facet_grid(spatial~ spp) +
   labs(x = "", 
        y = "") +
@@ -2963,7 +3175,7 @@ prop_chng_map_diff <- land_sf %>%
                               limits = c(-100,100),
                               breaks = seq(-100,100,25),
                               labels = c("<-100",seq(-75,75,25),">100")
-                              ) +
+  ) +
   facet_grid(spatial~ spp) +
   labs(x = "", 
        y = "") +
@@ -2991,7 +3203,7 @@ p <- ggdraw() +
                   x = c(0.1,0.45), 
                   y = c(0.45,0.11)
   )
-    
+
 
 save_plot(
   path = my_path("R","Figures"),
@@ -3022,17 +3234,17 @@ state_change <- historic_spp %>%
             by = c("year","region","spatial")) %>%
   mutate(percentage = state_value/total_value*100,
          label = ifelse(year >= 1980 & year <= 2001,"reference",
-                         ifelse(year > 2001,"today",NA)
-                         )
-         ) %>% 
+                        ifelse(year > 2001,"today",NA)
+         )
+  ) %>% 
   # left_join(periods,
-            # by = "year") %>% 
+  # by = "year") %>% 
   group_by(state,label,region,spatial) %>% 
   summarise(mean_per = round(mean(percentage)),.groups = "drop") %>% 
   #Only show results for spring
   filter(#str_detect(region,"Spring"),
-         !is.na(label)
-         ) %>% 
+    !is.na(label)
+  ) %>% 
   # select(-region) %>% 
   # Estimate percentage change
   spread(label,mean_per) %>% 
@@ -3059,11 +3271,11 @@ state_change %>%
     sd(raw_change)
   ) %>% 
   write_csv("../Results/state_relative_chng.csv")
-  View()
+View()
 
 
 
-  # Estimate spatial differences in percentage change
+# Estimate spatial differences in percentage change
 spatial_diff <- state_change %>% 
   spread(spatial,change) %>% 
   mutate(spatial_diff = abs(fp-sw)) %>% 
@@ -3079,18 +3291,18 @@ differences <- season_diff %>%
   bind_rows(spatial_diff) %>% 
   mutate(
     label = ifelse(category == "fp","Fishing ports",
-                          ifelse(category == "sw","State Waters",category)
-         )
+                   ifelse(category == "sw","State Waters",category)
+    )
   )
 
 # For in text differences
 differences %>% 
   group_by(category) %>%
   summarise_at(vars(diff),
-    c(mean = mean,
-      sd =sd,
-      min = min,
-      max= max))
+               c(mean = mean,
+                 sd =sd,
+                 min = min,
+                 max= max))
 
 
 # The main plot
@@ -3104,7 +3316,7 @@ prop_chng_map <- land_sf %>%
                               limits = c(-100,100),
                               breaks = seq(-100,100,25),
                               labels = c(seq(-100,75,25),">100")
-                              ) +
+  ) +
   facet_grid(spatial~ region) +
   labs(x = "", 
        y = "") +
@@ -3118,14 +3330,14 @@ prop_chng_map <- land_sf %>%
         legend.title.align=0.5,
         strip.text.y = element_blank(),
         strip.background = element_blank(),
-        ) 
+  ) 
 
 ggsave(filename = "proportion_chng_agg.png",
-         plot = prop_chng_map,
-         path = my_path("R","Figures"),
-         width = 10,
-         height = 10
-  )
+       plot = prop_chng_map,
+       path = my_path("R","Figures"),
+       width = 10,
+       height = 10
+)
 
 
 #### Option with differences
@@ -3143,7 +3355,7 @@ spat_diff <- land_sf %>%
                               option = "C",
                               limits = c(0,50),
                               breaks = seq(0,50,10)
-                              ) +
+  ) +
   facet_wrap(~ label,
              ncol = 2) +
   labs(x = "", 
@@ -3160,11 +3372,11 @@ spat_diff <- land_sf %>%
         strip.text.x = element_blank())
 
 ggsave(filename = "spat_diff.png",
-         plot = spat_diff,
-         path = my_path("R","Figures"),
-         width = 8,
-         height = 6
-  )
+       plot = spat_diff,
+       path = my_path("R","Figures"),
+       width = 8,
+       height = 6
+)
 
 # seasonal
 seas_diff <- land_sf %>% 
@@ -3178,7 +3390,7 @@ seas_diff <- land_sf %>%
                               option = "C",
                               limits = c(0,50),
                               breaks = seq(0,50,10)
-                              ) +
+  ) +
   facet_wrap(~ label,
              ncol = 1,
              strip.position="right") +
@@ -3194,14 +3406,14 @@ seas_diff <- land_sf %>%
         # strip.text.x = element_blank(),
         axis.text.y = element_blank(),
         axis.line.y = element_blank()
-        )
+  )
 
 ggsave(filename = "seas_diff.png",
-         plot = seas_diff,
-         path = my_path("R","Figures"),
-         width = 8,
-         height = 6
-  )
+       plot = seas_diff,
+       path = my_path("R","Figures"),
+       width = 8,
+       height = 6
+)
 
 
 ```
@@ -3295,10 +3507,10 @@ state_fit <- historic_spp %>%
   mutate(percentage = state_value/total_value*100) %>% 
   group_by(state,region) %>% 
   mutate(RMean = zoo::rollmean(x = percentage, 
-                            10,
-                            fill = NA,
-                            na.rm=T)
-    ) %>%  
+                               10,
+                               fill = NA,
+                               na.rm=T)
+  ) %>%  
   left_join(state_lat)
 
 # Plot me
@@ -3322,11 +3534,11 @@ p <- ggplot(state_fit) +
   theme_dark()
 
 suppressWarnings(
-ggplotly(p,
-         dynamicTicks = TRUE) %>% 
-  layout(hovermode = "x") %>% 
-  # add_trace() %>% 
-  rangeslider()
+  ggplotly(p,
+           dynamicTicks = TRUE) %>% 
+    layout(hovermode = "x") %>% 
+    # add_trace() %>% 
+    rangeslider()
 )
 
 ```
@@ -3350,19 +3562,19 @@ state_fit <- historic_spp %>%
   mutate(percentage = state_value/total_value*100) %>% 
   group_by(state,region,spatial) %>% 
   mutate(RMean = zoo::rollmean(x = percentage, 
-                            10,
-                            fill = NA,
-                            na.rm=T)
-    ) %>% 
+                               10,
+                               fill = NA,
+                               na.rm=T)
+  ) %>% 
   #Only show results for spring
   filter(str_detect(region,"Spring"),
          !is.na(RMean) # Remove NAs from rollmean
-         ) %>%  
+  ) %>%  
   left_join(state_lat) %>% 
   mutate(
-         spatial = ifelse(spatial == "fp","Fishing ports",
-                          ifelse(spatial == "sw","State Waters","Difference")
-         )
+    spatial = ifelse(spatial == "fp","Fishing ports",
+                     ifelse(spatial == "sw","State Waters","Difference")
+    )
   )
 
 # Plot me
@@ -3378,7 +3590,7 @@ agg_area <- ggplot(state_fit) +
   annotate(geom= "rect",
            xmin = 1980, xmax = 2001, 
            ymin = 0, ymax = 100,
-            fill = "gray90",
+           fill = "gray90",
            colour = NA,
            alpha = 0.5) +
   ylab("Propotion (10 yrs running average)") +
@@ -3396,12 +3608,12 @@ agg_area <- ggplot(state_fit) +
   facet_wrap(~spatial) 
 
 
-    ggsave(filename = "area_plot_avg_agg_sptl.jpg",
-         plot = agg_area,
-         path = my_path("R","Figures"),
-         width = 8,
-         height = 6
-         )
+ggsave(filename = "area_plot_avg_agg_sptl.jpg",
+       plot = agg_area,
+       path = my_path("R","Figures"),
+       width = 8,
+       height = 6
+)
 
 
 ```
