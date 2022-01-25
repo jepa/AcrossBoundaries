@@ -1510,6 +1510,7 @@ head(historic_spp)
 # Degree ressolution for area estimation
 # https://rdrr.io/github/stineb/rbeni/src/R/area.R
 # https://www.pmel.noaa.gov/maillists/tmap/ferret_users/fu_2004/msg00023.html
+# DOUBLE CHECK RESULTS BELOW
 # https://www.engr.scu.edu/~emaurer/tools/calc_cell_area_cgi.pl
 
 r_earth <- 6371000 # NASA's volumetric mean radious https://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html
@@ -1520,7 +1521,7 @@ grids %>%
   tally() %>% 
   # View()
   mutate(
-    area = (4 * r_earth^2 * 0.5 * 0.3 * pi/180 * cos(abs(lat) * pi/180 ) * sin(0.5 * 0.3 * pi/180))/1000000
+    area = (4 * r_earth^2 * 0.5 * res_lon * pi/180 * cos(abs(lat) * pi/180 ) * sin(0.5 * res_lon * pi/180))/1000000
   ) %>% 
   # View()
   group_by(state,spatial,spp) %>%
