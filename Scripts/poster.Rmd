@@ -1,0 +1,93 @@
+---
+title: "Quantifying fish range shifts across poorly defined management boundaries"
+output: 
+  posterdown::posterdown_html
+author: "DRAFT. Target journal *PlosOne*"
+subtitle: "Juliano Palacios-Abrantes*^1^, Scott Crosson^2^, Chris Dumas^3^, Rod Fujita^4^, Arielle Levine^5^, Catherine Longo^6^, Olaf Jensen^1^"
+date: "Affiliations: ^1^Center for Limnology, University of Wisconsin-Madison, US. ^2^National Oceanic and Atmospheric Administration, US. ^3^University of North Carolina Wilmington, US. ^4^Rod Fujita, Environmental Defense Fund, US. ^5^San Diego State University, US. ^6^Marine Stewardship Council, UK."
+---
+
+```{r setup, include=FALSE}
+
+library(MyFunctions)
+MyFunctions::my_lib(c("dplyr","tibble","knitr","kableExtra","png","grid"))
+
+
+
+```
+
+# Introduction
+
+Management regimes that rely on spatial boundaries for the management of marine resources might be poorly adapted to changes in the distribution of these resources caused by climate change, resulting in mismatches between species distributions and the spatial boundaries. This is of specific concern for the management of fish stocks that cross management jurisdictions, known as shared stocks. Transitioning to dynamic ocean management has been suggested as a solution to this issue, however, in many cases spatial boundaries are not clearly drawn, hampering such transition. This is the case along the East coast of the United States (U.S.), where the need for individual states to coordinate the management of shifting shared stocks is challenged by a lack of clear spatially-explicit state regulatory subunits within federal waters (i.e., Exclusive Economic Zone -EEZ). This can result in a number of problems, such as misalignment between allocations based on historical stock distribution and actual stock distribution, which can in turn change catch rates, discard rates, and fishing costs. 
+
+# Objectives
+
+Explore different approaches to designing spatial regulatory units to facilitate the adaptation of fisheries management to species shifting distributions.
+
+# Methods
+
+1. - Determine the yearly distribution of each stock within the U.S. Mid-Atlantic EEZ from 1951 to 2019 during two sampling seasons (Fall and Spring). 
+
+2.- Explore two approaches for drawing regulatory units: one based on state waters and another on historical landings from North Carolina to Maine. 
+
+3-. Estimate each state’s proportion of the stock’s distribution and compare historical and recent values. 
+
+```{r bufferFig, eval = T, echo = T, fig.width = 20, echo=FALSE, fig.cap="Spatial regions within the United States' North East Exclusive Economic Zone. A) Spatial buffers from each state's waters. B) Spatial buffers from the main fishing ports. States are aligned by average latitude from north to south. ME, Maine; NH, New Hampshire; MA, Massachusetts; RI, Rhode Island; CT, Connecticut; NY, New York; NY, New Jersey; DE, Delaware; MD, Maryland; VA Virginia; North Carolina."}
+
+# Call the image
+img <- readPNG("../Figures/Fig1alt.png")
+# Print the image
+grid.raster(img)
+```
+
+
+
+# Results
+
+The choice of boundary expansion method (e.g., fishing port radius or extension of state boundaries) is highly consequential for determining the spatial extent of each state’s regulatory unit.
+
+Seasonality plays an important role in determining the distributional range of black sea bass, scup, and summer flounder.
+
+```{r interpolation, eval = T, echo = T,  fig.width = 20, echo=FALSE, fig.cap="Interpolation results for all species and seasons within the US Northeast Exclusive Economic Zone. Scale showing Catch per Unit of Effort (CPUE) at a log 10 scale. Black cross represents the species’ centroid defined as the region with the largest CPUE with grey regions representing no CPUE."}
+
+# Call the image
+img <- readPNG("../Figures/Fig2.png")
+# Print the image
+grid.raster(img)
+```
+
+
+We overlaid the putative regulatory units with the interpolated CPUE of black sea bass, summer flounder and scup to estimate each state’s proportion of the total CPUE (Fig. 3). Under the state waters approach, each state has a regulatory unit and thus captures a part of the CPUE of each species. However, under the fishing ports approach some states end up without regulatory units resulting in no CPUE. 
+
+
+```{r reg_unit_spatial, eval = T, echo = T, fig.width = 20, echo=FALSE, fig.cap="Proportion of the Catch per Unit of Effort (CPUE) for each state and species by spatial approach. Top and middle rows represent the fishing port and state waters approach, respectively. Bottom row is the difference between both approaches (Δα_reg; see methods). All values in percentage units."}
+
+# Call the image
+img <- readPNG("../Figures/Fig3.png")
+# Print the image
+grid.raster(img)
+```
+
+
+Seasonal differences in state’s CPUE proportion are also evident, although smaller than the regulatory units differences.
+
+```{r reg_unit_season, eval = T, echo = T, fig.width = 20, echo=FALSE, fig.cap="Proportion of the Catch Per Unit of Effort (CPUE) proportion for each state and species by survey season. Top and middle rows represent fall and spring surveys, respectively. "}
+
+# Call the image
+img <- readPNG("../Figures/Fig4.png")
+# Print the image
+grid.raster(img)
+```
+
+
+Over the last 40 years, the proportion of CPUE in each state has increased for northern states and decreased for southern states for all three species (Fig. 5).
+
+
+```{r area_plot, eval = T, echo = T, fig.width = 20, echo=FALSE, fig.cap="Historical Catch Per Unit of Effort (CPUE) proportion for each state and species by spatial approach. Proportion presented in 10 years running mean percentage. States presented latitudinally from north to south."}
+
+# Call the image
+img <- readPNG("../Figures/Fig5.png")
+# Print the image
+grid.raster(img)
+```
+
