@@ -2181,6 +2181,7 @@ state_fit <- historic_spp %>%
   group_by(state,region,spp,spatial) %>% 
   mutate(RMean = zoo::rollmean(x = percentage, 
                                10,
+                               align = "left",
                                fill = NA,
                                na.rm=T)
   ) %>% 
@@ -2194,6 +2195,11 @@ state_fit <- historic_spp %>%
                      ifelse(spatial == "sw","State waters","Difference")
     )
   )
+
+        data_new <- state_fit
+        
+        data_new$group <- factor(data_new$state,                 # Relevel group factor
+                                 levels = state_lat$state)
 
 
 ```
@@ -2214,12 +2220,12 @@ historic_periods <- historic_spp %>%
 
 # Plot me
 ssp_area <-
-  ggplot(state_fit) +
+  ggplot(data_new) +
   geom_area(
     aes(
       x = year,
       y = round(RMean),
-      fill = abrev
+      fill = group
       # fill = state
     )
   ) +
@@ -2236,8 +2242,8 @@ ssp_area <-
   ylab("Propotion (10 yrs running average)") +
   # viridis::scale_fill_viridis(discrete = T, alpha = 0.8) +
   scale_fill_manual("State\n(Latitudinal order)",
-                    values = state_pallet,
-                    labels = state_fit %>% arrange(desc(order)) %>%  pull(state) %>% unique()
+                    values = state_pallet#,
+                    # labels = state_fit %>% arrange(desc(order)) %>%  pull(state) %>% unique()
   ) +
   scale_color_manual("",values = "grey90") +
   facet_grid(spp~spatial) +
@@ -2250,7 +2256,7 @@ ssp_area <-
 
 ggsave(filename = "area_plot_avg_spp_sptl.jpg",
        plot = ssp_area,
-       path = my_path("R","Figures"),
+       # path = my_path("R","Figures"),
        width = 14,
        height = 8
 )
