@@ -2,9 +2,6 @@
 
 This repository supports the Lenfest project; [Adaptive Allocation Strategies for Transboundary Fish Stocks](https://www.lenfestocean.org/en/research-projects/new-effort-to-inform-adaptive-allocation-strategies-for-transboundary-fish-stocks)
 
-Projecet updates: https://jepa.github.io/AcrossBoundaries/index.html
-
-
 # Project background
 
 Climate change is driving shifts in fish stock distributions that will affect resource availability across different jurisdictions around the world. Elinor Ostrom’s fundamental principles of common pool resource governance include a requirement for clear boundaries over resource units. However, when stock ranges shift, governance systems and boundaries are no longer aligned. This misalignment has already created conflicts around access and the re-distribution of benefits flowing from the stocks. This is a global challenge that is likely to increase as the effects of climate change intensify in the coming years. Specific problems that arise from the movement of stocks across jurisdictions include: overfishing; conflicts over access; unfairness to stakeholders who have borne the costs of resource stewardship but cannot capture the benefits due to stock movement; and high costs and conflicts associated with re-negotiating allocation, which is typically the most contentious aspect of fishery management.
