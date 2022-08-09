@@ -83,3 +83,49 @@ file_name <- my_path("D","Spatial", name = "nefsc_index.csv")
 write_csv(nefsc_index %>% select(-state), file_name)
 ```
 
+# Estimate area of gridcell
+
+
+Would it be possible for you to send me a file with the area in hectares for each of the “index” grid areas in your fish distribution analysis?  You sent me kg/ha as one field in the dataset, so I’m hoping that you also have hectares for each index area, and that it’s easy to send.
+
+```{r area_estimation}
+
+library("tidyverse")
+
+# Load coordinate grid
+coords <- MyFunctions::my_path("D", extra_path = "Spatial", name = "inter_grid_df.csv", read = T, header = T) 
+
+# 1.2 Estimate gridcell area based on global variables (m^2)
+# Degree ressolution for area estimation
+# https://rdrr.io/github/stineb/rbeni/src/R/area.R
+# https://www.pmel.noaa.gov/maillists/tmap/ferret_users/fu_2004/msg00023.html
+# https://www.engr.scu.edu/~emaurer/tools/calc_cell_area_cgi.pl
+
+r_earth <- 6371000 # NASA's volumetric mean radious https://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html
+res_lon <- 0.3 # lon degree resolution
+res_lat <- 0.3 # lat degree resolution
+
+coords <- coords %>% 
+  mutate(
+    area = (4 * r_earth^2 * 0.5 * res_lon * pi/180 * cos(abs(lat) * pi/180 ) * sin(0.5 * res_lat * pi/180))/10000
+  )
+
+write_csv(coords, "corrds_area.csv")
+
+```
+
+```{r plot_test}
+
+ggplot(coords) +
+  geom_tile(
+    aes(
+      x = lon,
+      y = lat,
+      fill = area
+    )
+  ) +
+  scale_fill_gradient(low = "yellow", high = "red", na.value = NA)
+
+
+```
+
