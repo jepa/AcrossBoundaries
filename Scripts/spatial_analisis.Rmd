@@ -60,8 +60,16 @@ land_sf <- st_as_sf(map("state", plot = FALSE, fill = TRUE)) %>%
          state = str_to_sentence(ID)
   )
 
-# Visual exploration (o.k! )
-# Visual exploration (o.k! )
+
+
+
+
+# Include figure for paper
+
+land_sf$group <- factor(state_mpa$abrev,      # Reordering group factor levels
+                          levels = state_lat$abrev)
+
+
 ggplot() +
   geom_sf(data = st_as_sf(map("state", plot = FALSE, fill = TRUE))) +
   geom_sf(data = land_sf, aes(fill = state)) +
@@ -114,7 +122,7 @@ Covers the state waters of the NE US states. Data from [data.gov](https://catalo
 ```{r state_sf, eval = T, echo = T}
 
 
-state_sf <-  st_read("~/OneDrive - UW-Madison/FederalAndStateWaters/FederalAndStateWaters.gdb") %>%
+state_sf <-  st_read("/Volumes/Enterprise/Data/Spatial/FederalAndStateWaters") %>%
   janitor::clean_names() %>% 
   mutate(jurisdicti = str_to_lower(jurisdicti)) %>% 
   filter(jurisdicti %in% States) %>% 
@@ -215,7 +223,7 @@ overall_port_data <- ports_data %>%
 #   group_by(species_name) %>% 
 #   summarise(
 #     "95th" = quantile(year_ton, 0.95),
-#     "12th" = quantile(year_ton, 0.75),
+#     "25th" = quantile(year_ton, 0.75),
 #     "50th" = quantile(year_ton, 0.50)) %>% 
 #   gather("tresh","quant",`95th`:`50th`)
 # 
@@ -560,7 +568,7 @@ ggplot() +
   geom_sf(data = eez_sf, aes()) +
   geom_sf(data = land_sf, aes(fill = state), alpha = 0.3) +
   geom_sf(data = state_sf, aes(color = state), fill = NA) +
-  geom_point(data = subset(noaa_ports_complete, tresh == "12th"), aes(x = lon, y = lat,
+  geom_point(data = subset(noaa_ports_complete, tresh == "25th"), aes(x = lon, y = lat,
                                                                       shape = species_name), size = 3, alpha = 0.7) +
   scale_color_manual(values = state_pallet) +
   scale_fill_manual(values = state_pallet) +
@@ -649,7 +657,7 @@ We set a buffer of *5* deg (510 km, ~ 221 nm) that overshoots the EEZ a bit, but
 
 #Load top port data 
 ports_df <- my_path("G","AcrossBoundaries/Data/Partial", "top_ports.csv", read = T) %>% 
-  filter(tresh == "12th")
+  filter(tresh == "25th")
 
 
 port_sf <- st_as_sf(ports_df,
@@ -1384,7 +1392,7 @@ grids <- bind_rows(grids_sw,grids_fp)
 
 # Ports data
 ports_df <- my_path("G","AcrossBoundaries/Data/Partial", "top_ports.csv", read = T) %>% 
-  filter(tresh == "12th") %>%
+  filter(tresh == "25th") %>%
   group_by(species_name,state_postal) %>% 
   summarise(n =n()) %>% 
   select(-n)
@@ -1492,15 +1500,52 @@ state_lat <- historic_spp %>%
   arrange(desc(order)) 
 
 
-
-
-length(state_pallet)
+# length(state_pallet)
 
 barplot(c(1,2,3,4,5,6,7,8,9,10,11), col=state_pallet)
 
 # print for notebook
 head(historic_spp)
 ```
+
+## F0 Map of the US and study site
+
+```{r}
+
+# re order states by latitude
+land_sf_t <- land_sf
+
+land_sf_t$group <- factor(land_sf_t$abrev,      # Reordering group factor levels
+                               levels = state_lat$abrev)
+
+ land_sf_t <- land_sf_t %>% 
+  left_join(state_lat) %>% 
+   mutate(
+     name = paste0(str_to_title(state)," (",abrev,")")
+   )
+
+ # Load us MAP
+ us_map <- st_as_sf(map("state", plot = FALSE, fill = TRUE))
+ 
+ # Plot figure
+study_plot <-
+  ggplot() +
+  geom_sf(data = us_map, aes(),fill = "grey", color = "lightgrey") +
+  geom_sf(data = land_sf_t, aes(fill = reorder(name,-order))) +
+  scale_fill_manual("State",
+                    values = state_pallet) +
+  my_ggtheme_m(leg_pos = "right",map_type = "R")
+
+name_f0 <- my_path("G", "AcrossBoundaries/Results/Figures", name = "study_region.png")
+
+ggsave(name_f0,
+       study_plot,
+       width = 9,
+       height = 4)
+
+
+```
+
 
 
 ## F1 Regulatory units result
@@ -1545,7 +1590,7 @@ grids %>%
 # Estimate distance between points
 
 my_path("D","Partial","top_ports.csv", read = T) %>% 
-  filter(tresh == "12th",
+  filter(tresh == "25th",
          state_postal == "NY") %>% 
   ggplot() +
   geom_point(
