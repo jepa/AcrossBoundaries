@@ -61,10 +61,13 @@ land_sf <- st_as_sf(map("state", plot = FALSE, fill = TRUE)) %>%
   )
 
 # Visual exploration (o.k! )
-ggplot(land_sf) +
-  geom_sf(aes(fill = state)) +
+# Visual exploration (o.k! )
+ggplot() +
+  geom_sf(data = st_as_sf(map("state", plot = FALSE, fill = TRUE))) +
+  geom_sf(data = land_sf, aes(fill = state)) +
   scale_fill_manual(values = state_pallet) +
-  theme_dark()
+  my_ggtheme_m(leg_pos = "right")
+  
 
 
 ```
@@ -212,7 +215,7 @@ overall_port_data <- ports_data %>%
 #   group_by(species_name) %>% 
 #   summarise(
 #     "95th" = quantile(year_ton, 0.95),
-#     "75th" = quantile(year_ton, 0.75),
+#     "12th" = quantile(year_ton, 0.75),
 #     "50th" = quantile(year_ton, 0.50)) %>% 
 #   gather("tresh","quant",`95th`:`50th`)
 # 
@@ -225,33 +228,33 @@ overall_port_data <- ports_data %>%
 #   )
 
 top_ports <- bind_rows(
-  # 75th percentile used in project
+  # Top 25 % used in this project
   overall_port_data %>% 
     group_by(species_name) %>% 
-    top_frac(0.25,year_ton) %>%  # top 75
-    mutate(tresh = "75th"),
+    top_frac(0.25,year_ton) %>%  # top 25 %
+    mutate(tresh = "25th"),
   # -------------------- #
   # For sensitivity values
   # -------------------- #
-  # 95%
+  # 5%
   overall_port_data %>% 
     group_by(species_name) %>% 
     top_frac(0.05,year_ton) %>%  
-    mutate(tresh = "95th"), # top 95
-  # 85%
+    mutate(tresh = "5th"), # top 5%
+  # 15%
   overall_port_data %>% 
     group_by(species_name) %>% 
     top_frac(0.15,year_ton) %>% 
-    mutate(tresh = "85th"), # top 85
-  # 65%
+    mutate(tresh = "15th"), # top 15%
+  # 35%
   overall_port_data %>% 
     group_by(species_name) %>% 
-    top_frac(0.35,year_ton) %>%  # top 75
-    mutate(tresh = "65th"),
+    top_frac(0.35,year_ton) %>%  # top 35%
+    mutate(tresh = "35th"),
   # 50%
   overall_port_data %>% 
     group_by(species_name) %>% 
-    top_frac(0.5,year_ton) %>%  # top 50
+    top_frac(0.5,year_ton) %>%  # top 50 %
     mutate(tresh = "50th")
 )
 
@@ -520,7 +523,7 @@ my_path("G","AcrossBoundaries/Data/Partial","top_ports.csv", read = T) %>%
 ```{r}
 
 port_map <- noaa_ports_complete %>%  
-  filter(tresh == "75th") 
+  filter(tresh == "25th") 
 
 port_map <- ggplot() +
   geom_sf(data = eez_sf,aes(), fill = "grey90") +
@@ -557,7 +560,7 @@ ggplot() +
   geom_sf(data = eez_sf, aes()) +
   geom_sf(data = land_sf, aes(fill = state), alpha = 0.3) +
   geom_sf(data = state_sf, aes(color = state), fill = NA) +
-  geom_point(data = subset(noaa_ports_complete, tresh == "75th"), aes(x = lon, y = lat,
+  geom_point(data = subset(noaa_ports_complete, tresh == "12th"), aes(x = lon, y = lat,
                                                                       shape = species_name), size = 3, alpha = 0.7) +
   scale_color_manual(values = state_pallet) +
   scale_fill_manual(values = state_pallet) +
@@ -646,7 +649,7 @@ We set a buffer of *5* deg (510 km, ~ 221 nm) that overshoots the EEZ a bit, but
 
 #Load top port data 
 ports_df <- my_path("G","AcrossBoundaries/Data/Partial", "top_ports.csv", read = T) %>% 
-  filter(tresh == "75th")
+  filter(tresh == "12th")
 
 
 port_sf <- st_as_sf(ports_df,
@@ -1381,7 +1384,7 @@ grids <- bind_rows(grids_sw,grids_fp)
 
 # Ports data
 ports_df <- my_path("G","AcrossBoundaries/Data/Partial", "top_ports.csv", read = T) %>% 
-  filter(tresh == "75th") %>%
+  filter(tresh == "12th") %>%
   group_by(species_name,state_postal) %>% 
   summarise(n =n()) %>% 
   select(-n)
@@ -1542,7 +1545,7 @@ grids %>%
 # Estimate distance between points
 
 my_path("D","Partial","top_ports.csv", read = T) %>% 
-  filter(tresh == "75th",
+  filter(tresh == "12th",
          state_postal == "NY") %>% 
   ggplot() +
   geom_point(
