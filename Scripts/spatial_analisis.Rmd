@@ -16,7 +16,7 @@ output:
 
 ```{r setup, include=FALSE}
 library(MyFunctions)
-MyFunctions::my_lib(c("ggmap","sf","st","tidyverse","tools","readr","data.table","maps","viridis","wesanderson","knitr","kableExtra","plotly","ggrepel","ggsflabel","janitor","interp","rnaturalearth","readxl","cowplot"))
+MyFunctions::my_lib(c("ggmap","sf","st","tidyverse","tools","readr","data.table","maps","viridis","wesanderson","knitr","kableExtra","plotly","ggrepel","ggsflabel","janitor","interp","rnaturalearth","readxl","cowplot","here"))
 
 # Fix new updates of sf package
 sf::sf_use_s2(use_s2 = FALSE)
@@ -60,22 +60,6 @@ land_sf <- st_as_sf(map("state", plot = FALSE, fill = TRUE)) %>%
          state = str_to_sentence(ID)
   )
 
-
-
-
-
-# Include figure for paper
-
-land_sf$group <- factor(state_mpa$abrev,      # Reordering group factor levels
-                          levels = state_lat$abrev)
-
-
-ggplot() +
-  geom_sf(data = st_as_sf(map("state", plot = FALSE, fill = TRUE))) +
-  geom_sf(data = land_sf, aes(fill = state)) +
-  scale_fill_manual(values = state_pallet) +
-  my_ggtheme_m(leg_pos = "right")
-  
 
 
 ```
@@ -1312,10 +1296,10 @@ State allocations of the commercial black sea bass coastwide quota were original
 
 ```{r}
 
-x <- as.data.frame(st_read(my_path("D", "Partial/grid_fp",name="grid_eez_fp.shp"))) %>% 
-  select(index,spp = spcs_nm,port_name = port_nm, abrev = stt_pst) %>% 
+x <- as.data.frame(st_read(here("Data/Processed/grid_fp/grid_eez_fp.shp"))) %>% 
+  select(index, spp, port_name, abrev) %>% 
   bind_cols(
-    as.data.frame(st_coordinates(st_read(my_path("D", "Partial/grid_fp",name="grid_eez_fp.shp"))))
+    as.data.frame(st_coordinates(st_read(here("Data/Processed/grid_fp/grid_eez_fp.shp"))))
   ) %>% 
   rename(lon = X, lat = Y) %>% 
   left_join(as.data.frame(land_sf),
@@ -1331,7 +1315,7 @@ x <- as.data.frame(st_read(my_path("D", "Partial/grid_fp",name="grid_eez_fp.shp"
   )
 
 
-write_csv(x,my_path("D", "Partial/grid_fp",name="grid_eez_fp_df.csv"))
+# write_csv(x,my_path("D", "Partial/grid_fp",name="grid_eez_fp_df.csv"))
 
 # x %>% filter() %>% group_by(spp,abrev) %>% tally()
 
@@ -1361,11 +1345,11 @@ eez_sf <- st_read(my_path("G", extra_path = "Spatial/SAU/SAU_Shapefile", name = 
 ### Previously created grids 
 
 grids_sw <- bind_rows(
-  my_path("G", "AcrossBoundaries/Data/Partial/grid_sw", name = "grid_eez_sw_df.csv", read = T) %>% 
+  read_csv(here("Data/Processed/grid_sw/grid_eez_sw_df.csv")) %>% 
     mutate(spp = "Paralichthys dentatus"),
-  my_path("G", "AcrossBoundaries/Data/Partial/grid_sw", name = "grid_eez_sw_df.csv", read = T) %>% 
+  read_csv(here("Data/Processed/grid_sw/grid_eez_sw_df.csv")) %>% 
     mutate(spp = "Stenotomus chrysops"),
-  my_path("G", "AcrossBoundaries/Data/Partial/grid_sw", name = "grid_eez_sw_df.csv", read = T) %>% 
+  read_csv(here("Data/Processed/grid_sw/grid_eez_sw_df.csv")) %>% 
     mutate(spp = "Centropristis striata")
 ) %>% 
   left_join(land_sf) %>% 
@@ -1374,8 +1358,7 @@ grids_sw <- bind_rows(
          port_name = NA
   )
 
-grids_fp <- my_path("G", "AcrossBoundaries/Data/Partial/grid_fp", name = "grid_eez_fp_df.csv", read = T
-) %>%
+grids_fp <- read_csv(here("Data/Processed/grid_fp/grid_eez_fp_df.csv")) %>%
   mutate(spatial = "fp",
          spp = ifelse(spp == "summer flounder","Paralichthys dentatus", 
                       ifelse(spp == "scup", "Stenotomus chrysops", 
@@ -1391,8 +1374,8 @@ grids <- bind_rows(grids_sw,grids_fp)
 # unique(grids$spp)
 
 # Ports data
-ports_df <- my_path("G","AcrossBoundaries/Data/Partial", "top_ports.csv", read = T) %>% 
-  filter(tresh == "25th") %>%
+ports_df <- read_csv(here("Data/Processed/top_ports.csv")) %>% 
+  filter(tresh == "75th") %>% # this selects the top 25%
   group_by(species_name,state_postal) %>% 
   summarise(n =n()) %>% 
   select(-n)
@@ -1409,27 +1392,14 @@ Species <- c(
   "Centropristis striata"#, # black sea bass
 )
 
-spp_paths <- list.files(my_path("G",extra_path = "AcrossBoundaries/Results/Partial/Interpolation/"))
-
-# Some gibiris for names
-taxon_list <- gsub("_"," ",spp_paths)
-taxon_list <- gsub("tif ","",taxon_list)
-taxon_list <- gsub(".csv","",taxon_list)
-
-taxon_list <- taxon_list[taxon_list %in% Species]
-
-# Now set a list of files to read
-taxon_read <- paste0("tif_",taxon_list,".csv")
-taxon_read <- gsub(" ","_",taxon_read)
-
-taxon_read <- spp_paths[spp_paths %in% taxon_read]
+# Get files
+spp_paths <- list.files(here("Data/Processed/Interpolation"),
+                        full.names = T)
 
 #### Load sw interpolation 
 
-taxon_sw <- my_path("G",extra_path = "AcrossBoundaries/Results/Partial/Interpolation/", name = taxon_read)
-
 # Load all sp in one table
-historic_spp <- bind_rows(lapply(taxon_sw, fread)) %>% 
+historic_spp <- bind_rows(lapply(spp_paths, fread)) %>% 
   left_join(grids,
             by = c("index","lon","lat","spp")
   ) %>%
@@ -1513,12 +1483,10 @@ head(historic_spp)
 ```{r}
 
 # re order states by latitude
-land_sf_t <- land_sf
-
-land_sf_t$group <- factor(land_sf_t$abrev,      # Reordering group factor levels
+land_sf$group <- factor(land_sf$abrev,      # Reordering group factor levels
                                levels = state_lat$abrev)
 
- land_sf_t <- land_sf_t %>% 
+ land_sf_to_plot <- land_sf %>% 
   left_join(state_lat) %>% 
    mutate(
      name = paste0(str_to_title(state)," (",abrev,")")
@@ -1527,11 +1495,10 @@ land_sf_t$group <- factor(land_sf_t$abrev,      # Reordering group factor levels
  # Load us MAP
  us_map <- st_as_sf(map("state", plot = FALSE, fill = TRUE))
  
- # Plot figure
-study_plot <-
-  ggplot() +
+ # Plot figure 0 ( NewFig 1)
+study_plot <- ggplot() +
   geom_sf(data = us_map, aes(),fill = "grey", color = "lightgrey") +
-  geom_sf(data = land_sf_t, aes(fill = reorder(name,-order))) +
+  geom_sf(data = land_sf_to_plot, aes(fill = reorder(name,-order))) +
   scale_fill_manual("State",
                     values = state_pallet) +
   my_ggtheme_m(leg_pos = "right",map_type = "R")
@@ -1545,7 +1512,6 @@ ggsave(name_f0,
 
 
 ```
-
 
 
 ## F1 Regulatory units result
@@ -1589,8 +1555,8 @@ grids %>%
 
 # Estimate distance between points
 
-my_path("D","Partial","top_ports.csv", read = T) %>% 
-  filter(tresh == "25th",
+read_csv(here("Data/Processed/top_ports.csv")) %>% 
+  filter(tresh == "75th",
          state_postal == "NY") %>% 
   ggplot() +
   geom_point(
@@ -1624,7 +1590,7 @@ geosphere::distm(c(ny_dist$lon[1], ny_dist$lat[1]), c(ny_dist$lon[2], ny_dist$la
 #### Data needed ####
 
 # Load grid of state waters
-grid_eez_sw_sf <-  st_read(my_path("G","AcrossBoundaries/Data/Partial/grid_sw", name = "grid_eez_sw_sf.shp")) %>%
+grid_eez_sw_sf <-  st_read(here("Data/Processed/grid_sw/grid_eez_sw_sf.shp")) %>%
   select(index,state,geometry) %>% 
   mutate(method = "state_waters",
          state = str_to_sentence(state)) %>% 
@@ -1634,7 +1600,7 @@ grid_eez_sw_sf$group <- factor(grid_eez_sw_sf$abrev,      # Reordering group fac
                                levels = state_lat$abrev)
 
 # Load grid of fishing ports
-grid_eez_fp_sf <-  st_read(my_path("G","AcrossBoundaries/Data/Partial/grid_fp", name = "grid_eez_fp.shp")) %>%
+grid_eez_fp_sf <-  st_read(here("Data/Processed/grid_fp/grid_eez_fp_sf.shp")) %>%
   select(index,abrev,geometry) %>% 
   mutate(method = "fishing_port"#,
          # state = str_to_sentence(landing_port)
@@ -2320,7 +2286,7 @@ ggsave(filename = "area_plot_avg_spp_sptl.jpg",
 ```{r sen_data}
 # Estimate distance between points
 
-top_ports_sen <- my_path("G","AcrossBoundaries/Data/Partial","top_ports.csv", read = T)
+top_ports_sen <- read_csv(here("Data/Processed/top_ports.csv"))
 
 eez_sf <- st_read(my_path("G", extra_path = "Spatial/SAU/SAU_Shapefile", name = "SAUEEZ_July2015.shp")) %>% 
   st_transform(crs = 4326) %>% # 4326
@@ -2421,7 +2387,7 @@ sens_plot <- grid_fp_bf_dt %>%
                ) +
   theme(axis.text.x = element_blank(),
         strip.background = element_rect(fill = "grey"))+
-  labs(y = "Number of grid-cells (n)", x = "Threshold") +
+  labs(y = "Number of grid-cells (n)", x = "Top Ports") +
   scale_fill_brewer(palette = "Set3")
   
 
@@ -2429,6 +2395,7 @@ ggsave(filename = "tresh_sens_plot.png",
        sens_plot)
 
 ```
+
 # Old code
 
 ## Fishing ports WPI
