@@ -161,12 +161,10 @@ Non-confidential dataset containing annual landings/value summaries by port for 
 In order to make the report non-confidential, I am displaying as much of the port-level summary data as I can – and for cases where the port-level was confidential, I have first attempted to roll-up any confidential port-level summaries into state-level summaries within the same year.  If those state-level summaries continue to be confidential, I have further rolled-up those confidential ports across states into a coast-level summary.  Even at the coast level, there were several cases where not enough confidential ports could be combined to produce a non-confidential summary – and so for those rows it was necessary to redact the final landings/value data.  Fortunately, this only amounts to less than 0.5% of the total landings data (characterized in the “Pivot by Confidentiality” tab of the spreadsheet).
 
 
-*License???.*
-
 ```{r}
 # NOAA DATA
 
-ports_path <- my_path("G","AcrossBoundaries/Data/NOAA", name = "PalaciosJ - BSB, SFlounder, Scup by Port 1970-2020 - 2021.10.25.xlsx")
+ports_path <- here("Data/Raw/ACCSP/PalaciosJ - BSB, SFlounder, Scup by Port 1970-2020 - 2021.10.25.xlsx")
 
 
 # Load ports
@@ -249,6 +247,21 @@ top_ports <- bind_rows(
     top_frac(0.5,year_ton) %>%  # top 50 %
     mutate(tresh = "50th")
 )
+
+# get percentage for revisions
+
+overall_port_data %>% 
+  group_by(species_name) %>% 
+  summarise(total = sum(year_ton),
+            n_tot = n()) %>% 
+  left_join(top_ports) %>% 
+  filter(tresh == "25th") %>% 
+  group_by(species_name,total,n_tot) %>% 
+  summarise(top_sum = sum(year_ton),
+            n_top =n()
+            ) %>% 
+  mutate(round(top_sum/total,2),
+         round(n_top/n_tot,2))
 
 ```
 
