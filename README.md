@@ -1,6 +1,9 @@
 # Managing Across Boundaries 
 
-This repository supports the Lenfest project; [Adaptive Allocation Strategies for Transboundary Fish Stocks](https://www.lenfestocean.org/en/research-projects/new-effort-to-inform-adaptive-allocation-strategies-for-transboundary-fish-stocks)
+This repository supports the Lenfest project; [Adaptive Allocation Strategies for Transboundary Fish Stocks](https://www.lenfestocean.org/en/research-projects/new-effort-to-inform-adaptive-allocation-strategies-for-transboundary-fish-stocks) To support the [following publication](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0279025):
+
+*Palacios-Abrantes, J., Crosson, S., Dumas, C., Fujita, R., Levine, A., Longo, C., Jensen, O.P. (2023) Quantifying fish range shifts across poorly defined management boundaries. PLOS ONE.*
+
 
 # Authors
 
